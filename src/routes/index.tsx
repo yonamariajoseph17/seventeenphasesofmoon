@@ -75,7 +75,7 @@ function Index() {
         <div className="overflow-hidden rounded-2xl border border-border bg-card/40 p-8 backdrop-blur-sm md:p-12">
           <div className="grid items-center gap-10 md:grid-cols-[auto_1fr]">
             <div className="relative mx-auto">
-              <MoonSvg illumination={birthMoon.illumination} waxing={birthMoon.waxing} size={180} />
+              <MoonSvg phaseFraction={birthMoon.phaseFraction} size={180} />
             </div>
             <div>
               <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">Night one</p>
@@ -143,7 +143,7 @@ function YearCard({ date }: { date: Date }) {
       </div>
 
       <div className="relative mt-6 flex justify-center">
-        <MoonSvg illumination={m.illumination} waxing={m.waxing} size={130} />
+        <MoonSvg phaseFraction={m.phaseFraction} size={130} />
       </div>
 
       <div className="relative mt-6 space-y-2">
