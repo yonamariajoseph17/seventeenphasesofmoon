@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import { z } from "zod";
 import { moonPhase, zodiacFor, visibleConstellations } from "@/lib/astro";
 import { MoonSvg } from "@/components/MoonSvg";
 import { StarField } from "@/components/StarField";
@@ -8,8 +9,8 @@ export const Route = createFileRoute("/")({
   component: Index,
   head: () => ({
     meta: [
-      { title: "Her Sky · Moons & Stars from April 17, 2004" },
-      { name: "description", content: "Every birthday's moon phase and night sky from Coimbatore, traced from 2004 to today." },
+      { title: "Her Sky · A diary in moonlight" },
+      { name: "description", content: "Every birthday's moon phase and night sky, traced from her first night to today." },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -19,51 +20,194 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-const BIRTH_YEAR = 2004;
-const BIRTH_MONTH = 4; // April
-const BIRTH_DAY = 17;
-const LOCATION = "Coimbatore, Tamil Nadu";
+const CITY_PRESETS: Array<{ name: string; tz: number }> = [
+  { name: "Coimbatore, Tamil Nadu", tz: 5.5 },
+  { name: "Chennai, India", tz: 5.5 },
+  { name: "Mumbai, India", tz: 5.5 },
+  { name: "Bengaluru, India", tz: 5.5 },
+  { name: "Delhi, India", tz: 5.5 },
+  { name: "London, UK", tz: 0 },
+  { name: "Paris, France", tz: 1 },
+  { name: "New York, USA", tz: -5 },
+  { name: "Los Angeles, USA", tz: -8 },
+  { name: "Tokyo, Japan", tz: 9 },
+  { name: "Sydney, Australia", tz: 10 },
+];
 
-function fmtDate(d: Date) {
-  return d.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+const formSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD"),
+  time: z.string().regex(/^\d{2}:\d{2}$/, "Use HH:MM"),
+  city: z.string().trim().min(1, "City required").max(80),
+  tz: z.coerce.number().min(-12).max(14),
+});
+type FormValues = z.infer<typeof formSchema>;
+
+const DEFAULTS: FormValues = {
+  date: "2004-04-17",
+  time: "12:00",
+  city: "Coimbatore, Tamil Nadu",
+  tz: 5.5,
+};
+
+function localToUtc(date: string, time: string, tzHours: number): Date {
+  const [y, mo, d] = date.split("-").map(Number);
+  const [h, mi] = time.split(":").map(Number);
+  return new Date(Date.UTC(y, mo - 1, d, h, mi) - tzHours * 3_600_000);
+}
+
+function fmtDate(d: Date, tzHours: number) {
+  // Render as the local civil date at the given offset.
+  const shifted = new Date(d.getTime() + tzHours * 3_600_000);
+  return shifted.toLocaleDateString("en-US", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "UTC",
+  });
+}
+
+function fmtTime(d: Date, tzHours: number) {
+  const shifted = new Date(d.getTime() + tzHours * 3_600_000);
+  return shifted.toLocaleTimeString("en-US", {
+    hour: "2-digit", minute: "2-digit", timeZone: "UTC",
+  });
 }
 
 function Index() {
-  const today = new Date();
+  const [form, setForm] = useState<FormValues>(DEFAULTS);
+  const [errors, setErrors] = useState<Partial<Record<keyof FormValues, string>>>({});
+  const [applied, setApplied] = useState<FormValues>(DEFAULTS);
+
+  const birth = useMemo(() => localToUtc(applied.date, applied.time, applied.tz), [applied]);
+  const now = new Date();
+  const birthYear = Number(applied.date.slice(0, 4));
+  const birthMonth = Number(applied.date.slice(5, 7));
+  const birthDay = Number(applied.date.slice(8, 10));
+  const [bh, bm] = applied.time.split(":").map(Number);
+
   const years = useMemo(() => {
     const out: Date[] = [];
-    for (let y = BIRTH_YEAR; y <= today.getFullYear(); y++) {
-      out.push(new Date(Date.UTC(y, BIRTH_MONTH - 1, BIRTH_DAY, 6, 0))); // ~local noon Coimbatore
+    for (let y = birthYear; y <= now.getFullYear(); y++) {
+      out.push(localToUtc(`${y}-${String(birthMonth).padStart(2,"0")}-${String(birthDay).padStart(2,"0")}`, applied.time, applied.tz));
     }
     return out;
-  }, [today]);
+  }, [birthYear, birthMonth, birthDay, applied.time, applied.tz, now.getFullYear()]);
 
-  const birth = years[0];
   const birthMoon = moonPhase(birth);
-  const birthZodiac = zodiacFor(BIRTH_MONTH, BIRTH_DAY);
-  const todayMoon = moonPhase(today);
-  const totalDays = Math.floor((today.getTime() - birth.getTime()) / 86_400_000);
+  const birthZodiac = zodiacFor(birthMonth, birthDay);
+  const todayMoon = moonPhase(now);
+  const totalDays = Math.max(0, Math.floor((now.getTime() - birth.getTime()) / 86_400_000));
+
+  function submit(e: React.FormEvent) {
+    e.preventDefault();
+    const parsed = formSchema.safeParse(form);
+    if (!parsed.success) {
+      const errs: Partial<Record<keyof FormValues, string>> = {};
+      for (const issue of parsed.error.issues) {
+        const k = issue.path[0] as keyof FormValues;
+        if (!errs[k]) errs[k] = issue.message;
+      }
+      setErrors(errs);
+      return;
+    }
+    setErrors({});
+    setApplied(parsed.data);
+  }
+
+  function setCity(name: string) {
+    const preset = CITY_PRESETS.find((c) => c.name === name);
+    setForm((f) => ({ ...f, city: name, tz: preset ? preset.tz : f.tz }));
+  }
 
   return (
     <main className="relative min-h-screen overflow-hidden">
-      {/* Ambient sky */}
       <StarField seed={42} className="pointer-events-none fixed inset-0 h-full w-full opacity-70" count={140} />
       <div className="pointer-events-none fixed inset-0" style={{ background: "radial-gradient(ellipse at 50% 0%, oklch(0.3 0.12 280 / 0.4), transparent 60%)" }} />
 
       {/* Hero */}
-      <section className="relative mx-auto flex max-w-5xl flex-col items-center px-6 pt-24 pb-20 text-center md:pt-32">
+      <section className="relative mx-auto flex max-w-5xl flex-col items-center px-6 pt-20 pb-12 text-center md:pt-28">
         <p className="font-display text-sm tracking-[0.4em] text-accent uppercase">A love letter in moonlight</p>
         <h1 className="mt-6 text-balance font-display text-5xl leading-[1.05] md:text-7xl">
           The sky we&apos;ve shared,
           <br />
-          <em className="text-accent">since April 17, 2004</em>
+          <em className="text-accent">
+            since {birth.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}
+          </em>
         </h1>
         <p className="mt-6 max-w-xl text-balance text-base text-muted-foreground md:text-lg">
-          Every birthday, the moon returns a little different. Here is its quiet diary — drawn over {LOCATION},
-          from the night you arrived to the sky tonight.
+          Every birthday, the moon returns a little different. Here is its quiet diary — drawn over {applied.city},
+          from the night she arrived to the sky tonight.
         </p>
+      </section>
 
-        <div className="mt-14 grid w-full grid-cols-1 gap-6 md:grid-cols-3">
+      {/* Birth details form */}
+      <section className="relative mx-auto max-w-3xl px-6 pb-16">
+        <form
+          onSubmit={submit}
+          className="rounded-2xl border border-border bg-card/40 p-6 backdrop-blur-sm md:p-8"
+        >
+          <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">Her birth details</p>
+          <h2 className="mt-2 font-display text-2xl md:text-3xl">When and where the sky opened for her</h2>
+
+          <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="Birth date" error={errors.date}>
+              <input
+                type="date"
+                value={form.date}
+                onChange={(e) => setForm({ ...form, date: e.target.value })}
+                className="input"
+                max="2100-12-31"
+              />
+            </Field>
+            <Field label="Birth time (local)" error={errors.time}>
+              <input
+                type="time"
+                value={form.time}
+                onChange={(e) => setForm({ ...form, time: e.target.value })}
+                className="input"
+              />
+            </Field>
+            <Field label="City" error={errors.city}>
+              <input
+                list="cities"
+                type="text"
+                value={form.city}
+                maxLength={80}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="City, region"
+                className="input"
+              />
+              <datalist id="cities">
+                {CITY_PRESETS.map((c) => <option key={c.name} value={c.name} />)}
+              </datalist>
+            </Field>
+            <Field label="UTC offset (hours)" error={errors.tz}>
+              <input
+                type="number"
+                step="0.25"
+                min={-12}
+                max={14}
+                value={form.tz}
+                onChange={(e) => setForm({ ...form, tz: Number(e.target.value) })}
+                className="input"
+              />
+            </Field>
+          </div>
+
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+            <p className="text-xs text-muted-foreground">
+              Auto-filled UTC offset updates when you pick a preset city. Adjust manually if needed.
+            </p>
+            <button
+              type="submit"
+              className="rounded-md bg-primary px-5 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              Update the sky
+            </button>
+          </div>
+        </form>
+      </section>
+
+      {/* Stats */}
+      <section className="relative mx-auto max-w-5xl px-6 pb-20">
+        <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-3">
           <StatCard label="Days together with the stars" value={totalDays.toLocaleString()} />
           <StatCard label="Sun sign" value={`${birthZodiac.symbol} ${birthZodiac.sign}`} sub={`${birthZodiac.element} · ruled by ${birthZodiac.ruling}`} />
           <StatCard label="Moon tonight" value={`${todayMoon.emoji} ${todayMoon.name}`} sub={`${Math.round(todayMoon.illumination * 100)}% illuminated`} />
@@ -79,9 +223,12 @@ function Index() {
             </div>
             <div>
               <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">Night one</p>
-              <h2 className="mt-2 font-display text-3xl md:text-4xl">{fmtDate(birth)}</h2>
+              <h2 className="mt-2 font-display text-3xl md:text-4xl">{fmtDate(birth, applied.tz)}</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {fmtTime(birth, applied.tz)} local · {applied.city}
+              </p>
               <p className="mt-3 text-muted-foreground">
-                Above {LOCATION}, the moon was a <span className="text-foreground">{birthMoon.name.toLowerCase()}</span>,
+                Above {applied.city}, the moon was a <span className="text-foreground">{birthMoon.name.toLowerCase()}</span>,
                 {" "}{Math.round(birthMoon.illumination * 100)}% lit, {birthMoon.waxing ? "growing toward fullness" : "softening toward dark"}.
                 The constellations of {visibleConstellations(birth).slice(0, 3).join(", ")} kept watch.
               </p>
@@ -99,15 +246,32 @@ function Index() {
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {years.map((d) => (
-            <YearCard key={d.getUTCFullYear()} date={d} />
+            <YearCard
+              key={d.getTime()}
+              date={d}
+              tz={applied.tz}
+              birthYear={birthYear}
+              birthHour={bh}
+              birthMinute={bm}
+            />
           ))}
         </div>
       </section>
 
       <footer className="relative border-t border-border/50 py-10 text-center text-xs tracking-widest text-muted-foreground uppercase">
-        Made under the same sky · {LOCATION}
+        Made under the same sky · {applied.city}
       </footer>
     </main>
+  );
+}
+
+function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-2 block text-xs tracking-[0.2em] text-muted-foreground uppercase">{label}</span>
+      {children}
+      {error && <span className="mt-1 block text-xs text-destructive">{error}</span>}
+    </label>
   );
 }
 
@@ -121,12 +285,21 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
   );
 }
 
-function YearCard({ date }: { date: Date }) {
+function YearCard({ date, tz, birthYear, birthHour, birthMinute }: {
+  date: Date; tz: number; birthYear: number; birthHour: number; birthMinute: number;
+}) {
   const m = moonPhase(date);
-  const year = date.getUTCFullYear();
+  const shifted = new Date(date.getTime() + tz * 3_600_000);
+  const year = shifted.getUTCFullYear();
+  const month = shifted.getUTCMonth() + 1;
+  const day = shifted.getUTCDate();
   const cons = visibleConstellations(date);
-  const seed = year * 10000 + (date.getUTCMonth() + 1) * 100 + date.getUTCDate();
-  const ageLabel = `Turning ${year - BIRTH_YEAR}`;
+  const seed = year * 10000 + month * 100 + day;
+  const ageLabel = `Turning ${year - birthYear}`;
+  const dateLabel = shifted.toLocaleDateString("en-US", {
+    month: "long", day: "numeric", year: "numeric", timeZone: "UTC",
+  });
+  const timeLabel = `${String(birthHour).padStart(2, "0")}:${String(birthMinute).padStart(2, "0")}`;
 
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-border bg-card/30 p-6 backdrop-blur-sm transition-all hover:border-accent/60 hover:bg-card/50">
@@ -135,10 +308,11 @@ function YearCard({ date }: { date: Date }) {
       <div className="relative flex items-start justify-between">
         <div>
           <p className="text-xs tracking-[0.25em] text-accent uppercase">{ageLabel}</p>
-          <p className="mt-1 font-display text-2xl">April 17, {year}</p>
+          <p className="mt-1 font-display text-2xl">{dateLabel}</p>
+          <p className="text-xs text-muted-foreground">{timeLabel} local</p>
         </div>
         <span className="rounded-full border border-border/60 px-2 py-0.5 text-[10px] tracking-widest text-muted-foreground uppercase">
-          {year === BIRTH_YEAR ? "Birth" : year === new Date().getFullYear() ? "Now" : ""}
+          {year === birthYear ? "Birth" : year === new Date().getFullYear() ? "Now" : ""}
         </span>
       </div>
 
