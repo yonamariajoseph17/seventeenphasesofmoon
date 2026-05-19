@@ -560,7 +560,7 @@ function YearCard({ date, tz, birthYear, currentYear, mode }: {
           <p className="text-xs text-muted-foreground">{timeLabel} local</p>
         </div>
         <span className="rounded-full border border-border/60 px-2 py-0.5 text-[10px] tracking-widest text-muted-foreground uppercase">
-          {year === birthYear ? "Birth" : year === new Date().getFullYear() ? "Now" : ""}
+          {year === birthYear ? "Birth" : year === currentYear ? "Now" : ""}
         </span>
       </div>
 
