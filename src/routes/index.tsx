@@ -99,20 +99,24 @@ function Index() {
   const [errors, setErrors] = useState<Partial<Record<keyof FormValues, string>>>({});
   const [applied, setApplied] = useState<FormValues>(DEFAULTS);
 
-  const birth = useMemo(() => localToUtc(applied.date, applied.time, applied.tz), [applied]);
-  const now = new Date();
   const birthYear = Number(applied.date.slice(0, 4));
   const birthMonth = Number(applied.date.slice(5, 7));
   const birthDay = Number(applied.date.slice(8, 10));
   const [bh, bm] = applied.time.split(":").map(Number);
 
+  const birth = useMemo(
+    () => momentFor(birthYear, birthMonth, birthDay, applied.time, applied.tz, applied.lat, applied.lon, applied.mode),
+    [birthYear, birthMonth, birthDay, applied.time, applied.tz, applied.lat, applied.lon, applied.mode],
+  );
+  const now = new Date();
+
   const years = useMemo(() => {
     const out: Date[] = [];
     for (let y = birthYear; y <= now.getFullYear(); y++) {
-      out.push(localToUtc(`${y}-${String(birthMonth).padStart(2,"0")}-${String(birthDay).padStart(2,"0")}`, applied.time, applied.tz));
+      out.push(momentFor(y, birthMonth, birthDay, applied.time, applied.tz, applied.lat, applied.lon, applied.mode));
     }
     return out;
-  }, [birthYear, birthMonth, birthDay, applied.time, applied.tz, now.getFullYear()]);
+  }, [birthYear, birthMonth, birthDay, applied.time, applied.tz, applied.lat, applied.lon, applied.mode, now.getFullYear()]);
 
   const birthMoon = moonPhase(birth);
   const birthZodiac = zodiacFor(birthMonth, birthDay);
@@ -137,8 +141,11 @@ function Index() {
 
   function setCity(name: string) {
     const preset = CITY_PRESETS.find((c) => c.name === name);
-    setForm((f) => ({ ...f, city: name, tz: preset ? preset.tz : f.tz }));
+    setForm((f) => preset
+      ? { ...f, city: name, tz: preset.tz, lat: preset.lat, lon: preset.lon }
+      : { ...f, city: name });
   }
+
 
   return (
     <main className="relative min-h-screen overflow-hidden">
