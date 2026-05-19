@@ -531,9 +531,10 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
   );
 }
 
-function YearCard({ date, tz, birthYear, mode }: {
-  date: Date; tz: number; birthYear: number; mode: Mode;
+function YearCard({ date, tz, birthYear, currentYear, mode }: {
+  date: Date; tz: number; birthYear: number; currentYear: number; mode: Mode;
 }) {
+
   const m = moonPhase(date);
   const shifted = new Date(date.getTime() + tz * 3_600_000);
   const year = shifted.getUTCFullYear();
