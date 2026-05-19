@@ -153,30 +153,70 @@ function Index() {
   const [form, setForm] = useState<FormValues>(DEFAULTS);
   const [errors, setErrors] = useState<Partial<Record<keyof FormValues, string>>>({});
   const [applied, setApplied] = useState<FormValues>(DEFAULTS);
+  const [savedPresets, setSavedPresets] = useState<CityPreset[]>([]);
+  // Client-only "now" — avoids SSR/CSR hydration drift.
+  const [now, setNow] = useState<Date | null>(null);
+
+  // Load saved presets from localStorage once, on the client.
+  useEffect(() => {
+    setSavedPresets(loadSavedPresets());
+    setNow(new Date());
+  }, []);
+
+  // Persist saved presets whenever they change.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(PRESETS_STORAGE_KEY, JSON.stringify(savedPresets));
+    } catch {
+      // ignore quota errors
+    }
+  }, [savedPresets]);
+
+  const allPresets = useMemo<CityPreset[]>(() => {
+    // Saved first (so user-defined wins datalist preview), then built-ins, dedup by name.
+    const seen = new Set<string>();
+    return [...savedPresets, ...BUILTIN_PRESETS].filter((p) => {
+      const k = p.name.toLowerCase();
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    });
+  }, [savedPresets]);
 
   const birthYear = Number(applied.date.slice(0, 4));
   const birthMonth = Number(applied.date.slice(5, 7));
   const birthDay = Number(applied.date.slice(8, 10));
-  
 
   const birth = useMemo(
     () => momentFor(birthYear, birthMonth, birthDay, applied.time, applied.tz, applied.lat, applied.lon, applied.mode),
     [birthYear, birthMonth, birthDay, applied.time, applied.tz, applied.lat, applied.lon, applied.mode],
   );
-  const now = new Date();
+
+  const currentYear = now ? now.getFullYear() : birthYear;
 
   const years = useMemo(() => {
     const out: Date[] = [];
-    for (let y = birthYear; y <= now.getFullYear(); y++) {
+    for (let y = birthYear; y <= currentYear; y++) {
       out.push(momentFor(y, birthMonth, birthDay, applied.time, applied.tz, applied.lat, applied.lon, applied.mode));
     }
     return out;
-  }, [birthYear, birthMonth, birthDay, applied.time, applied.tz, applied.lat, applied.lon, applied.mode, now.getFullYear()]);
+  }, [birthYear, birthMonth, birthDay, applied.time, applied.tz, applied.lat, applied.lon, applied.mode, currentYear]);
 
   const birthMoon = moonPhase(birth);
   const birthZodiac = zodiacFor(birthMonth, birthDay);
-  const todayMoon = moonPhase(now);
-  const totalDays = Math.max(0, Math.floor((now.getTime() - birth.getTime()) / 86_400_000));
+  const todayMoon = now ? moonPhase(now) : birthMoon;
+  const totalDays = now ? Math.max(0, Math.floor((now.getTime() - birth.getTime()) / 86_400_000)) : 0;
+
+  const pronouns = PRONOUN_MAP[applied.pronoun];
+  const personName = applied.name.trim() || cap(pronouns.subject);
+  const possessive = `${personName}'s`;
+  const isSavedMatch = savedPresets.some(
+    (p) =>
+      p.name.toLowerCase() === form.city.trim().toLowerCase()
+      && Math.abs(p.lat - form.lat) < 1e-4
+      && Math.abs(p.lon - form.lon) < 1e-4,
+  );
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -195,12 +235,24 @@ function Index() {
   }
 
   function setCity(name: string) {
-    const preset = CITY_PRESETS.find((c) => c.name === name);
+    const preset = allPresets.find((c) => c.name.toLowerCase() === name.toLowerCase());
     setForm((f) => preset
-      ? { ...f, city: name, tz: preset.tz, lat: preset.lat, lon: preset.lon }
+      ? { ...f, city: preset.name, tz: preset.tz, lat: preset.lat, lon: preset.lon }
       : { ...f, city: name });
   }
 
+  function saveCurrentAsPreset() {
+    const name = form.city.trim();
+    if (!name) return;
+    setSavedPresets((prev) => {
+      const filtered = prev.filter((p) => p.name.toLowerCase() !== name.toLowerCase());
+      return [{ name, tz: form.tz, lat: form.lat, lon: form.lon }, ...filtered].slice(0, 30);
+    });
+  }
+
+  function removeSavedPreset(name: string) {
+    setSavedPresets((prev) => prev.filter((p) => p.name !== name));
+  }
 
   return (
     <main className="relative min-h-screen overflow-hidden">
@@ -211,15 +263,15 @@ function Index() {
       <section className="relative mx-auto flex max-w-5xl flex-col items-center px-6 pt-20 pb-12 text-center md:pt-28">
         <p className="font-display text-sm tracking-[0.4em] text-accent uppercase">A love letter in moonlight</p>
         <h1 className="mt-6 text-balance font-display text-5xl leading-[1.05] md:text-7xl">
-          The sky we&apos;ve shared,
+          The sky we&apos;ve shared with <em className="text-accent">{personName}</em>,
           <br />
-          <em className="text-accent">
+          <span className="text-muted-foreground/80">
             since {birth.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}
-          </em>
+          </span>
         </h1>
         <p className="mt-6 max-w-xl text-balance text-base text-muted-foreground md:text-lg">
           Every birthday, the moon returns a little different. Here is its quiet diary — drawn over {applied.city},
-          from the night she arrived to the sky tonight.
+          from the night {pronouns.subject} arrived to the sky tonight.
         </p>
       </section>
 
@@ -229,10 +281,29 @@ function Index() {
           onSubmit={submit}
           className="rounded-2xl border border-border bg-card/40 p-6 backdrop-blur-sm md:p-8"
         >
-          <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">Her birth details</p>
-          <h2 className="mt-2 font-display text-2xl md:text-3xl">When and where the sky opened for her</h2>
+          <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">{possessive} birth details</p>
+          <h2 className="mt-2 font-display text-2xl md:text-3xl">When and where the sky opened for {pronouns.object}</h2>
 
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Field label="Their name" error={errors.name}>
+              <input
+                type="text"
+                value={form.name}
+                maxLength={60}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="e.g. Aanya, Arjun, Sam"
+                className="input"
+              />
+            </Field>
+            <Field label="Pronouns" error={errors.pronoun}>
+              <select
+                value={form.pronoun}
+                onChange={(e) => setForm({ ...form, pronoun: e.target.value as Pronoun })}
+                className="input"
+              >
+                {PRONOUN_OPTIONS.map((p) => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </Field>
             <Field label="Birth date" error={errors.date}>
               <input
                 type="date"
@@ -261,7 +332,7 @@ function Index() {
                 className="input"
               />
               <datalist id="cities">
-                {CITY_PRESETS.map((c) => <option key={c.name} value={c.name} />)}
+                {allPresets.map((c) => <option key={c.name} value={c.name} />)}
               </datalist>
             </Field>
             <Field label="UTC offset (hours)" error={errors.tz}>
@@ -297,6 +368,49 @@ function Index() {
                 className="input"
               />
             </Field>
+          </div>
+
+          {/* Saved locations */}
+          <div className="mt-6 rounded-xl border border-border/60 bg-card/30 p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">Saved locations</p>
+              <button
+                type="button"
+                onClick={saveCurrentAsPreset}
+                disabled={!form.city.trim() || isSavedMatch}
+                className="rounded-md border border-accent/40 px-3 py-1 text-xs tracking-widest text-accent uppercase transition-colors hover:bg-accent/10 disabled:opacity-40"
+              >
+                {isSavedMatch ? "Already saved" : "Save current location"}
+              </button>
+            </div>
+            {savedPresets.length === 0 ? (
+              <p className="mt-3 text-xs text-muted-foreground">
+                Save any city — even a tiny Tamil Nadu hometown — and it stays here on this device for next time.
+              </p>
+            ) : (
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {savedPresets.map((p) => (
+                  <li key={p.name} className="flex items-center gap-1 rounded-full border border-border/60 bg-card/50 py-1 pr-1 pl-3 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setCity(p.name)}
+                      className="text-foreground/90 transition-colors hover:text-accent"
+                      title={`${p.lat.toFixed(3)}°N, ${p.lon.toFixed(3)}°E · UTC${p.tz >= 0 ? "+" : ""}${p.tz}`}
+                    >
+                      {p.name}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => removeSavedPreset(p.name)}
+                      aria-label={`Remove ${p.name}`}
+                      className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-destructive/20 hover:text-destructive"
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           <div className="mt-6">
@@ -336,17 +450,16 @@ function Index() {
         </form>
       </section>
 
-
       {/* Stats */}
       <section className="relative mx-auto max-w-5xl px-6 pb-20">
         <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-3">
-          <StatCard label="Days together with the stars" value={totalDays.toLocaleString()} />
+          <StatCard label={`Days with ${personName} under the stars`} value={totalDays.toLocaleString()} />
           <StatCard label="Sun sign" value={`${birthZodiac.symbol} ${birthZodiac.sign}`} sub={`${birthZodiac.element} · ruled by ${birthZodiac.ruling}`} />
           <StatCard label="Moon tonight" value={`${todayMoon.emoji} ${todayMoon.name}`} sub={`${Math.round(todayMoon.illumination * 100)}% illuminated`} />
         </div>
       </section>
 
-      {/* The night she was born */}
+      {/* The night they were born */}
       <section className="relative mx-auto max-w-5xl px-6 pb-24">
         <div className="overflow-hidden rounded-2xl border border-border bg-card/40 p-8 backdrop-blur-sm md:p-12">
           <div className="grid items-center gap-10 md:grid-cols-[auto_1fr]">
@@ -360,9 +473,9 @@ function Index() {
                 {fmtTime(birth, applied.tz)} local · {applied.city}
               </p>
               <p className="mt-3 text-muted-foreground">
-                Above {applied.city}, the moon was a <span className="text-foreground">{birthMoon.name.toLowerCase()}</span>,
+                Above {applied.city}, the moon {pronouns.was === "were" ? "was" : "was"} a <span className="text-foreground">{birthMoon.name.toLowerCase()}</span>,
                 {" "}{Math.round(birthMoon.illumination * 100)}% lit, {birthMoon.waxing ? "growing toward fullness" : "softening toward dark"}.
-                The constellations of {visibleConstellations(birth).slice(0, 3).join(", ")} kept watch.
+                The constellations of {visibleConstellations(birth).slice(0, 3).join(", ")} kept watch as {pronouns.subject} {pronouns.was} born.
               </p>
             </div>
           </div>
@@ -383,19 +496,20 @@ function Index() {
               date={d}
               tz={applied.tz}
               birthYear={birthYear}
+              currentYear={currentYear}
               mode={applied.mode}
             />
           ))}
         </div>
       </section>
 
-
       <footer className="relative border-t border-border/50 py-10 text-center text-xs tracking-widest text-muted-foreground uppercase">
-        Made under the same sky · {applied.city}
+        Made under the same sky · for {personName} · {applied.city}
       </footer>
     </main>
   );
 }
+
 
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
   return (
