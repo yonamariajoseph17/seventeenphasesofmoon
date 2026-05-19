@@ -20,25 +20,33 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-const CITY_PRESETS: Array<{ name: string; tz: number }> = [
-  { name: "Coimbatore, Tamil Nadu", tz: 5.5 },
-  { name: "Chennai, India", tz: 5.5 },
-  { name: "Mumbai, India", tz: 5.5 },
-  { name: "Bengaluru, India", tz: 5.5 },
-  { name: "Delhi, India", tz: 5.5 },
-  { name: "London, UK", tz: 0 },
-  { name: "Paris, France", tz: 1 },
-  { name: "New York, USA", tz: -5 },
-  { name: "Los Angeles, USA", tz: -8 },
-  { name: "Tokyo, Japan", tz: 9 },
-  { name: "Sydney, Australia", tz: 10 },
+import { sunTimes } from "@/lib/astro";
+
+const CITY_PRESETS: Array<{ name: string; tz: number; lat: number; lon: number }> = [
+  { name: "Coimbatore, Tamil Nadu", tz: 5.5, lat: 11.0168, lon: 76.9558 },
+  { name: "Chennai, India", tz: 5.5, lat: 13.0827, lon: 80.2707 },
+  { name: "Mumbai, India", tz: 5.5, lat: 19.076, lon: 72.8777 },
+  { name: "Bengaluru, India", tz: 5.5, lat: 12.9716, lon: 77.5946 },
+  { name: "Delhi, India", tz: 5.5, lat: 28.6139, lon: 77.209 },
+  { name: "London, UK", tz: 0, lat: 51.5074, lon: -0.1278 },
+  { name: "Paris, France", tz: 1, lat: 48.8566, lon: 2.3522 },
+  { name: "New York, USA", tz: -5, lat: 40.7128, lon: -74.006 },
+  { name: "Los Angeles, USA", tz: -8, lat: 34.0522, lon: -118.2437 },
+  { name: "Tokyo, Japan", tz: 9, lat: 35.6762, lon: 139.6503 },
+  { name: "Sydney, Australia", tz: 10, lat: -33.8688, lon: 151.2093 },
 ];
+
+const MODE_OPTIONS = ["custom", "sunrise", "sunset"] as const;
+type Mode = (typeof MODE_OPTIONS)[number];
 
 const formSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD"),
   time: z.string().regex(/^\d{2}:\d{2}$/, "Use HH:MM"),
   city: z.string().trim().min(1, "City required").max(80),
   tz: z.coerce.number().min(-12).max(14),
+  lat: z.coerce.number().min(-90).max(90),
+  lon: z.coerce.number().min(-180).max(180),
+  mode: z.enum(MODE_OPTIONS),
 });
 type FormValues = z.infer<typeof formSchema>;
 
@@ -47,12 +55,27 @@ const DEFAULTS: FormValues = {
   time: "12:00",
   city: "Coimbatore, Tamil Nadu",
   tz: 5.5,
+  lat: 11.0168,
+  lon: 76.9558,
+  mode: "sunset",
 };
 
 function localToUtc(date: string, time: string, tzHours: number): Date {
   const [y, mo, d] = date.split("-").map(Number);
   const [h, mi] = time.split(":").map(Number);
   return new Date(Date.UTC(y, mo - 1, d, h, mi) - tzHours * 3_600_000);
+}
+
+// Resolve the actual moment to use for the given civil date, honoring the night-window mode.
+function momentFor(
+  year: number, month: number, day: number,
+  time: string, tz: number, lat: number, lon: number, mode: Mode,
+): Date {
+  if (mode !== "custom") {
+    const st = sunTimes(year, month, day, lat, lon);
+    if (st) return mode === "sunrise" ? st.sunrise : st.sunset;
+  }
+  return localToUtc(`${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`, time, tz);
 }
 
 function fmtDate(d: Date, tzHours: number) {
@@ -69,6 +92,7 @@ function fmtTime(d: Date, tzHours: number) {
     hour: "2-digit", minute: "2-digit", timeZone: "UTC",
   });
 }
+
 
 function Index() {
   const [form, setForm] = useState<FormValues>(DEFAULTS);
