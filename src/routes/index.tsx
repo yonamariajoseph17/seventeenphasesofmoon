@@ -362,8 +362,8 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
   );
 }
 
-function YearCard({ date, tz, birthYear, birthHour, birthMinute }: {
-  date: Date; tz: number; birthYear: number; birthHour: number; birthMinute: number;
+function YearCard({ date, tz, birthYear, mode }: {
+  date: Date; tz: number; birthYear: number; mode: Mode;
 }) {
   const m = moonPhase(date);
   const shifted = new Date(date.getTime() + tz * 3_600_000);
@@ -376,7 +376,8 @@ function YearCard({ date, tz, birthYear, birthHour, birthMinute }: {
   const dateLabel = shifted.toLocaleDateString("en-US", {
     month: "long", day: "numeric", year: "numeric", timeZone: "UTC",
   });
-  const timeLabel = `${String(birthHour).padStart(2, "0")}:${String(birthMinute).padStart(2, "0")}`;
+  const timeLabel = `${fmtTime(date, tz)} local${mode === "custom" ? "" : ` · ${mode}`}`;
+
 
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-border bg-card/30 p-6 backdrop-blur-sm transition-all hover:border-accent/60 hover:bg-card/50">
