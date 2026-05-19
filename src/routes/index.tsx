@@ -102,7 +102,7 @@ function Index() {
   const birthYear = Number(applied.date.slice(0, 4));
   const birthMonth = Number(applied.date.slice(5, 7));
   const birthDay = Number(applied.date.slice(8, 10));
-  const [bh, bm] = applied.time.split(":").map(Number);
+  
 
   const birth = useMemo(
     () => momentFor(birthYear, birthMonth, birthDay, applied.time, applied.tz, applied.lat, applied.lon, applied.mode),
