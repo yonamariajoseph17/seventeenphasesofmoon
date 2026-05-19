@@ -220,11 +220,56 @@ function Index() {
                 className="input"
               />
             </Field>
+            <Field label="Latitude (°N)" error={errors.lat}>
+              <input
+                type="number"
+                step="0.0001"
+                min={-90}
+                max={90}
+                value={form.lat}
+                onChange={(e) => setForm({ ...form, lat: Number(e.target.value) })}
+                className="input"
+              />
+            </Field>
+            <Field label="Longitude (°E)" error={errors.lon}>
+              <input
+                type="number"
+                step="0.0001"
+                min={-180}
+                max={180}
+                value={form.lon}
+                onChange={(e) => setForm({ ...form, lon: Number(e.target.value) })}
+                className="input"
+              />
+            </Field>
+          </div>
+
+          <div className="mt-6">
+            <span className="mb-2 block text-xs tracking-[0.2em] text-muted-foreground uppercase">Compute the sky at</span>
+            <div className="inline-flex rounded-md border border-border bg-card/30 p-1">
+              {MODE_OPTIONS.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setForm({ ...form, mode: opt })}
+                  className={`rounded px-4 py-1.5 text-xs tracking-[0.2em] uppercase transition-colors ${
+                    form.mode === opt
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {opt === "custom" ? "Birth time" : `Local ${opt}`}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Sunrise &amp; sunset are computed per year from latitude &amp; longitude — so the moon and stars reflect the actual night-time window each birthday.
+            </p>
           </div>
 
           <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
             <p className="text-xs text-muted-foreground">
-              Auto-filled UTC offset updates when you pick a preset city. Adjust manually if needed.
+              Picking a preset city auto-fills offset, latitude, and longitude.
             </p>
             <button
               type="submit"
@@ -235,6 +280,7 @@ function Index() {
           </div>
         </form>
       </section>
+
 
       {/* Stats */}
       <section className="relative mx-auto max-w-5xl px-6 pb-20">
