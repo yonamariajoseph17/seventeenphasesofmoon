@@ -328,12 +328,12 @@ function Index() {
               date={d}
               tz={applied.tz}
               birthYear={birthYear}
-              birthHour={bh}
-              birthMinute={bm}
+              mode={applied.mode}
             />
           ))}
         </div>
       </section>
+
 
       <footer className="relative border-t border-border/50 py-10 text-center text-xs tracking-widest text-muted-foreground uppercase">
         Made under the same sky · {applied.city}
