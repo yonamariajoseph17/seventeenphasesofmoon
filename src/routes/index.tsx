@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
-import { moonPhase, zodiacFor, visibleConstellations } from "@/lib/astro";
+import { moonPhase, zodiacFor, visibleConstellations, sunTimes } from "@/lib/astro";
 import { MoonSvg } from "@/components/MoonSvg";
 import { StarField } from "@/components/StarField";
 
@@ -9,8 +9,8 @@ export const Route = createFileRoute("/")({
   component: Index,
   head: () => ({
     meta: [
-      { title: "Her Sky · A diary in moonlight" },
-      { name: "description", content: "Every birthday's moon phase and night sky, traced from her first night to today." },
+      { title: "Their Sky · A diary in moonlight" },
+      { name: "description", content: "Every birthday's moon phase and night sky, traced from the first night to today — for anyone you love." },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -20,14 +20,31 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-import { sunTimes } from "@/lib/astro";
+type CityPreset = { name: string; tz: number; lat: number; lon: number };
 
-const CITY_PRESETS: Array<{ name: string; tz: number; lat: number; lon: number }> = [
+const BUILTIN_PRESETS: CityPreset[] = [
+  // Tamil Nadu
   { name: "Coimbatore, Tamil Nadu", tz: 5.5, lat: 11.0168, lon: 76.9558 },
-  { name: "Chennai, India", tz: 5.5, lat: 13.0827, lon: 80.2707 },
+  { name: "Chennai, Tamil Nadu", tz: 5.5, lat: 13.0827, lon: 80.2707 },
+  { name: "Madurai, Tamil Nadu", tz: 5.5, lat: 9.9252, lon: 78.1198 },
+  { name: "Tiruchirappalli, Tamil Nadu", tz: 5.5, lat: 10.7905, lon: 78.7047 },
+  { name: "Salem, Tamil Nadu", tz: 5.5, lat: 11.6643, lon: 78.146 },
+  { name: "Erode, Tamil Nadu", tz: 5.5, lat: 11.341, lon: 77.7172 },
+  { name: "Tirunelveli, Tamil Nadu", tz: 5.5, lat: 8.7139, lon: 77.7567 },
+  { name: "Vellore, Tamil Nadu", tz: 5.5, lat: 12.9165, lon: 79.1325 },
+  { name: "Thoothukudi, Tamil Nadu", tz: 5.5, lat: 8.7642, lon: 78.1348 },
+  { name: "Thanjavur, Tamil Nadu", tz: 5.5, lat: 10.787, lon: 79.1378 },
+  { name: "Kanyakumari, Tamil Nadu", tz: 5.5, lat: 8.0883, lon: 77.5385 },
+  { name: "Ooty, Tamil Nadu", tz: 5.5, lat: 11.4102, lon: 76.695 },
+  // India
   { name: "Mumbai, India", tz: 5.5, lat: 19.076, lon: 72.8777 },
   { name: "Bengaluru, India", tz: 5.5, lat: 12.9716, lon: 77.5946 },
   { name: "Delhi, India", tz: 5.5, lat: 28.6139, lon: 77.209 },
+  { name: "Hyderabad, India", tz: 5.5, lat: 17.385, lon: 78.4867 },
+  { name: "Kolkata, India", tz: 5.5, lat: 22.5726, lon: 88.3639 },
+  { name: "Kochi, India", tz: 5.5, lat: 9.9312, lon: 76.2673 },
+  { name: "Thiruvananthapuram, India", tz: 5.5, lat: 8.5241, lon: 76.9366 },
+  // World
   { name: "London, UK", tz: 0, lat: 51.5074, lon: -0.1278 },
   { name: "Paris, France", tz: 1, lat: 48.8566, lon: 2.3522 },
   { name: "New York, USA", tz: -5, lat: 40.7128, lon: -74.006 },
@@ -39,7 +56,27 @@ const CITY_PRESETS: Array<{ name: string; tz: number; lat: number; lon: number }
 const MODE_OPTIONS = ["custom", "sunrise", "sunset"] as const;
 type Mode = (typeof MODE_OPTIONS)[number];
 
+const PRONOUN_OPTIONS = ["she/her", "he/him", "they/them"] as const;
+type Pronoun = (typeof PRONOUN_OPTIONS)[number];
+
+interface PronounSet {
+  subject: string;   // she / he / they
+  object: string;    // her / him / them
+  possessive: string; // her / his / their
+  was: string;       // was / was / were
+}
+const PRONOUN_MAP: Record<Pronoun, PronounSet> = {
+  "she/her": { subject: "she", object: "her", possessive: "her", was: "was" },
+  "he/him": { subject: "he", object: "him", possessive: "his", was: "was" },
+  "they/them": { subject: "they", object: "them", possessive: "their", was: "were" },
+};
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+
+const PRESETS_STORAGE_KEY = "her-sky:custom-presets:v1";
+
 const formSchema = z.object({
+  name: z.string().trim().min(1, "Name required").max(60),
+  pronoun: z.enum(PRONOUN_OPTIONS),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD"),
   time: z.string().regex(/^\d{2}:\d{2}$/, "Use HH:MM"),
   city: z.string().trim().min(1, "City required").max(80),
@@ -51,6 +88,8 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const DEFAULTS: FormValues = {
+  name: "Her",
+  pronoun: "she/her",
   date: "2004-04-17",
   time: "12:00",
   city: "Coimbatore, Tamil Nadu",
@@ -59,6 +98,22 @@ const DEFAULTS: FormValues = {
   lon: 76.9558,
   mode: "sunset",
 };
+
+function loadSavedPresets(): CityPreset[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = window.localStorage.getItem(PRESETS_STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((p): p is CityPreset =>
+      p && typeof p.name === "string" && typeof p.tz === "number"
+      && typeof p.lat === "number" && typeof p.lon === "number",
+    );
+  } catch {
+    return [];
+  }
+}
 
 function localToUtc(date: string, time: string, tzHours: number): Date {
   const [y, mo, d] = date.split("-").map(Number);
@@ -79,7 +134,6 @@ function momentFor(
 }
 
 function fmtDate(d: Date, tzHours: number) {
-  // Render as the local civil date at the given offset.
   const shifted = new Date(d.getTime() + tzHours * 3_600_000);
   return shifted.toLocaleDateString("en-US", {
     weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "UTC",
@@ -92,6 +146,7 @@ function fmtTime(d: Date, tzHours: number) {
     hour: "2-digit", minute: "2-digit", timeZone: "UTC",
   });
 }
+
 
 
 function Index() {
