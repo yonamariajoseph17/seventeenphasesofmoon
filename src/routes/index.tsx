@@ -20,25 +20,33 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-const CITY_PRESETS: Array<{ name: string; tz: number }> = [
-  { name: "Coimbatore, Tamil Nadu", tz: 5.5 },
-  { name: "Chennai, India", tz: 5.5 },
-  { name: "Mumbai, India", tz: 5.5 },
-  { name: "Bengaluru, India", tz: 5.5 },
-  { name: "Delhi, India", tz: 5.5 },
-  { name: "London, UK", tz: 0 },
-  { name: "Paris, France", tz: 1 },
-  { name: "New York, USA", tz: -5 },
-  { name: "Los Angeles, USA", tz: -8 },
-  { name: "Tokyo, Japan", tz: 9 },
-  { name: "Sydney, Australia", tz: 10 },
+import { sunTimes } from "@/lib/astro";
+
+const CITY_PRESETS: Array<{ name: string; tz: number; lat: number; lon: number }> = [
+  { name: "Coimbatore, Tamil Nadu", tz: 5.5, lat: 11.0168, lon: 76.9558 },
+  { name: "Chennai, India", tz: 5.5, lat: 13.0827, lon: 80.2707 },
+  { name: "Mumbai, India", tz: 5.5, lat: 19.076, lon: 72.8777 },
+  { name: "Bengaluru, India", tz: 5.5, lat: 12.9716, lon: 77.5946 },
+  { name: "Delhi, India", tz: 5.5, lat: 28.6139, lon: 77.209 },
+  { name: "London, UK", tz: 0, lat: 51.5074, lon: -0.1278 },
+  { name: "Paris, France", tz: 1, lat: 48.8566, lon: 2.3522 },
+  { name: "New York, USA", tz: -5, lat: 40.7128, lon: -74.006 },
+  { name: "Los Angeles, USA", tz: -8, lat: 34.0522, lon: -118.2437 },
+  { name: "Tokyo, Japan", tz: 9, lat: 35.6762, lon: 139.6503 },
+  { name: "Sydney, Australia", tz: 10, lat: -33.8688, lon: 151.2093 },
 ];
+
+const MODE_OPTIONS = ["custom", "sunrise", "sunset"] as const;
+type Mode = (typeof MODE_OPTIONS)[number];
 
 const formSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD"),
   time: z.string().regex(/^\d{2}:\d{2}$/, "Use HH:MM"),
   city: z.string().trim().min(1, "City required").max(80),
   tz: z.coerce.number().min(-12).max(14),
+  lat: z.coerce.number().min(-90).max(90),
+  lon: z.coerce.number().min(-180).max(180),
+  mode: z.enum(MODE_OPTIONS),
 });
 type FormValues = z.infer<typeof formSchema>;
 
@@ -47,12 +55,27 @@ const DEFAULTS: FormValues = {
   time: "12:00",
   city: "Coimbatore, Tamil Nadu",
   tz: 5.5,
+  lat: 11.0168,
+  lon: 76.9558,
+  mode: "sunset",
 };
 
 function localToUtc(date: string, time: string, tzHours: number): Date {
   const [y, mo, d] = date.split("-").map(Number);
   const [h, mi] = time.split(":").map(Number);
   return new Date(Date.UTC(y, mo - 1, d, h, mi) - tzHours * 3_600_000);
+}
+
+// Resolve the actual moment to use for the given civil date, honoring the night-window mode.
+function momentFor(
+  year: number, month: number, day: number,
+  time: string, tz: number, lat: number, lon: number, mode: Mode,
+): Date {
+  if (mode !== "custom") {
+    const st = sunTimes(year, month, day, lat, lon);
+    if (st) return mode === "sunrise" ? st.sunrise : st.sunset;
+  }
+  return localToUtc(`${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`, time, tz);
 }
 
 function fmtDate(d: Date, tzHours: number) {
@@ -70,25 +93,30 @@ function fmtTime(d: Date, tzHours: number) {
   });
 }
 
+
 function Index() {
   const [form, setForm] = useState<FormValues>(DEFAULTS);
   const [errors, setErrors] = useState<Partial<Record<keyof FormValues, string>>>({});
   const [applied, setApplied] = useState<FormValues>(DEFAULTS);
 
-  const birth = useMemo(() => localToUtc(applied.date, applied.time, applied.tz), [applied]);
-  const now = new Date();
   const birthYear = Number(applied.date.slice(0, 4));
   const birthMonth = Number(applied.date.slice(5, 7));
   const birthDay = Number(applied.date.slice(8, 10));
-  const [bh, bm] = applied.time.split(":").map(Number);
+  
+
+  const birth = useMemo(
+    () => momentFor(birthYear, birthMonth, birthDay, applied.time, applied.tz, applied.lat, applied.lon, applied.mode),
+    [birthYear, birthMonth, birthDay, applied.time, applied.tz, applied.lat, applied.lon, applied.mode],
+  );
+  const now = new Date();
 
   const years = useMemo(() => {
     const out: Date[] = [];
     for (let y = birthYear; y <= now.getFullYear(); y++) {
-      out.push(localToUtc(`${y}-${String(birthMonth).padStart(2,"0")}-${String(birthDay).padStart(2,"0")}`, applied.time, applied.tz));
+      out.push(momentFor(y, birthMonth, birthDay, applied.time, applied.tz, applied.lat, applied.lon, applied.mode));
     }
     return out;
-  }, [birthYear, birthMonth, birthDay, applied.time, applied.tz, now.getFullYear()]);
+  }, [birthYear, birthMonth, birthDay, applied.time, applied.tz, applied.lat, applied.lon, applied.mode, now.getFullYear()]);
 
   const birthMoon = moonPhase(birth);
   const birthZodiac = zodiacFor(birthMonth, birthDay);
@@ -113,8 +141,11 @@ function Index() {
 
   function setCity(name: string) {
     const preset = CITY_PRESETS.find((c) => c.name === name);
-    setForm((f) => ({ ...f, city: name, tz: preset ? preset.tz : f.tz }));
+    setForm((f) => preset
+      ? { ...f, city: name, tz: preset.tz, lat: preset.lat, lon: preset.lon }
+      : { ...f, city: name });
   }
+
 
   return (
     <main className="relative min-h-screen overflow-hidden">
@@ -189,11 +220,56 @@ function Index() {
                 className="input"
               />
             </Field>
+            <Field label="Latitude (°N)" error={errors.lat}>
+              <input
+                type="number"
+                step="0.0001"
+                min={-90}
+                max={90}
+                value={form.lat}
+                onChange={(e) => setForm({ ...form, lat: Number(e.target.value) })}
+                className="input"
+              />
+            </Field>
+            <Field label="Longitude (°E)" error={errors.lon}>
+              <input
+                type="number"
+                step="0.0001"
+                min={-180}
+                max={180}
+                value={form.lon}
+                onChange={(e) => setForm({ ...form, lon: Number(e.target.value) })}
+                className="input"
+              />
+            </Field>
+          </div>
+
+          <div className="mt-6">
+            <span className="mb-2 block text-xs tracking-[0.2em] text-muted-foreground uppercase">Compute the sky at</span>
+            <div className="inline-flex rounded-md border border-border bg-card/30 p-1">
+              {MODE_OPTIONS.map((opt) => (
+                <button
+                  key={opt}
+                  type="button"
+                  onClick={() => setForm({ ...form, mode: opt })}
+                  className={`rounded px-4 py-1.5 text-xs tracking-[0.2em] uppercase transition-colors ${
+                    form.mode === opt
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {opt === "custom" ? "Birth time" : `Local ${opt}`}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Sunrise &amp; sunset are computed per year from latitude &amp; longitude — so the moon and stars reflect the actual night-time window each birthday.
+            </p>
           </div>
 
           <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
             <p className="text-xs text-muted-foreground">
-              Auto-filled UTC offset updates when you pick a preset city. Adjust manually if needed.
+              Picking a preset city auto-fills offset, latitude, and longitude.
             </p>
             <button
               type="submit"
@@ -204,6 +280,7 @@ function Index() {
           </div>
         </form>
       </section>
+
 
       {/* Stats */}
       <section className="relative mx-auto max-w-5xl px-6 pb-20">
@@ -251,12 +328,12 @@ function Index() {
               date={d}
               tz={applied.tz}
               birthYear={birthYear}
-              birthHour={bh}
-              birthMinute={bm}
+              mode={applied.mode}
             />
           ))}
         </div>
       </section>
+
 
       <footer className="relative border-t border-border/50 py-10 text-center text-xs tracking-widest text-muted-foreground uppercase">
         Made under the same sky · {applied.city}
@@ -285,8 +362,8 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
   );
 }
 
-function YearCard({ date, tz, birthYear, birthHour, birthMinute }: {
-  date: Date; tz: number; birthYear: number; birthHour: number; birthMinute: number;
+function YearCard({ date, tz, birthYear, mode }: {
+  date: Date; tz: number; birthYear: number; mode: Mode;
 }) {
   const m = moonPhase(date);
   const shifted = new Date(date.getTime() + tz * 3_600_000);
@@ -299,7 +376,8 @@ function YearCard({ date, tz, birthYear, birthHour, birthMinute }: {
   const dateLabel = shifted.toLocaleDateString("en-US", {
     month: "long", day: "numeric", year: "numeric", timeZone: "UTC",
   });
-  const timeLabel = `${String(birthHour).padStart(2, "0")}:${String(birthMinute).padStart(2, "0")}`;
+  const timeLabel = `${fmtTime(date, tz)} local${mode === "custom" ? "" : ` · ${mode}`}`;
+
 
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-border bg-card/30 p-6 backdrop-blur-sm transition-all hover:border-accent/60 hover:bg-card/50">

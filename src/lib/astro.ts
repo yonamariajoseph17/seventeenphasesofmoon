@@ -113,3 +113,40 @@ export function starField(seed: number, count = 60) {
     delay: rand() * 4,
   }));
 }
+
+// Approximate sunrise/sunset (UTC) for a civil date at lat/lon (degrees, east positive).
+// NOAA simplified solar calculator — accurate to ~1 minute for non-polar latitudes.
+export function sunTimes(year: number, month: number, day: number, lat: number, lon: number): { sunrise: Date; sunset: Date } | null {
+  const start = Date.UTC(year, 0, 0);
+  const N = Math.floor((Date.UTC(year, month - 1, day) - start) / 86_400_000);
+  const gamma = (2 * Math.PI / 365) * (N - 1);
+  const eqtime = 229.18 * (
+    0.000075
+    + 0.001868 * Math.cos(gamma)
+    - 0.032077 * Math.sin(gamma)
+    - 0.014615 * Math.cos(2 * gamma)
+    - 0.040849 * Math.sin(2 * gamma)
+  );
+  const decl =
+    0.006918
+    - 0.399912 * Math.cos(gamma)
+    + 0.070257 * Math.sin(gamma)
+    - 0.006758 * Math.cos(2 * gamma)
+    + 0.000907 * Math.sin(2 * gamma)
+    - 0.002697 * Math.cos(3 * gamma)
+    + 0.00148 * Math.sin(3 * gamma);
+  const latRad = (lat * Math.PI) / 180;
+  const zenith = (90.833 * Math.PI) / 180;
+  const cosH = (Math.cos(zenith) - Math.sin(latRad) * Math.sin(decl)) / (Math.cos(latRad) * Math.cos(decl));
+  if (cosH > 1 || cosH < -1) return null; // sun doesn't rise/set that day
+  const ha = (Math.acos(cosH) * 180) / Math.PI;
+
+  const sunriseMin = 720 + 4 * lon - 4 * ha - eqtime;
+  const sunsetMin = 720 + 4 * lon + 4 * ha - eqtime;
+  const dayStartUTC = Date.UTC(year, month - 1, day);
+  return {
+    sunrise: new Date(dayStartUTC + sunriseMin * 60_000),
+    sunset: new Date(dayStartUTC + sunsetMin * 60_000),
+  };
+}
+
