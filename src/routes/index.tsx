@@ -248,6 +248,20 @@ function Index() {
       && Math.abs(p.lon - form.lon) < 1e-4,
   );
 
+  // Wikipedia milestones for this birth date (month/day), grouped by year.
+  const { events: milestones, error: milestonesError } = useMilestones(birthMonth, birthDay);
+  const milestonesByYear = useMemo(() => {
+    const map = new Map<number, MilestoneEvent[]>();
+    if (!milestones) return map;
+    for (const ev of milestones) {
+      if (ev.year < birthYear || ev.year > currentYear) continue;
+      const list = map.get(ev.year) ?? [];
+      list.push(ev);
+      map.set(ev.year, list);
+    }
+    return map;
+  }, [milestones, birthYear, currentYear]);
+
   function submit(e: React.FormEvent) {
     e.preventDefault();
     const parsed = formSchema.safeParse(form);
