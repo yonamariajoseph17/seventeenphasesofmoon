@@ -52,7 +52,8 @@ export function accurateMoon(date: Date): AccurateMoonInfo {
   const waxing = phaseAngle < 180;
 
   // Constellation containing the Moon at this instant (geocentric, equator-of-date).
-  const eq = Astro.Equator(Astro.Body.Moon, time, undefined as unknown as Astro.Observer, true, true);
+  const geoObs = new Astro.Observer(0, 0, 0);
+  const eq = Astro.Equator(Astro.Body.Moon, time, geoObs, true, true);
   const con = Astro.Constellation(eq.ra, eq.dec);
 
   const { name, emoji } = phaseNameFromAngle(phaseAngle);
