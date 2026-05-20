@@ -534,17 +534,24 @@ function Index() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {years.map((d) => (
-            <YearCard
-              key={d.getTime()}
-              date={d}
-              tz={applied.tz}
-              birthYear={birthYear}
-              currentYear={currentYear}
-              mode={applied.mode}
-            />
-          ))}
+          {years.map((d) => {
+            const shifted = new Date(d.getTime() + applied.tz * 3_600_000);
+            const y = shifted.getUTCFullYear();
+            return (
+              <YearCard
+                key={d.getTime()}
+                date={d}
+                tz={applied.tz}
+                birthYear={birthYear}
+                currentYear={currentYear}
+                mode={applied.mode}
+                milestones={milestonesByYear.get(y) ?? []}
+                milestonesLoading={milestones === null && !milestonesError}
+              />
+            );
+          })}
         </div>
+
       </section>
 
       <footer className="relative border-t border-border/50 py-10 text-center text-xs tracking-widest text-muted-foreground uppercase">
