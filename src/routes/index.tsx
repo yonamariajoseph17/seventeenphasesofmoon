@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
-import { moonPhase, zodiacFor, visibleConstellations, sunTimes } from "@/lib/astro";
+import { zodiacFor, sunTimes } from "@/lib/astro";
+import { accurateMoon, riseSetFor, nextPhaseTransition } from "@/lib/astro-accurate";
 import { milestoneFor } from "@/lib/milestones";
 import { MoonSvg } from "@/components/MoonSvg";
 import { StarField } from "@/components/StarField";
@@ -204,10 +205,12 @@ function Index() {
     return out;
   }, [birthYear, birthMonth, birthDay, applied.time, applied.tz, applied.lat, applied.lon, applied.mode, currentYear]);
 
-  const birthMoon = moonPhase(birth);
+  const birthMoon = accurateMoon(birth);
   const birthZodiac = zodiacFor(birthMonth, birthDay);
-  const todayMoon = now ? moonPhase(now) : birthMoon;
+  const todayMoon = now ? accurateMoon(now) : birthMoon;
   const totalDays = now ? Math.max(0, Math.floor((now.getTime() - birth.getTime()) / 86_400_000)) : 0;
+  const birthRiseSet = useMemo(() => riseSetFor(birth, applied.lat, applied.lon), [birth, applied.lat, applied.lon]);
+  const birthNextPhase = useMemo(() => nextPhaseTransition(birth), [birth]);
 
   const pronouns = PRONOUN_MAP[applied.pronoun];
   const personName = applied.name.trim() || cap(pronouns.subject);
@@ -474,9 +477,30 @@ function Index() {
                 {fmtTime(birth, applied.tz)} local · {applied.city}
               </p>
               <p className="mt-3 text-muted-foreground">
-                Above {applied.city}, the moon {pronouns.was === "were" ? "was" : "was"} a <span className="text-foreground">{birthMoon.name.toLowerCase()}</span>,
-                {" "}{Math.round(birthMoon.illumination * 100)}% lit, {birthMoon.waxing ? "growing toward fullness" : "softening toward dark"}.
-                The constellations of {visibleConstellations(birth).slice(0, 3).join(", ")} kept watch as {pronouns.subject} {pronouns.was} born.
+                Above {applied.city}, the Moon was a <span className="text-foreground">{birthMoon.name.toLowerCase()}</span>
+                {" "}at <span className="text-foreground">{birthMoon.illumination * 100 >= 0.05 ? (birthMoon.illumination * 100).toFixed(1) : (birthMoon.illumination * 100).toFixed(2)}%</span> illumination,
+                {" "}{birthMoon.age.toFixed(1)} days into its cycle, {birthMoon.waxing ? "waxing" : "waning"}.
+                {" "}It sat in <span className="text-foreground">{birthMoon.constellationSymbol} {birthMoon.constellation}</span> when {pronouns.subject} {pronouns.was} born.
+              </p>
+              <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-muted-foreground sm:grid-cols-3">
+                {birthRiseSet.moonrise && (
+                  <div><dt className="tracking-[0.2em] uppercase">Moonrise</dt><dd className="text-foreground/90">{fmtTime(birthRiseSet.moonrise, applied.tz)}</dd></div>
+                )}
+                {birthRiseSet.moonset && (
+                  <div><dt className="tracking-[0.2em] uppercase">Moonset</dt><dd className="text-foreground/90">{fmtTime(birthRiseSet.moonset, applied.tz)}</dd></div>
+                )}
+                {birthRiseSet.sunrise && (
+                  <div><dt className="tracking-[0.2em] uppercase">Sunrise</dt><dd className="text-foreground/90">{fmtTime(birthRiseSet.sunrise, applied.tz)}</dd></div>
+                )}
+                {birthRiseSet.sunset && (
+                  <div><dt className="tracking-[0.2em] uppercase">Sunset</dt><dd className="text-foreground/90">{fmtTime(birthRiseSet.sunset, applied.tz)}</dd></div>
+                )}
+                {birthNextPhase && (
+                  <div className="col-span-2"><dt className="tracking-[0.2em] uppercase">Next phase</dt><dd className="text-foreground/90">{birthNextPhase.name} · {fmtDate(birthNextPhase.date, applied.tz)} {fmtTime(birthNextPhase.date, applied.tz)}</dd></div>
+                )}
+              </dl>
+              <p className="mt-4 text-[10px] tracking-[0.25em] text-muted-foreground/60 uppercase">
+                Computed with astronomy-engine (VSOP87 / ELP2000) · UTC{applied.tz >= 0 ? "+" : ""}{applied.tz}
               </p>
             </div>
           </div>
@@ -496,6 +520,8 @@ function Index() {
               key={d.getTime()}
               date={d}
               tz={applied.tz}
+              lat={applied.lat}
+              lon={applied.lon}
               birthYear={birthYear}
               currentYear={currentYear}
               mode={applied.mode}
@@ -532,23 +558,23 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
   );
 }
 
-function YearCard({ date, tz, birthYear, currentYear, mode }: {
-  date: Date; tz: number; birthYear: number; currentYear: number; mode: Mode;
+function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
+  date: Date; tz: number; lat: number; lon: number; birthYear: number; currentYear: number; mode: Mode;
 }) {
-
-  const m = moonPhase(date);
+  const m = accurateMoon(date);
+  const rs = riseSetFor(date, lat, lon);
   const shifted = new Date(date.getTime() + tz * 3_600_000);
   const year = shifted.getUTCFullYear();
   const month = shifted.getUTCMonth() + 1;
   const day = shifted.getUTCDate();
-  const cons = visibleConstellations(date);
   const seed = year * 10000 + month * 100 + day;
   const ageLabel = `Turning ${year - birthYear}`;
   const dateLabel = shifted.toLocaleDateString("en-US", {
     month: "long", day: "numeric", year: "numeric", timeZone: "UTC",
   });
   const timeLabel = `${fmtTime(date, tz)} local${mode === "custom" ? "" : ` · ${mode}`}`;
-
+  const illumPct = m.illumination * 100;
+  const illumStr = illumPct >= 1 ? illumPct.toFixed(1) : illumPct.toFixed(2);
 
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-border bg-card/30 p-6 backdrop-blur-sm transition-all hover:border-accent/60 hover:bg-card/50">
@@ -558,7 +584,7 @@ function YearCard({ date, tz, birthYear, currentYear, mode }: {
         <div>
           <p className="text-xs tracking-[0.25em] text-accent uppercase">{ageLabel}</p>
           <p className="mt-1 font-display text-2xl">{dateLabel}</p>
-          <p className="text-xs text-muted-foreground">{timeLabel} local</p>
+          <p className="text-xs text-muted-foreground">{timeLabel}</p>
         </div>
         <span className="rounded-full border border-border/60 px-2 py-0.5 text-[10px] tracking-widest text-muted-foreground uppercase">
           {year === birthYear ? "Birth" : year === currentYear ? "Now" : ""}
@@ -569,14 +595,21 @@ function YearCard({ date, tz, birthYear, currentYear, mode }: {
         <MoonSvg phaseFraction={m.phaseFraction} size={130} />
       </div>
 
-      <div className="relative mt-6 space-y-2">
+      <div className="relative mt-6 space-y-1.5">
         <p className="font-display text-lg text-foreground">{m.emoji} {m.name}</p>
         <p className="text-xs text-muted-foreground">
-          {Math.round(m.illumination * 100)}% illuminated · age {m.age.toFixed(1)}d · {m.waxing ? "waxing" : "waning"}
+          {illumStr}% illuminated · age {m.age.toFixed(1)}d · {m.waxing ? "waxing" : "waning"}
         </p>
-        <p className="pt-2 text-xs leading-relaxed text-muted-foreground/90">
-          Overhead: <span className="text-foreground/90">{cons.slice(0, 3).join(" · ")}</span>
+        <p className="text-xs text-muted-foreground">
+          Moon in <span className="text-foreground/90">{m.constellationSymbol} {m.constellation}</span>
         </p>
+        {(rs.moonrise || rs.moonset) && (
+          <p className="text-[11px] text-muted-foreground/90">
+            {rs.moonrise && <>rise <span className="text-foreground/85">{fmtTime(rs.moonrise, tz)}</span></>}
+            {rs.moonrise && rs.moonset && " · "}
+            {rs.moonset && <>set <span className="text-foreground/85">{fmtTime(rs.moonset, tz)}</span></>}
+          </p>
+        )}
         {month === 4 && day === 17 && milestoneFor(year) && (
           <div className="mt-3 rounded-lg border border-accent/20 bg-accent/5 p-3">
             <p className="text-[10px] tracking-[0.25em] text-accent uppercase">That same day</p>
