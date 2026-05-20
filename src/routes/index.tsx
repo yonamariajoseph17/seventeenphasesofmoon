@@ -147,6 +147,36 @@ function fmtTime(d: Date, tzHours: number) {
   });
 }
 
+// Wikipedia "On this day" events, grouped by year.
+interface MilestoneEvent { year: number; text: string; url?: string }
+function useMilestones(month: number, day: number) {
+  const [events, setEvents] = useState<MilestoneEvent[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    setEvents(null);
+    setError(null);
+    const mm = String(month).padStart(2, "0");
+    const dd = String(day).padStart(2, "0");
+    fetch(`https://en.wikipedia.org/api/rest_v1/feed/onthisday/events/${mm}/${dd}`)
+      .then((r) => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+      .then((data) => {
+        if (cancelled) return;
+        const list: MilestoneEvent[] = (data.events ?? []).map((e: { year: number; text: string; pages?: Array<{ content_urls?: { desktop?: { page?: string } } }> }) => ({
+          year: e.year,
+          text: e.text,
+          url: e.pages?.[0]?.content_urls?.desktop?.page,
+        }));
+        setEvents(list);
+      })
+      .catch((err) => { if (!cancelled) setError(err.message); });
+    return () => { cancelled = true; };
+  }, [month, day]);
+  return { events, error };
+}
+
+
+
 
 
 function Index() {
@@ -217,6 +247,20 @@ function Index() {
       && Math.abs(p.lat - form.lat) < 1e-4
       && Math.abs(p.lon - form.lon) < 1e-4,
   );
+
+  // Wikipedia milestones for this birth date (month/day), grouped by year.
+  const { events: milestones, error: milestonesError } = useMilestones(birthMonth, birthDay);
+  const milestonesByYear = useMemo(() => {
+    const map = new Map<number, MilestoneEvent[]>();
+    if (!milestones) return map;
+    for (const ev of milestones) {
+      if (ev.year < birthYear || ev.year > currentYear) continue;
+      const list = map.get(ev.year) ?? [];
+      list.push(ev);
+      map.set(ev.year, list);
+    }
+    return map;
+  }, [milestones, birthYear, currentYear]);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -490,17 +534,24 @@ function Index() {
         </div>
 
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {years.map((d) => (
-            <YearCard
-              key={d.getTime()}
-              date={d}
-              tz={applied.tz}
-              birthYear={birthYear}
-              currentYear={currentYear}
-              mode={applied.mode}
-            />
-          ))}
+          {years.map((d) => {
+            const shifted = new Date(d.getTime() + applied.tz * 3_600_000);
+            const y = shifted.getUTCFullYear();
+            return (
+              <YearCard
+                key={d.getTime()}
+                date={d}
+                tz={applied.tz}
+                birthYear={birthYear}
+                currentYear={currentYear}
+                mode={applied.mode}
+                milestones={milestonesByYear.get(y) ?? []}
+                milestonesLoading={milestones === null && !milestonesError}
+              />
+            );
+          })}
         </div>
+
       </section>
 
       <footer className="relative border-t border-border/50 py-10 text-center text-xs tracking-widest text-muted-foreground uppercase">
@@ -531,8 +582,9 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
   );
 }
 
-function YearCard({ date, tz, birthYear, currentYear, mode }: {
+function YearCard({ date, tz, birthYear, currentYear, mode, milestones, milestonesLoading }: {
   date: Date; tz: number; birthYear: number; currentYear: number; mode: Mode;
+  milestones: MilestoneEvent[]; milestonesLoading: boolean;
 }) {
 
   const m = moonPhase(date);
@@ -547,6 +599,7 @@ function YearCard({ date, tz, birthYear, currentYear, mode }: {
     month: "long", day: "numeric", year: "numeric", timeZone: "UTC",
   });
   const timeLabel = `${fmtTime(date, tz)} local${mode === "custom" ? "" : ` · ${mode}`}`;
+  const topMilestones = milestones.slice(0, 3);
 
 
   return (
@@ -577,6 +630,28 @@ function YearCard({ date, tz, birthYear, currentYear, mode }: {
           Overhead: <span className="text-foreground/90">{cons.slice(0, 3).join(" · ")}</span>
         </p>
       </div>
+
+      <div className="relative mt-5 border-t border-border/40 pt-4">
+        <p className="mb-2 text-[10px] tracking-[0.25em] text-accent/80 uppercase">On this day · {year}</p>
+        {milestonesLoading ? (
+          <p className="text-xs text-muted-foreground/70 italic">Listening to history…</p>
+        ) : topMilestones.length === 0 ? (
+          <p className="text-xs text-muted-foreground/70 italic">A quiet day in the world&apos;s diary.</p>
+        ) : (
+          <ul className="space-y-1.5">
+            {topMilestones.map((ev, i) => (
+              <li key={i} className="text-xs leading-relaxed text-muted-foreground">
+                {ev.url ? (
+                  <a href={ev.url} target="_blank" rel="noreferrer" className="transition-colors hover:text-accent">
+                    {ev.text}
+                  </a>
+                ) : ev.text}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </article>
   );
 }
+
