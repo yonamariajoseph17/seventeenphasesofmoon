@@ -147,6 +147,36 @@ function fmtTime(d: Date, tzHours: number) {
   });
 }
 
+// Wikipedia "On this day" events, grouped by year.
+interface MilestoneEvent { year: number; text: string; url?: string }
+function useMilestones(month: number, day: number) {
+  const [events, setEvents] = useState<MilestoneEvent[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    setEvents(null);
+    setError(null);
+    const mm = String(month).padStart(2, "0");
+    const dd = String(day).padStart(2, "0");
+    fetch(`https://en.wikipedia.org/api/rest_v1/feed/onthisday/events/${mm}/${dd}`)
+      .then((r) => r.ok ? r.json() : Promise.reject(new Error(`HTTP ${r.status}`)))
+      .then((data) => {
+        if (cancelled) return;
+        const list: MilestoneEvent[] = (data.events ?? []).map((e: { year: number; text: string; pages?: Array<{ content_urls?: { desktop?: { page?: string } } }> }) => ({
+          year: e.year,
+          text: e.text,
+          url: e.pages?.[0]?.content_urls?.desktop?.page,
+        }));
+        setEvents(list);
+      })
+      .catch((err) => { if (!cancelled) setError(err.message); });
+    return () => { cancelled = true; };
+  }, [month, day]);
+  return { events, error };
+}
+
+
+
 
 
 function Index() {
