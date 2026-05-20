@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
 import { moonPhase, zodiacFor, visibleConstellations, sunTimes } from "@/lib/astro";
+import { milestoneFor } from "@/lib/milestones";
 import { MoonSvg } from "@/components/MoonSvg";
 import { StarField } from "@/components/StarField";
 
@@ -576,6 +577,12 @@ function YearCard({ date, tz, birthYear, currentYear, mode }: {
         <p className="pt-2 text-xs leading-relaxed text-muted-foreground/90">
           Overhead: <span className="text-foreground/90">{cons.slice(0, 3).join(" · ")}</span>
         </p>
+        {month === 4 && day === 17 && milestoneFor(year) && (
+          <div className="mt-3 rounded-lg border border-accent/20 bg-accent/5 p-3">
+            <p className="text-[10px] tracking-[0.25em] text-accent uppercase">That same day</p>
+            <p className="mt-1 text-xs leading-relaxed text-foreground/85">{milestoneFor(year)}</p>
+          </div>
+        )}
       </div>
     </article>
   );
