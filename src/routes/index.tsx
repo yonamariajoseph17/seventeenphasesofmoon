@@ -477,9 +477,30 @@ function Index() {
                 {fmtTime(birth, applied.tz)} local · {applied.city}
               </p>
               <p className="mt-3 text-muted-foreground">
-                Above {applied.city}, the moon {pronouns.was === "were" ? "was" : "was"} a <span className="text-foreground">{birthMoon.name.toLowerCase()}</span>,
-                {" "}{Math.round(birthMoon.illumination * 100)}% lit, {birthMoon.waxing ? "growing toward fullness" : "softening toward dark"}.
-                The constellations of {visibleConstellations(birth).slice(0, 3).join(", ")} kept watch as {pronouns.subject} {pronouns.was} born.
+                Above {applied.city}, the Moon was a <span className="text-foreground">{birthMoon.name.toLowerCase()}</span>
+                {" "}at <span className="text-foreground">{birthMoon.illumination * 100 >= 0.05 ? (birthMoon.illumination * 100).toFixed(1) : (birthMoon.illumination * 100).toFixed(2)}%</span> illumination,
+                {" "}{birthMoon.age.toFixed(1)} days into its cycle, {birthMoon.waxing ? "waxing" : "waning"}.
+                {" "}It sat in <span className="text-foreground">{birthMoon.constellationSymbol} {birthMoon.constellation}</span> when {pronouns.subject} {pronouns.was} born.
+              </p>
+              <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-muted-foreground sm:grid-cols-3">
+                {birthRiseSet.moonrise && (
+                  <div><dt className="tracking-[0.2em] uppercase">Moonrise</dt><dd className="text-foreground/90">{fmtTime(birthRiseSet.moonrise, applied.tz)}</dd></div>
+                )}
+                {birthRiseSet.moonset && (
+                  <div><dt className="tracking-[0.2em] uppercase">Moonset</dt><dd className="text-foreground/90">{fmtTime(birthRiseSet.moonset, applied.tz)}</dd></div>
+                )}
+                {birthRiseSet.sunrise && (
+                  <div><dt className="tracking-[0.2em] uppercase">Sunrise</dt><dd className="text-foreground/90">{fmtTime(birthRiseSet.sunrise, applied.tz)}</dd></div>
+                )}
+                {birthRiseSet.sunset && (
+                  <div><dt className="tracking-[0.2em] uppercase">Sunset</dt><dd className="text-foreground/90">{fmtTime(birthRiseSet.sunset, applied.tz)}</dd></div>
+                )}
+                {birthNextPhase && (
+                  <div className="col-span-2"><dt className="tracking-[0.2em] uppercase">Next phase</dt><dd className="text-foreground/90">{birthNextPhase.name} · {fmtDate(birthNextPhase.date, applied.tz)} {fmtTime(birthNextPhase.date, applied.tz)}</dd></div>
+                )}
+              </dl>
+              <p className="mt-4 text-[10px] tracking-[0.25em] text-muted-foreground/60 uppercase">
+                Computed with astronomy-engine (VSOP87 / ELP2000) · UTC{applied.tz >= 0 ? "+" : ""}{applied.tz}
               </p>
             </div>
           </div>
