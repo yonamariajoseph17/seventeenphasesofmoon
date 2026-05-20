@@ -520,6 +520,8 @@ function Index() {
               key={d.getTime()}
               date={d}
               tz={applied.tz}
+              lat={applied.lat}
+              lon={applied.lon}
               birthYear={birthYear}
               currentYear={currentYear}
               mode={applied.mode}
