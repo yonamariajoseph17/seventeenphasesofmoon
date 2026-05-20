@@ -205,10 +205,12 @@ function Index() {
     return out;
   }, [birthYear, birthMonth, birthDay, applied.time, applied.tz, applied.lat, applied.lon, applied.mode, currentYear]);
 
-  const birthMoon = moonPhase(birth);
+  const birthMoon = accurateMoon(birth);
   const birthZodiac = zodiacFor(birthMonth, birthDay);
-  const todayMoon = now ? moonPhase(now) : birthMoon;
+  const todayMoon = now ? accurateMoon(now) : birthMoon;
   const totalDays = now ? Math.max(0, Math.floor((now.getTime() - birth.getTime()) / 86_400_000)) : 0;
+  const birthRiseSet = useMemo(() => riseSetFor(birth, applied.lat, applied.lon), [birth, applied.lat, applied.lon]);
+  const birthNextPhase = useMemo(() => nextPhaseTransition(birth), [birth]);
 
   const pronouns = PRONOUN_MAP[applied.pronoun];
   const personName = applied.name.trim() || cap(pronouns.subject);
