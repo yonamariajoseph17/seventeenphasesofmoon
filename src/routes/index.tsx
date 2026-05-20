@@ -582,8 +582,9 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
   );
 }
 
-function YearCard({ date, tz, birthYear, currentYear, mode }: {
+function YearCard({ date, tz, birthYear, currentYear, mode, milestones, milestonesLoading }: {
   date: Date; tz: number; birthYear: number; currentYear: number; mode: Mode;
+  milestones: MilestoneEvent[]; milestonesLoading: boolean;
 }) {
 
   const m = moonPhase(date);
@@ -598,6 +599,7 @@ function YearCard({ date, tz, birthYear, currentYear, mode }: {
     month: "long", day: "numeric", year: "numeric", timeZone: "UTC",
   });
   const timeLabel = `${fmtTime(date, tz)} local${mode === "custom" ? "" : ` · ${mode}`}`;
+  const topMilestones = milestones.slice(0, 3);
 
 
   return (
@@ -628,6 +630,28 @@ function YearCard({ date, tz, birthYear, currentYear, mode }: {
           Overhead: <span className="text-foreground/90">{cons.slice(0, 3).join(" · ")}</span>
         </p>
       </div>
+
+      <div className="relative mt-5 border-t border-border/40 pt-4">
+        <p className="mb-2 text-[10px] tracking-[0.25em] text-accent/80 uppercase">On this day · {year}</p>
+        {milestonesLoading ? (
+          <p className="text-xs text-muted-foreground/70 italic">Listening to history…</p>
+        ) : topMilestones.length === 0 ? (
+          <p className="text-xs text-muted-foreground/70 italic">A quiet day in the world&apos;s diary.</p>
+        ) : (
+          <ul className="space-y-1.5">
+            {topMilestones.map((ev, i) => (
+              <li key={i} className="text-xs leading-relaxed text-muted-foreground">
+                {ev.url ? (
+                  <a href={ev.url} target="_blank" rel="noreferrer" className="transition-colors hover:text-accent">
+                    {ev.text}
+                  </a>
+                ) : ev.text}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </article>
   );
 }
+
