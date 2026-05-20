@@ -556,23 +556,23 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
   );
 }
 
-function YearCard({ date, tz, birthYear, currentYear, mode }: {
-  date: Date; tz: number; birthYear: number; currentYear: number; mode: Mode;
+function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
+  date: Date; tz: number; lat: number; lon: number; birthYear: number; currentYear: number; mode: Mode;
 }) {
-
-  const m = moonPhase(date);
+  const m = accurateMoon(date);
+  const rs = riseSetFor(date, lat, lon);
   const shifted = new Date(date.getTime() + tz * 3_600_000);
   const year = shifted.getUTCFullYear();
   const month = shifted.getUTCMonth() + 1;
   const day = shifted.getUTCDate();
-  const cons = visibleConstellations(date);
   const seed = year * 10000 + month * 100 + day;
   const ageLabel = `Turning ${year - birthYear}`;
   const dateLabel = shifted.toLocaleDateString("en-US", {
     month: "long", day: "numeric", year: "numeric", timeZone: "UTC",
   });
   const timeLabel = `${fmtTime(date, tz)} local${mode === "custom" ? "" : ` · ${mode}`}`;
-
+  const illumPct = m.illumination * 100;
+  const illumStr = illumPct >= 1 ? illumPct.toFixed(1) : illumPct.toFixed(2);
 
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-border bg-card/30 p-6 backdrop-blur-sm transition-all hover:border-accent/60 hover:bg-card/50">
@@ -582,7 +582,7 @@ function YearCard({ date, tz, birthYear, currentYear, mode }: {
         <div>
           <p className="text-xs tracking-[0.25em] text-accent uppercase">{ageLabel}</p>
           <p className="mt-1 font-display text-2xl">{dateLabel}</p>
-          <p className="text-xs text-muted-foreground">{timeLabel} local</p>
+          <p className="text-xs text-muted-foreground">{timeLabel}</p>
         </div>
         <span className="rounded-full border border-border/60 px-2 py-0.5 text-[10px] tracking-widest text-muted-foreground uppercase">
           {year === birthYear ? "Birth" : year === currentYear ? "Now" : ""}
@@ -593,14 +593,21 @@ function YearCard({ date, tz, birthYear, currentYear, mode }: {
         <MoonSvg phaseFraction={m.phaseFraction} size={130} />
       </div>
 
-      <div className="relative mt-6 space-y-2">
+      <div className="relative mt-6 space-y-1.5">
         <p className="font-display text-lg text-foreground">{m.emoji} {m.name}</p>
         <p className="text-xs text-muted-foreground">
-          {Math.round(m.illumination * 100)}% illuminated · age {m.age.toFixed(1)}d · {m.waxing ? "waxing" : "waning"}
+          {illumStr}% illuminated · age {m.age.toFixed(1)}d · {m.waxing ? "waxing" : "waning"}
         </p>
-        <p className="pt-2 text-xs leading-relaxed text-muted-foreground/90">
-          Overhead: <span className="text-foreground/90">{cons.slice(0, 3).join(" · ")}</span>
+        <p className="text-xs text-muted-foreground">
+          Moon in <span className="text-foreground/90">{m.constellationSymbol} {m.constellation}</span>
         </p>
+        {(rs.moonrise || rs.moonset) && (
+          <p className="text-[11px] text-muted-foreground/90">
+            {rs.moonrise && <>rise <span className="text-foreground/85">{fmtTime(rs.moonrise, tz)}</span></>}
+            {rs.moonrise && rs.moonset && " · "}
+            {rs.moonset && <>set <span className="text-foreground/85">{fmtTime(rs.moonset, tz)}</span></>}
+          </p>
+        )}
         {month === 4 && day === 17 && milestoneFor(year) && (
           <div className="mt-3 rounded-lg border border-accent/20 bg-accent/5 p-3">
             <p className="text-[10px] tracking-[0.25em] text-accent uppercase">That same day</p>
