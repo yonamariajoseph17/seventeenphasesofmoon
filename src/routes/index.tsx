@@ -1,11 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
+import { toPng } from "html-to-image";
 import { zodiacFor, sunTimes } from "@/lib/astro";
 import { accurateMoon, riseSetFor, nextPhaseTransition } from "@/lib/astro-accurate";
+import { validateMoon } from "@/lib/moon-validate";
+import { poeticLine } from "@/lib/poetic";
 import { milestoneFor } from "@/lib/milestones";
 import { MoonSvg } from "@/components/MoonSvg";
 import { StarField } from "@/components/StarField";
+import { Postcard, POSTCARD_STYLES, POSTCARD_FORMATS, type PostcardStyle, type PostcardFormat } from "@/components/Postcard";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -211,6 +215,10 @@ function Index() {
   const totalDays = now ? Math.max(0, Math.floor((now.getTime() - birth.getTime()) / 86_400_000)) : 0;
   const birthRiseSet = useMemo(() => riseSetFor(birth, applied.lat, applied.lon), [birth, applied.lat, applied.lon]);
   const birthNextPhase = useMemo(() => nextPhaseTransition(birth), [birth]);
+  const birthValidation = useMemo(() => validateMoon(birthMoon), [birthMoon]);
+  const birthIllumStr = birthMoon.illumination * 100 >= 1
+    ? (birthMoon.illumination * 100).toFixed(1)
+    : (birthMoon.illumination * 100).toFixed(2);
 
   const pronouns = PRONOUN_MAP[applied.pronoun];
   const personName = applied.name.trim() || cap(pronouns.subject);
@@ -257,6 +265,39 @@ function Index() {
   function removeSavedPreset(name: string) {
     setSavedPresets((prev) => prev.filter((p) => p.name !== name));
   }
+
+  // ── Postcard ────────────────────────────────────────────────────────
+  const [pcStyle, setPcStyle] = useState<PostcardStyle>("romantic");
+  const [pcFormat, setPcFormat] = useState<PostcardFormat>("square");
+  const [pcRecipient, setPcRecipient] = useState("");
+  const [pcOccasion, setPcOccasion] = useState("");
+  const [pcMessage, setPcMessage] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const postcardRef = useRef<HTMLDivElement>(null);
+
+  const recipientForCard = pcRecipient.trim() || personName;
+  const occasionForCard = pcOccasion.trim() || "A moon for you";
+  const poetic = useMemo(() => poeticLine(birthMoon, recipientForCard), [birthMoon, recipientForCard]);
+
+  async function downloadPostcard() {
+    if (!postcardRef.current) return;
+    setExporting(true);
+    try {
+      const dataUrl = await toPng(postcardRef.current, {
+        pixelRatio: 1,
+        cacheBust: true,
+        backgroundColor: undefined,
+      });
+      const a = document.createElement("a");
+      const safeName = recipientForCard.replace(/[^a-z0-9-_]+/gi, "_").toLowerCase() || "moon";
+      a.download = `moon-postcard-${safeName}-${applied.date}.png`;
+      a.href = dataUrl;
+      a.click();
+    } finally {
+      setExporting(false);
+    }
+  }
+
 
   return (
     <main className="relative min-h-screen overflow-hidden">
@@ -499,13 +540,170 @@ function Index() {
                   <div className="col-span-2"><dt className="tracking-[0.2em] uppercase">Next phase</dt><dd className="text-foreground/90">{birthNextPhase.name} · {fmtDate(birthNextPhase.date, applied.tz)} {fmtTime(birthNextPhase.date, applied.tz)}</dd></div>
                 )}
               </dl>
-              <p className="mt-4 text-[10px] tracking-[0.25em] text-muted-foreground/60 uppercase">
-                Computed with astronomy-engine (VSOP87 / ELP2000) · UTC{applied.tz >= 0 ? "+" : ""}{applied.tz}
+
+              {/* Poetic line — generated ONLY from verified astronomy */}
+              <p className="mt-5 border-l-2 border-accent/40 pl-4 font-display text-lg leading-relaxed text-foreground/90 italic">
+                “{poetic}”
               </p>
+
+              {/* Confidence badge */}
+              <div className="mt-4 flex flex-wrap items-center gap-2">
+                <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] tracking-[0.2em] uppercase ${
+                  birthValidation.ok
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                    : "border-amber-500/40 bg-amber-500/10 text-amber-300"
+                }`}>
+                  <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                  {birthValidation.ok ? "Verified astronomical calculation" : "Uncertainty detected"}
+                </span>
+                <span className="text-[10px] tracking-[0.25em] text-muted-foreground/70 uppercase">
+                  UTC{applied.tz >= 0 ? "+" : ""}{applied.tz} · {birthIllumStr}% · age {birthMoon.age.toFixed(2)}d
+                </span>
+              </div>
+              {!birthValidation.ok && (
+                <ul className="mt-2 list-disc pl-5 text-xs text-amber-200/80">
+                  {birthValidation.reasons.map((r) => <li key={r}>{r}</li>)}
+                </ul>
+              )}
             </div>
           </div>
         </div>
       </section>
+
+      {/* Postcard / Gift */}
+      <section className="relative mx-auto max-w-6xl px-6 pb-24">
+        <div className="mb-8 text-center">
+          <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">A keepsake of that night</p>
+          <h2 className="mt-3 font-display text-3xl md:text-5xl">Create a moon postcard</h2>
+          <p className="mt-3 text-sm text-muted-foreground">
+            A shareable card built entirely from verified astronomy — no invented constellations, no false claims.
+          </p>
+        </div>
+
+        <div className="grid gap-8 lg:grid-cols-[1fr_1.1fr]">
+          {/* Controls */}
+          <div className="rounded-2xl border border-border bg-card/40 p-6 backdrop-blur-sm">
+            <Field label="Recipient name">
+              <input
+                type="text"
+                value={pcRecipient}
+                maxLength={40}
+                onChange={(e) => setPcRecipient(e.target.value)}
+                placeholder={personName}
+                className="input"
+              />
+            </Field>
+            <div className="mt-4">
+              <Field label="Occasion">
+                <select
+                  value={pcOccasion}
+                  onChange={(e) => setPcOccasion(e.target.value)}
+                  className="input"
+                >
+                  <option value="">A moon for you</option>
+                  <option>Birthday</option>
+                  <option>Anniversary</option>
+                  <option>First met</option>
+                  <option>Proposal</option>
+                  <option>A memory</option>
+                  <option>Friendship</option>
+                </select>
+              </Field>
+            </div>
+            <div className="mt-4">
+              <Field label="Personal message (optional)">
+                <textarea
+                  value={pcMessage}
+                  maxLength={220}
+                  rows={3}
+                  onChange={(e) => setPcMessage(e.target.value)}
+                  placeholder="A few words from you…"
+                  className="input resize-none"
+                />
+              </Field>
+            </div>
+
+            <div className="mt-5">
+              <span className="mb-2 block text-xs tracking-[0.2em] text-muted-foreground uppercase">Style</span>
+              <div className="flex flex-wrap gap-2">
+                {POSTCARD_STYLES.map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    onClick={() => setPcStyle(s)}
+                    className={`rounded-full border px-3 py-1.5 text-xs tracking-[0.15em] capitalize transition-colors ${
+                      pcStyle === s
+                        ? "border-accent bg-accent/15 text-accent"
+                        : "border-border text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="mt-5">
+              <span className="mb-2 block text-xs tracking-[0.2em] text-muted-foreground uppercase">Format</span>
+              <div className="inline-flex rounded-md border border-border bg-card/30 p-1">
+                {(Object.keys(POSTCARD_FORMATS) as PostcardFormat[]).map((k) => (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setPcFormat(k)}
+                    className={`rounded px-3 py-1.5 text-[11px] tracking-[0.2em] uppercase transition-colors ${
+                      pcFormat === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                    }`}
+                  >
+                    {k}
+                  </button>
+                ))}
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">{POSTCARD_FORMATS[pcFormat].label}</p>
+            </div>
+
+            <button
+              type="button"
+              onClick={downloadPostcard}
+              disabled={exporting}
+              className="mt-6 w-full rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
+            >
+              {exporting ? "Rendering…" : "Download postcard (PNG)"}
+            </button>
+            <p className="mt-2 text-[10px] tracking-[0.2em] text-muted-foreground/70 uppercase">
+              High-resolution · ready to share or print
+            </p>
+          </div>
+
+          {/* Preview — full-resolution node scaled into view */}
+          <PostcardPreview
+            width={POSTCARD_FORMATS[pcFormat].w}
+            height={POSTCARD_FORMATS[pcFormat].h}
+          >
+            <Postcard
+              ref={postcardRef}
+              style={pcStyle}
+              format={pcFormat}
+              moon={birthMoon}
+              date={birth}
+              tz={applied.tz}
+              city={applied.city}
+              recipient={recipientForCard}
+              occasion={occasionForCard}
+              message={pcMessage}
+              poetic={poetic}
+              illumPct={birthIllumStr}
+              dateLabel={fmtDate(birth, applied.tz)}
+              timeLabel={fmtTime(birth, applied.tz)}
+              moonriseLabel={birthRiseSet.moonrise ? fmtTime(birthRiseSet.moonrise, applied.tz) : undefined}
+              moonsetLabel={birthRiseSet.moonset ? fmtTime(birthRiseSet.moonset, applied.tz) : undefined}
+            />
+          </PostcardPreview>
+
+        </div>
+      </section>
+
+
 
       {/* Timeline */}
       <section className="relative mx-auto max-w-6xl px-6 pb-32">
@@ -618,5 +816,31 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
         )}
       </div>
     </article>
+  );
+}
+
+function PostcardPreview({ width, height, children }: { width: number; height: number; children: React.ReactNode }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.001);
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const update = () => setScale(el.clientWidth / width);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [width]);
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-black/30 p-4 backdrop-blur-sm">
+      <div ref={wrapRef} className="relative w-full" style={{ aspectRatio: `${width} / ${height}` }}>
+        <div
+          className="absolute top-0 left-0 origin-top-left"
+          style={{ width, height, transform: `scale(${scale})` }}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
   );
 }
