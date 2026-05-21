@@ -818,3 +818,29 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
     </article>
   );
 }
+
+function PostcardPreview({ width, height, children }: { width: number; height: number; children: React.ReactNode }) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(0.001);
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const update = () => setScale(el.clientWidth / width);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [width]);
+  return (
+    <div className="overflow-hidden rounded-2xl border border-border bg-black/30 p-4 backdrop-blur-sm">
+      <div ref={wrapRef} className="relative w-full" style={{ aspectRatio: `${width} / ${height}` }}>
+        <div
+          className="absolute top-0 left-0 origin-top-left"
+          style={{ width, height, transform: `scale(${scale})` }}
+        >
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
