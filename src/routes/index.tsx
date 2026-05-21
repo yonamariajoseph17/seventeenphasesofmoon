@@ -266,6 +266,39 @@ function Index() {
     setSavedPresets((prev) => prev.filter((p) => p.name !== name));
   }
 
+  // ── Postcard ────────────────────────────────────────────────────────
+  const [pcStyle, setPcStyle] = useState<PostcardStyle>("romantic");
+  const [pcFormat, setPcFormat] = useState<PostcardFormat>("square");
+  const [pcRecipient, setPcRecipient] = useState("");
+  const [pcOccasion, setPcOccasion] = useState("");
+  const [pcMessage, setPcMessage] = useState("");
+  const [exporting, setExporting] = useState(false);
+  const postcardRef = useRef<HTMLDivElement>(null);
+
+  const recipientForCard = pcRecipient.trim() || personName;
+  const occasionForCard = pcOccasion.trim() || "A moon for you";
+  const poetic = useMemo(() => poeticLine(birthMoon, recipientForCard), [birthMoon, recipientForCard]);
+
+  async function downloadPostcard() {
+    if (!postcardRef.current) return;
+    setExporting(true);
+    try {
+      const dataUrl = await toPng(postcardRef.current, {
+        pixelRatio: 1,
+        cacheBust: true,
+        backgroundColor: undefined,
+      });
+      const a = document.createElement("a");
+      const safeName = recipientForCard.replace(/[^a-z0-9-_]+/gi, "_").toLowerCase() || "moon";
+      a.download = `moon-postcard-${safeName}-${applied.date}.png`;
+      a.href = dataUrl;
+      a.click();
+    } finally {
+      setExporting(false);
+    }
+  }
+
+
   return (
     <main className="relative min-h-screen overflow-hidden">
       <StarField seed={42} className="pointer-events-none fixed inset-0 h-full w-full opacity-70" count={140} />
