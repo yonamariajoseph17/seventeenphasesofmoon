@@ -1,11 +1,15 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
+import { toPng } from "html-to-image";
 import { zodiacFor, sunTimes } from "@/lib/astro";
 import { accurateMoon, riseSetFor, nextPhaseTransition } from "@/lib/astro-accurate";
+import { validateMoon } from "@/lib/moon-validate";
+import { poeticLine } from "@/lib/poetic";
 import { milestoneFor } from "@/lib/milestones";
 import { MoonSvg } from "@/components/MoonSvg";
 import { StarField } from "@/components/StarField";
+import { Postcard, POSTCARD_STYLES, POSTCARD_FORMATS, type PostcardStyle, type PostcardFormat } from "@/components/Postcard";
 
 export const Route = createFileRoute("/")({
   component: Index,
