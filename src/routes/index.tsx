@@ -676,50 +676,30 @@ function Index() {
           </div>
 
           {/* Preview — full-resolution node scaled into view */}
-          <div className="overflow-hidden rounded-2xl border border-border bg-black/30 p-4 backdrop-blur-sm">
-            <div className="relative w-full" style={{ aspectRatio: `${POSTCARD_FORMATS[pcFormat].w} / ${POSTCARD_FORMATS[pcFormat].h}` }}>
-              <div
-                className="absolute top-0 left-0 origin-top-left"
-                style={{
-                  width: POSTCARD_FORMATS[pcFormat].w,
-                  height: POSTCARD_FORMATS[pcFormat].h,
-                  transform: `scale(var(--pc-scale))`,
-                  // @ts-expect-error - css var
-                  "--pc-scale": "0.001",
-                }}
-                ref={(node) => {
-                  if (!node) return;
-                  const parent = node.parentElement!;
-                  const setScale = () => {
-                    const s = parent.clientWidth / POSTCARD_FORMATS[pcFormat].w;
-                    node.style.setProperty("--pc-scale", String(s));
-                  };
-                  setScale();
-                  const ro = new ResizeObserver(setScale);
-                  ro.observe(parent);
-                }}
-              >
-                <Postcard
-                  ref={postcardRef}
-                  style={pcStyle}
-                  format={pcFormat}
-                  moon={birthMoon}
-                  date={birth}
-                  tz={applied.tz}
-                  city={applied.city}
-                  recipient={recipientForCard}
-                  occasion={occasionForCard}
-                  message={pcMessage}
-                  poetic={poetic}
-                  illumPct={birthIllumStr}
-                  dateLabel={fmtDate(birth, applied.tz)}
-                  timeLabel={fmtTime(birth, applied.tz)}
-                  moonriseLabel={birthRiseSet.moonrise ? fmtTime(birthRiseSet.moonrise, applied.tz) : undefined}
-                  moonsetLabel={birthRiseSet.moonset ? fmtTime(birthRiseSet.moonset, applied.tz) : undefined}
-                />
-              </div>
-            </div>
-          </div>
+          <PostcardPreview
+            width={POSTCARD_FORMATS[pcFormat].w}
+            height={POSTCARD_FORMATS[pcFormat].h}
+          >
+            <Postcard
+              ref={postcardRef}
+              style={pcStyle}
+              format={pcFormat}
+              moon={birthMoon}
+              date={birth}
+              tz={applied.tz}
+              city={applied.city}
+              recipient={recipientForCard}
+              occasion={occasionForCard}
+              message={pcMessage}
+              poetic={poetic}
+              illumPct={birthIllumStr}
+              dateLabel={fmtDate(birth, applied.tz)}
+              timeLabel={fmtTime(birth, applied.tz)}
+              moonriseLabel={birthRiseSet.moonrise ? fmtTime(birthRiseSet.moonrise, applied.tz) : undefined}
+              moonsetLabel={birthRiseSet.moonset ? fmtTime(birthRiseSet.moonset, applied.tz) : undefined}
+            />
+          </PostcardPreview>
+
         </div>
       </section>
 
