@@ -16,7 +16,7 @@ function illuminatedPath(phaseAngle: number, waxing: boolean, r: number) {
   for (let i = 0; i <= steps; i++) {
     const y = -r + (2 * r * i) / steps;
     const edge = Math.sqrt(Math.max(0, r * r - y * y));
-    const boundary = terminator * edge;
+    const boundary = (waxing ? terminator : -terminator) * edge;
     rightEdge.push(`${edge.toFixed(3)} ${y.toFixed(3)}`);
     leftEdge.push(`${(-edge).toFixed(3)} ${y.toFixed(3)}`);
     if (waxing) leftEdge[i] = `${boundary.toFixed(3)} ${y.toFixed(3)}`;
