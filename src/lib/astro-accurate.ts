@@ -77,6 +77,39 @@ export interface RiseSet {
   sunset: Date | null;
 }
 
+export type AstroEventKind = "sunrise" | "sunset" | "moonrise" | "moonset";
+export interface AstroEvent { kind: AstroEventKind; date: Date; }
+
+function localCivilParts(date: Date, tz: number) {
+  const shifted = new Date(date.getTime() + tz * 3_600_000);
+  return { year: shifted.getUTCFullYear(), month: shifted.getUTCMonth() + 1, day: shifted.getUTCDate() };
+}
+
+function eventForCivilDate(year: number, month: number, day: number, tz: number, lat: number, lon: number, kind: AstroEventKind): Date | null {
+  const observer = new Astro.Observer(lat, lon, 0);
+  const body = kind.startsWith("moon") ? Astro.Body.Moon : Astro.Body.Sun;
+  const direction: 1 | -1 = kind.endsWith("rise") ? +1 : -1;
+  const startUtc = Date.UTC(year, month - 1, day) - tz * 3_600_000;
+  const found = Astro.SearchRiseSet(body, observer, direction, Astro.MakeTime(new Date(startUtc)), 1.1)?.date ?? null;
+  if (!found) return null;
+  const p = localCivilParts(found, tz);
+  return p.year === year && p.month === month && p.day === day ? found : null;
+}
+
+export function riseSetForCivilDate(year: number, month: number, day: number, tz: number, lat: number, lon: number): RiseSet {
+  return {
+    moonrise: eventForCivilDate(year, month, day, tz, lat, lon, "moonrise"),
+    moonset: eventForCivilDate(year, month, day, tz, lat, lon, "moonset"),
+    sunrise: eventForCivilDate(year, month, day, tz, lat, lon, "sunrise"),
+    sunset: eventForCivilDate(year, month, day, tz, lat, lon, "sunset"),
+  };
+}
+
+export function eventMomentForCivilDate(year: number, month: number, day: number, tz: number, lat: number, lon: number, kind: Extract<AstroEventKind, "sunrise" | "sunset">): AstroEvent | null {
+  const date = eventForCivilDate(year, month, day, tz, lat, lon, kind);
+  return date ? { kind, date } : null;
+}
+
 // Find rise/set for Moon and Sun within ±24h of `date` at the given observer.
 export function riseSetFor(date: Date, lat: number, lon: number): RiseSet {
   const observer = new Astro.Observer(lat, lon, 0);
