@@ -134,8 +134,8 @@ function momentFor(
   time: string, tz: number, lat: number, lon: number, mode: Mode,
 ): Date {
   if (mode !== "custom") {
-    const st = sunTimes(year, month, day, lat, lon);
-    if (st) return mode === "sunrise" ? st.sunrise : st.sunset;
+    const event = eventMomentForCivilDate(year, month, day, tz, lat, lon, mode);
+    if (event) return event.date;
   }
   return localToUtc(`${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`, time, tz);
 }
@@ -152,6 +152,19 @@ function fmtTime(d: Date, tzHours: number) {
   return shifted.toLocaleTimeString("en-US", {
     hour: "2-digit", minute: "2-digit", timeZone: "UTC",
   });
+}
+
+function eventLabelForMoment(date: Date, events: RiseSet): AstroEventKind | null {
+  const candidates: Array<[AstroEventKind, Date | null]> = [
+    ["sunrise", events.sunrise], ["sunset", events.sunset], ["moonrise", events.moonrise], ["moonset", events.moonset],
+  ];
+  const matched = candidates.find(([, eventDate]) => eventDate && Math.abs(eventDate.getTime() - date.getTime()) <= 60_000);
+  return matched?.[0] ?? null;
+}
+
+function timeWithVerifiedEvent(date: Date, tz: number, events: RiseSet) {
+  const event = eventLabelForMoment(date, events);
+  return `${fmtTime(date, tz)} local${event ? ` · ${event}` : ""}`;
 }
 
 
