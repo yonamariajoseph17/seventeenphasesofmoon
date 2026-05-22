@@ -528,18 +528,23 @@ function Index() {
         <div className="overflow-hidden rounded-2xl border border-border bg-card/40 p-8 backdrop-blur-sm md:p-12">
           <div className="grid items-center gap-10 md:grid-cols-[auto_1fr]">
             <div className="relative mx-auto">
-              <MoonSvg phaseFraction={birthMoon.phaseFraction} size={180} />
+              {birthValidation.ok ? (
+                <MoonSvg phaseAngle={birthMoon.phaseAngle} illumination={birthMoon.illumination} waxing={birthMoon.waxing} size={180} />
+              ) : (
+                <div className="flex h-[180px] w-[180px] items-center justify-center rounded-full border border-amber-500/40 text-center text-xs text-amber-200">Unable to verify</div>
+              )}
             </div>
             <div>
               <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">Night one</p>
               <h2 className="mt-2 font-display text-3xl md:text-4xl">{fmtDate(birth, applied.tz)}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {fmtTime(birth, applied.tz)} local · {applied.city}
+                {birthTimeLabel} · {applied.city}
               </p>
               <p className="mt-3 text-muted-foreground">
                 Above {applied.city}, the Moon was a <span className="text-foreground">{birthMoon.name.toLowerCase()}</span>
                 {" "}at <span className="text-foreground">{birthMoon.illumination * 100 >= 0.05 ? (birthMoon.illumination * 100).toFixed(1) : (birthMoon.illumination * 100).toFixed(2)}%</span> illumination,
                 {" "}{birthMoon.age.toFixed(1)} days into its cycle, {birthMoon.waxing ? "waxing" : "waning"}.
+                {" "}Visual: <span className="text-foreground">{birthVisualLabel}</span>.
                 {" "}It sat in <span className="text-foreground">{birthMoon.constellationSymbol} {birthMoon.constellation}</span> when {pronouns.subject} {pronouns.was} born.
               </p>
               <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-muted-foreground sm:grid-cols-3">
