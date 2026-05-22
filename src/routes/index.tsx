@@ -784,17 +784,18 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
   date: Date; tz: number; lat: number; lon: number; birthYear: number; currentYear: number; mode: Mode;
 }) {
   const m = accurateMoon(date);
-  const rs = riseSetFor(date, lat, lon);
   const shifted = new Date(date.getTime() + tz * 3_600_000);
   const year = shifted.getUTCFullYear();
   const month = shifted.getUTCMonth() + 1;
   const day = shifted.getUTCDate();
+  const rs = riseSetForCivilDate(year, month, day, tz, lat, lon);
+  const validation = validateMoon(m);
   const seed = year * 10000 + month * 100 + day;
   const ageLabel = `Turning ${year - birthYear}`;
   const dateLabel = shifted.toLocaleDateString("en-US", {
     month: "long", day: "numeric", year: "numeric", timeZone: "UTC",
   });
-  const timeLabel = `${fmtTime(date, tz)} local${mode === "custom" ? "" : ` · ${mode}`}`;
+  const timeLabel = timeWithVerifiedEvent(date, tz, rs);
   const illumPct = m.illumination * 100;
   const illumStr = illumPct >= 1 ? illumPct.toFixed(1) : illumPct.toFixed(2);
 
@@ -814,7 +815,11 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
       </div>
 
       <div className="relative mt-6 flex justify-center">
-        <MoonSvg phaseFraction={m.phaseFraction} size={130} />
+        {validation.ok ? (
+          <MoonSvg phaseAngle={m.phaseAngle} illumination={m.illumination} waxing={m.waxing} size={130} />
+        ) : (
+          <div className="flex h-[130px] w-[130px] items-center justify-center rounded-full border border-amber-500/40 text-center text-[10px] text-amber-200">Unable to verify</div>
+        )}
       </div>
 
       <div className="relative mt-6 space-y-1.5">
