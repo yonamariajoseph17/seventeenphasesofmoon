@@ -141,7 +141,7 @@ export const Postcard = forwardRef<HTMLDivElement, Props>(function Postcard(p, r
         margin: isStory ? "60px 0" : "32px 0",
       }}>
         <div style={{ filter: isLight ? "invert(1) hue-rotate(180deg)" : "none" }}>
-          <MoonSvg phaseFraction={p.moon.phaseFraction} size={moonSize} />
+          <MoonSvg phaseAngle={p.moon.phaseAngle} illumination={p.moon.illumination} waxing={p.moon.waxing} size={moonSize} />
         </div>
       </div>
 

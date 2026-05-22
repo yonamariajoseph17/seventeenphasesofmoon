@@ -2,11 +2,14 @@
 // astronomy-engine is already self-consistent; this guards against display drift
 // and surfaces a confidence badge.
 import type { AccurateMoonInfo } from "./astro-accurate";
+import { validateMoonVisualInputs } from "./moon-visual";
 
 export function validateMoon(m: AccurateMoonInfo): { ok: boolean; reasons: string[] } {
   const reasons: string[] = [];
   const pct = m.illumination * 100;
   const age = m.age;
+  const phaseFractionFromAge = (age % 29.530588853) / 29.530588853;
+  const expectedIlluminationFromAge = (1 - Math.cos(phaseFractionFromAge * 2 * Math.PI)) / 2;
 
   // Age bands → expected phase family
   const ageExpected =
@@ -27,6 +30,13 @@ export function validateMoon(m: AccurateMoonInfo): { ok: boolean; reasons: strin
   if (expectWaxing !== m.waxing) {
     reasons.push(`Waxing flag (${m.waxing}) disagrees with age ${age.toFixed(2)}d.`);
   }
+
+  if (Math.abs(m.illumination - expectedIlluminationFromAge) > 0.04) {
+    reasons.push(`Illumination ${(pct).toFixed(2)}% disagrees with moon age ${age.toFixed(2)}d.`);
+  }
+
+  const visual = validateMoonVisualInputs({ phaseAngle: m.phaseAngle, illumination: m.illumination, waxing: m.waxing });
+  reasons.push(...visual.reasons);
 
   // Illumination vs phase coarse bounds
   const bounds: Record<string, [number, number]> = {

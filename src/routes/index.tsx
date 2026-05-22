@@ -2,9 +2,10 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { z } from "zod";
 import { toPng } from "html-to-image";
-import { zodiacFor, sunTimes } from "@/lib/astro";
-import { accurateMoon, riseSetFor, nextPhaseTransition } from "@/lib/astro-accurate";
+import { zodiacFor } from "@/lib/astro";
+import { accurateMoon, riseSetForCivilDate, nextPhaseTransition, eventMomentForCivilDate, type AstroEventKind, type RiseSet } from "@/lib/astro-accurate";
 import { validateMoon } from "@/lib/moon-validate";
+import { moonVisualDescription } from "@/lib/moon-visual";
 import { poeticLine } from "@/lib/poetic";
 import { milestoneFor } from "@/lib/milestones";
 import { MoonSvg } from "@/components/MoonSvg";
@@ -133,8 +134,8 @@ function momentFor(
   time: string, tz: number, lat: number, lon: number, mode: Mode,
 ): Date {
   if (mode !== "custom") {
-    const st = sunTimes(year, month, day, lat, lon);
-    if (st) return mode === "sunrise" ? st.sunrise : st.sunset;
+    const event = eventMomentForCivilDate(year, month, day, tz, lat, lon, mode);
+    if (event) return event.date;
   }
   return localToUtc(`${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`, time, tz);
 }
@@ -151,6 +152,19 @@ function fmtTime(d: Date, tzHours: number) {
   return shifted.toLocaleTimeString("en-US", {
     hour: "2-digit", minute: "2-digit", timeZone: "UTC",
   });
+}
+
+function eventLabelForMoment(date: Date, events: RiseSet): AstroEventKind | null {
+  const candidates: Array<[AstroEventKind, Date | null]> = [
+    ["sunrise", events.sunrise], ["sunset", events.sunset], ["moonrise", events.moonrise], ["moonset", events.moonset],
+  ];
+  const matched = candidates.find(([, eventDate]) => eventDate && Math.abs(eventDate.getTime() - date.getTime()) <= 60_000);
+  return matched?.[0] ?? null;
+}
+
+function timeWithVerifiedEvent(date: Date, tz: number, events: RiseSet) {
+  const event = eventLabelForMoment(date, events);
+  return `${fmtTime(date, tz)} local${event ? ` · ${event}` : ""}`;
 }
 
 
@@ -213,12 +227,17 @@ function Index() {
   const birthZodiac = zodiacFor(birthMonth, birthDay);
   const todayMoon = now ? accurateMoon(now) : birthMoon;
   const totalDays = now ? Math.max(0, Math.floor((now.getTime() - birth.getTime()) / 86_400_000)) : 0;
-  const birthRiseSet = useMemo(() => riseSetFor(birth, applied.lat, applied.lon), [birth, applied.lat, applied.lon]);
+  const birthRiseSet = useMemo(
+    () => riseSetForCivilDate(birthYear, birthMonth, birthDay, applied.tz, applied.lat, applied.lon),
+    [birthYear, birthMonth, birthDay, applied.tz, applied.lat, applied.lon],
+  );
   const birthNextPhase = useMemo(() => nextPhaseTransition(birth), [birth]);
   const birthValidation = useMemo(() => validateMoon(birthMoon), [birthMoon]);
   const birthIllumStr = birthMoon.illumination * 100 >= 1
     ? (birthMoon.illumination * 100).toFixed(1)
     : (birthMoon.illumination * 100).toFixed(2);
+  const birthTimeLabel = timeWithVerifiedEvent(birth, applied.tz, birthRiseSet);
+  const birthVisualLabel = moonVisualDescription(birthMoon);
 
   const pronouns = PRONOUN_MAP[applied.pronoun];
   const personName = applied.name.trim() || cap(pronouns.subject);
@@ -509,18 +528,23 @@ function Index() {
         <div className="overflow-hidden rounded-2xl border border-border bg-card/40 p-8 backdrop-blur-sm md:p-12">
           <div className="grid items-center gap-10 md:grid-cols-[auto_1fr]">
             <div className="relative mx-auto">
-              <MoonSvg phaseFraction={birthMoon.phaseFraction} size={180} />
+              {birthValidation.ok ? (
+                <MoonSvg phaseAngle={birthMoon.phaseAngle} illumination={birthMoon.illumination} waxing={birthMoon.waxing} size={180} />
+              ) : (
+                <div className="flex h-[180px] w-[180px] items-center justify-center rounded-full border border-amber-500/40 text-center text-xs text-amber-200">Unable to verify</div>
+              )}
             </div>
             <div>
               <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">Night one</p>
               <h2 className="mt-2 font-display text-3xl md:text-4xl">{fmtDate(birth, applied.tz)}</h2>
               <p className="mt-1 text-sm text-muted-foreground">
-                {fmtTime(birth, applied.tz)} local · {applied.city}
+                {birthTimeLabel} · {applied.city}
               </p>
               <p className="mt-3 text-muted-foreground">
                 Above {applied.city}, the Moon was a <span className="text-foreground">{birthMoon.name.toLowerCase()}</span>
                 {" "}at <span className="text-foreground">{birthMoon.illumination * 100 >= 0.05 ? (birthMoon.illumination * 100).toFixed(1) : (birthMoon.illumination * 100).toFixed(2)}%</span> illumination,
                 {" "}{birthMoon.age.toFixed(1)} days into its cycle, {birthMoon.waxing ? "waxing" : "waning"}.
+                {" "}Visual: <span className="text-foreground">{birthVisualLabel}</span>.
                 {" "}It sat in <span className="text-foreground">{birthMoon.constellationSymbol} {birthMoon.constellation}</span> when {pronouns.subject} {pronouns.was} born.
               </p>
               <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-muted-foreground sm:grid-cols-3">
@@ -694,7 +718,7 @@ function Index() {
               poetic={poetic}
               illumPct={birthIllumStr}
               dateLabel={fmtDate(birth, applied.tz)}
-              timeLabel={fmtTime(birth, applied.tz)}
+              timeLabel={birthTimeLabel}
               moonriseLabel={birthRiseSet.moonrise ? fmtTime(birthRiseSet.moonrise, applied.tz) : undefined}
               moonsetLabel={birthRiseSet.moonset ? fmtTime(birthRiseSet.moonset, applied.tz) : undefined}
             />
@@ -760,17 +784,18 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
   date: Date; tz: number; lat: number; lon: number; birthYear: number; currentYear: number; mode: Mode;
 }) {
   const m = accurateMoon(date);
-  const rs = riseSetFor(date, lat, lon);
   const shifted = new Date(date.getTime() + tz * 3_600_000);
   const year = shifted.getUTCFullYear();
   const month = shifted.getUTCMonth() + 1;
   const day = shifted.getUTCDate();
+  const rs = riseSetForCivilDate(year, month, day, tz, lat, lon);
+  const validation = validateMoon(m);
   const seed = year * 10000 + month * 100 + day;
   const ageLabel = `Turning ${year - birthYear}`;
   const dateLabel = shifted.toLocaleDateString("en-US", {
     month: "long", day: "numeric", year: "numeric", timeZone: "UTC",
   });
-  const timeLabel = `${fmtTime(date, tz)} local${mode === "custom" ? "" : ` · ${mode}`}`;
+  const timeLabel = timeWithVerifiedEvent(date, tz, rs);
   const illumPct = m.illumination * 100;
   const illumStr = illumPct >= 1 ? illumPct.toFixed(1) : illumPct.toFixed(2);
 
@@ -790,7 +815,11 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
       </div>
 
       <div className="relative mt-6 flex justify-center">
-        <MoonSvg phaseFraction={m.phaseFraction} size={130} />
+        {validation.ok ? (
+          <MoonSvg phaseAngle={m.phaseAngle} illumination={m.illumination} waxing={m.waxing} size={130} />
+        ) : (
+          <div className="flex h-[130px] w-[130px] items-center justify-center rounded-full border border-amber-500/40 text-center text-[10px] text-amber-200">Unable to verify</div>
+        )}
       </div>
 
       <div className="relative mt-6 space-y-1.5">
