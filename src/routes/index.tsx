@@ -227,12 +227,17 @@ function Index() {
   const birthZodiac = zodiacFor(birthMonth, birthDay);
   const todayMoon = now ? accurateMoon(now) : birthMoon;
   const totalDays = now ? Math.max(0, Math.floor((now.getTime() - birth.getTime()) / 86_400_000)) : 0;
-  const birthRiseSet = useMemo(() => riseSetFor(birth, applied.lat, applied.lon), [birth, applied.lat, applied.lon]);
+  const birthRiseSet = useMemo(
+    () => riseSetForCivilDate(birthYear, birthMonth, birthDay, applied.tz, applied.lat, applied.lon),
+    [birthYear, birthMonth, birthDay, applied.tz, applied.lat, applied.lon],
+  );
   const birthNextPhase = useMemo(() => nextPhaseTransition(birth), [birth]);
   const birthValidation = useMemo(() => validateMoon(birthMoon), [birthMoon]);
   const birthIllumStr = birthMoon.illumination * 100 >= 1
     ? (birthMoon.illumination * 100).toFixed(1)
     : (birthMoon.illumination * 100).toFixed(2);
+  const birthTimeLabel = timeWithVerifiedEvent(birth, applied.tz, birthRiseSet);
+  const birthVisualLabel = moonVisualDescription(birthMoon);
 
   const pronouns = PRONOUN_MAP[applied.pronoun];
   const personName = applied.name.trim() || cap(pronouns.subject);
