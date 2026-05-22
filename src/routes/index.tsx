@@ -718,7 +718,7 @@ function Index() {
               poetic={poetic}
               illumPct={birthIllumStr}
               dateLabel={fmtDate(birth, applied.tz)}
-              timeLabel={fmtTime(birth, applied.tz)}
+              timeLabel={birthTimeLabel}
               moonriseLabel={birthRiseSet.moonrise ? fmtTime(birthRiseSet.moonrise, applied.tz) : undefined}
               moonsetLabel={birthRiseSet.moonset ? fmtTime(birthRiseSet.moonset, applied.tz) : undefined}
             />
