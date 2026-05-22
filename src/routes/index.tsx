@@ -819,7 +819,7 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
   );
 }
 
-function PostcardPreview({ width, height, children }: { width: number; height: number; children: React.ReactNode }) {
+function PostcardPreview({ width, height, children }: { width: number; height: number; children: import("react").ReactNode }) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.001);
   useEffect(() => {
