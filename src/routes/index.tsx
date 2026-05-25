@@ -11,6 +11,7 @@ import { milestoneFor } from "@/lib/milestones";
 import { MoonSvg } from "@/components/MoonSvg";
 import { StarField } from "@/components/StarField";
 import { Postcard, POSTCARD_STYLES, POSTCARD_FORMATS, type PostcardStyle, type PostcardFormat } from "@/components/Postcard";
+import { encodeLetter, LETTER_STYLES, type LetterStyle } from "@/lib/letter";
 
 export const Route = createFileRoute("/")({
   component: Index,
