@@ -315,7 +315,10 @@ function Index() {
       a.click();
     } finally {
       setExporting(false);
+    }
   }
+
+
 
   // ── Moon Letter ─────────────────────────────────────────────────────
   const [ltStyle, setLtStyle] = useState<LetterStyle>("midnight");
