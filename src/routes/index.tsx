@@ -770,6 +770,92 @@ function Index() {
         </div>
       </section>
 
+      {/* Moon Letter — shareable gift link */}
+      <section className="relative mx-auto max-w-4xl px-6 pb-24">
+        <div className="mb-8 text-center">
+          <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">A gift across the night</p>
+          <h2 className="mt-3 font-display text-3xl md:text-5xl">Send as a Moon Letter</h2>
+          <p className="mt-3 text-sm text-muted-foreground">
+            A cinematic, shareable link — the recipient opens a sealed envelope, reads your note, then sees the verified sky from {applied.city}.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card/40 p-6 backdrop-blur-sm">
+          <div className="grid gap-4 md:grid-cols-2">
+            <Field label="To (recipient name)">
+              <input type="text" value={ltTo} onChange={(e) => setLtTo(e.target.value)} maxLength={40} placeholder={personName} className="input" />
+            </Field>
+            <Field label="From (your name, optional)">
+              <input type="text" value={ltFrom} onChange={(e) => setLtFrom(e.target.value)} maxLength={40} placeholder="—" className="input" />
+            </Field>
+          </div>
+
+          <div className="mt-4">
+            <Field label="Personal message (optional)">
+              <textarea
+                value={ltMessage}
+                onChange={(e) => setLtMessage(e.target.value)}
+                maxLength={280}
+                rows={3}
+                placeholder="You came into the world beneath this quiet moon…"
+                className="input resize-none"
+              />
+            </Field>
+          </div>
+
+          <div className="mt-5">
+            <span className="mb-2 block text-xs tracking-[0.2em] text-muted-foreground uppercase">Letter style</span>
+            <div className="flex flex-wrap gap-2">
+              {LETTER_STYLES.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  onClick={() => setLtStyle(s)}
+                  className={`rounded-full border px-3 py-1.5 text-xs tracking-[0.15em] capitalize transition-colors ${
+                    ltStyle === s ? "border-accent bg-accent/15 text-accent" : "border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {s === "midnight" ? "Midnight Sky" : s === "vintage" ? "Vintage Letter" : s === "archive" ? "Memory Archive" : s === "golden" ? "Golden Moon" : s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-6 rounded-lg border border-border bg-background/40 p-3">
+            <p className="text-[10px] tracking-[0.3em] text-muted-foreground uppercase">Your letter link</p>
+            <p className="mt-1 truncate font-mono text-xs text-foreground/80">{letterUrl}</p>
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={copyLetterLink}
+              className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            >
+              {ltCopied ? "Link copied" : "Copy letter link"}
+            </button>
+            <a
+              href={`/letter/${letterToken}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-md border border-accent px-5 py-2.5 text-sm text-accent transition-colors hover:bg-accent/10"
+            >
+              Preview letter
+            </a>
+            <a
+              href={`https://wa.me/?text=${encodeURIComponent(`A moon letter for ${ltTo.trim() || personName} — ${letterUrl}`)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-md border border-border px-5 py-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Share via WhatsApp
+            </a>
+          </div>
+          <p className="mt-3 text-[10px] tracking-[0.2em] text-muted-foreground/70 uppercase">
+            The link carries all astronomy data — no account needed.
+          </p>
+        </div>
+      </section>
 
 
       {/* Timeline */}
