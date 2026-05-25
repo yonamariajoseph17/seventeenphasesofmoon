@@ -315,8 +315,47 @@ function Index() {
       a.click();
     } finally {
       setExporting(false);
-    }
   }
+
+  // ── Moon Letter ─────────────────────────────────────────────────────
+  const [ltStyle, setLtStyle] = useState<LetterStyle>("midnight");
+  const [ltTo, setLtTo] = useState("");
+  const [ltFrom, setLtFrom] = useState("");
+  const [ltMessage, setLtMessage] = useState("");
+  const [ltCopied, setLtCopied] = useState(false);
+
+  const letterToken = useMemo(
+    () => encodeLetter({
+      v: 1,
+      name: applied.name,
+      pronoun: applied.pronoun,
+      date: applied.date,
+      time: applied.time,
+      city: applied.city,
+      tz: applied.tz,
+      lat: applied.lat,
+      lon: applied.lon,
+      mode: applied.mode,
+      to: ltTo.trim() || undefined,
+      from: ltFrom.trim() || undefined,
+      msg: ltMessage.trim() || undefined,
+      style: ltStyle,
+    }),
+    [applied, ltTo, ltFrom, ltMessage, ltStyle],
+  );
+
+  const letterUrl = typeof window !== "undefined"
+    ? `${window.location.origin}/letter/${letterToken}`
+    : `/letter/${letterToken}`;
+
+  async function copyLetterLink() {
+    try {
+      await navigator.clipboard.writeText(letterUrl);
+      setLtCopied(true);
+      setTimeout(() => setLtCopied(false), 1500);
+    } catch { /* ignore */ }
+  }
+
 
 
   return (
