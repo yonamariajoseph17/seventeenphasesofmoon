@@ -4,14 +4,15 @@ import { z } from "zod";
 import { toPng } from "html-to-image";
 import { zodiacFor } from "@/lib/astro";
 import { accurateMoon, riseSetForCivilDate, nextPhaseTransition, eventMomentForCivilDate, type AstroEventKind, type RiseSet } from "@/lib/astro-accurate";
-import { validateMoon } from "@/lib/moon-validate";
+import { validateMoon, combineConfidence, confidenceLabel, confidenceTag } from "@/lib/moon-validate";
 import { moonVisualDescription } from "@/lib/moon-visual";
 import { poeticLine } from "@/lib/poetic";
 import { milestoneFor } from "@/lib/milestones";
 import { MoonSvg } from "@/components/MoonSvg";
 import { StarField } from "@/components/StarField";
 import { Postcard, POSTCARD_STYLES, POSTCARD_FORMATS, type PostcardStyle, type PostcardFormat } from "@/components/Postcard";
-import { encodeLetter, LETTER_STYLES, type LetterStyle } from "@/lib/letter";
+import { LETTER_STYLES, type LetterStyle, type LetterPayload } from "@/lib/letter";
+import { createLetter } from "@/lib/letter-store";
 
 export const Route = createFileRoute("/")({
   component: Index,
