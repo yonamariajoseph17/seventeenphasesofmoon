@@ -14,7 +14,27 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      moon_letters: {
+        Row: {
+          created_at: string
+          id: string
+          payload: Json
+          snapshot: Json
+        }
+        Insert: {
+          created_at?: string
+          id: string
+          payload: Json
+          snapshot: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          payload?: Json
+          snapshot?: Json
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
