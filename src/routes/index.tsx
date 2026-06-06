@@ -330,9 +330,12 @@ function Index() {
   const [ltFrom, setLtFrom] = useState("");
   const [ltMessage, setLtMessage] = useState("");
   const [ltCopied, setLtCopied] = useState(false);
+  const [ltId, setLtId] = useState<string | null>(null);
+  const [ltCreating, setLtCreating] = useState(false);
+  const [ltError, setLtError] = useState<string | null>(null);
 
-  const letterToken = useMemo(
-    () => encodeLetter({
+  const letterPayload = useMemo<LetterPayload>(
+    () => ({
       v: 1,
       name: applied.name,
       pronoun: applied.pronoun,
@@ -351,11 +354,33 @@ function Index() {
     [applied, ltTo, ltFrom, ltMessage, ltStyle],
   );
 
-  const letterUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/letter/${letterToken}`
-    : `/letter/${letterToken}`;
+  // Editing the letter invalidates any previously generated permanent link.
+  useEffect(() => {
+    setLtId(null);
+    setLtError(null);
+  }, [letterPayload]);
+
+  const letterUrl = ltId
+    ? typeof window !== "undefined"
+      ? `${window.location.origin}/letter/${ltId}`
+      : `/letter/${ltId}`
+    : "";
+
+  async function generateLetter() {
+    setLtCreating(true);
+    setLtError(null);
+    try {
+      const id = await createLetter(letterPayload);
+      setLtId(id);
+    } catch {
+      setLtError("Could not create the letter link. Please try again.");
+    } finally {
+      setLtCreating(false);
+    }
+  }
 
   async function copyLetterLink() {
+    if (!letterUrl) return;
     try {
       await navigator.clipboard.writeText(letterUrl);
       setLtCopied(true);
