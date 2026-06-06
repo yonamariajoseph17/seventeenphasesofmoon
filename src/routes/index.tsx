@@ -997,7 +997,7 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
       </div>
 
       <div className="relative mt-6 flex justify-center">
-        {validation.ok ? (
+        {validation.coreOk ? (
           <MoonSvg phaseAngle={m.phaseAngle} illumination={m.illumination} waxing={m.waxing} size={130} />
         ) : (
           <div className="flex h-[130px] w-[130px] items-center justify-center rounded-full border border-amber-500/40 text-center text-[10px] text-amber-200">Unable to verify</div>
