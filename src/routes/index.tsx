@@ -234,7 +234,10 @@ function Index() {
     [birthYear, birthMonth, birthDay, applied.tz, applied.lat, applied.lon],
   );
   const birthNextPhase = useMemo(() => nextPhaseTransition(birth), [birth]);
-  const birthValidation = useMemo(() => validateMoon(birthMoon), [birthMoon]);
+  const birthValidation = useMemo(
+    () => combineConfidence(validateMoon(birthMoon), { hasRiseOrSet: !!(birthRiseSet.moonrise || birthRiseSet.moonset) }),
+    [birthMoon, birthRiseSet],
+  );
   const birthIllumStr = birthMoon.illumination * 100 >= 1
     ? (birthMoon.illumination * 100).toFixed(1)
     : (birthMoon.illumination * 100).toFixed(2);
