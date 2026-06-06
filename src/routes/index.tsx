@@ -855,39 +855,58 @@ function Index() {
             </div>
           </div>
 
-          <div className="mt-6 rounded-lg border border-border bg-background/40 p-3">
-            <p className="text-[10px] tracking-[0.3em] text-muted-foreground uppercase">Your letter link</p>
-            <p className="mt-1 truncate font-mono text-xs text-foreground/80">{letterUrl}</p>
-          </div>
+          {!ltId ? (
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={generateLetter}
+                disabled={ltCreating}
+                className="rounded-md bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+              >
+                {ltCreating ? "Creating your letter…" : "Create & save Moon Letter"}
+              </button>
+              {ltError && <p className="text-xs text-amber-300">{ltError}</p>}
+              <p className="text-[10px] tracking-[0.2em] text-muted-foreground/70 uppercase">
+                Saves a permanent link the recipient can reopen anytime.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="mt-6 rounded-lg border border-border bg-background/40 p-3">
+                <p className="text-[10px] tracking-[0.3em] text-muted-foreground uppercase">Your permanent letter link</p>
+                <p className="mt-1 truncate font-mono text-xs text-foreground/80">{letterUrl}</p>
+              </div>
 
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={copyLetterLink}
-              className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              {ltCopied ? "Link copied" : "Copy letter link"}
-            </button>
-            <a
-              href={`/letter/${letterToken}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-md border border-accent px-5 py-2.5 text-sm text-accent transition-colors hover:bg-accent/10"
-            >
-              Preview letter
-            </a>
-            <a
-              href={`https://wa.me/?text=${encodeURIComponent(`A moon letter for ${ltTo.trim() || personName} — ${letterUrl}`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-md border border-border px-5 py-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Share via WhatsApp
-            </a>
-          </div>
-          <p className="mt-3 text-[10px] tracking-[0.2em] text-muted-foreground/70 uppercase">
-            The link carries all astronomy data — no account needed.
-          </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={copyLetterLink}
+                  className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  {ltCopied ? "Link copied" : "Copy letter link"}
+                </button>
+                <a
+                  href={`/letter/${ltId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-md border border-accent px-5 py-2.5 text-sm text-accent transition-colors hover:bg-accent/10"
+                >
+                  Open letter
+                </a>
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(`A moon letter for ${ltTo.trim() || personName} — ${letterUrl}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-md border border-border px-5 py-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Share via WhatsApp
+                </a>
+              </div>
+              <p className="mt-3 text-[10px] tracking-[0.2em] text-muted-foreground/70 uppercase">
+                Saved to the cloud — works on mobile, WhatsApp, and when reopened later.
+              </p>
+            </>
+          )}
         </div>
       </section>
 
