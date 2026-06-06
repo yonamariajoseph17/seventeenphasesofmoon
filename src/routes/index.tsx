@@ -600,7 +600,7 @@ function Index() {
         <div className="overflow-hidden rounded-2xl border border-border bg-card/40 p-8 backdrop-blur-sm md:p-12">
           <div className="grid items-center gap-10 md:grid-cols-[auto_1fr]">
             <div className="relative mx-auto">
-              {birthValidation.ok ? (
+              {birthValidation.coreOk ? (
                 <MoonSvg phaseAngle={birthMoon.phaseAngle} illumination={birthMoon.illumination} waxing={birthMoon.waxing} size={180} />
               ) : (
                 <div className="flex h-[180px] w-[180px] items-center justify-center rounded-full border border-amber-500/40 text-center text-xs text-amber-200">Unable to verify</div>
