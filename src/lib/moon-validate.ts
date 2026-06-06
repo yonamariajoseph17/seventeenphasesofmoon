@@ -1,58 +1,110 @@
-// Cross-check moon phase classification against age & illumination.
-// astronomy-engine is already self-consistent; this guards against display drift
-// and surfaces a confidence badge.
+// Verification engine for lunar data.
+//
+// Philosophy: astronomy-engine (VSOP87 / ELP2000) is self-consistent, so CORE
+// astronomy (phase, illumination, age, waxing/waning) is virtually always
+// verifiable. We only fall back to "UNAVAILABLE" when the core math itself is
+// broken (non-finite or internally contradictory). Missing OPTIONAL metadata
+// (constellation/zodiac, rise/set, poetic, cultural notes) only downgrades the
+// confidence to VERIFIED (PARTIAL) — it never blocks the moon render.
 import type { AccurateMoonInfo } from "./astro-accurate";
-import { validateMoonVisualInputs } from "./moon-visual";
 
-export function validateMoon(m: AccurateMoonInfo): { ok: boolean; reasons: string[] } {
-  const reasons: string[] = [];
-  const pct = m.illumination * 100;
-  const age = m.age;
-  const phaseFractionFromAge = (age % 29.530588853) / 29.530588853;
-  const expectedIlluminationFromAge = (1 - Math.cos(phaseFractionFromAge * 2 * Math.PI)) / 2;
+export type MoonConfidence = "VERIFIED" | "VERIFIED_PARTIAL" | "UNAVAILABLE";
 
-  // Age bands → expected phase family
-  const ageExpected =
-    age < 1.5 ? "New Moon"
-    : age < 6.9 ? "Waxing Crescent"
-    : age < 8.9 ? "First Quarter"
-    : age < 13.9 ? "Waxing Gibbous"
-    : age < 15.9 ? "Full Moon"
-    : age < 20.9 ? "Waning Gibbous"
-    : age < 23.9 ? "Last Quarter"
-    : "Waning Crescent";
-  if (ageExpected !== m.name) {
-    reasons.push(`Age ${age.toFixed(2)}d suggests "${ageExpected}", got "${m.name}".`);
+export interface MoonValidationResult {
+  /** Highest-level verdict. */
+  confidence: MoonConfidence;
+  /** True when core astronomy is valid — render the moon whenever this is true. */
+  coreOk: boolean;
+  /** Reasons core astronomy failed (only populated when coreOk === false). */
+  coreReasons: string[];
+  /** Optional metadata that could not be verified (does not block rendering). */
+  optionalReasons: string[];
+}
+
+const norm360 = (n: number) => ((n % 360) + 360) % 360;
+const clamp01 = (n: number) => Math.min(1, Math.max(0, n));
+
+export function validateMoon(m: AccurateMoonInfo): MoonValidationResult {
+  const coreReasons: string[] = [];
+  const optionalReasons: string[] = [];
+
+  // ── CORE 1: numeric integrity ──────────────────────────────────────────
+  if (![m.phaseAngle, m.illumination, m.age, m.phaseFraction].every(Number.isFinite)) {
+    coreReasons.push("Core lunar values are not finite.");
   }
 
-  // Waxing/waning consistency
-  const expectWaxing = age < 14.77;
-  if (expectWaxing !== m.waxing) {
-    reasons.push(`Waxing flag (${m.waxing}) disagrees with age ${age.toFixed(2)}d.`);
+  const angle = norm360(m.phaseAngle);
+  const illumination = clamp01(m.illumination);
+
+  // ── CORE 2: illumination must agree with phase geometry ────────────────
+  const expectedIllumination = (1 - Math.cos((angle * Math.PI) / 180)) / 2;
+  if (Number.isFinite(m.illumination) && Math.abs(illumination - expectedIllumination) > 0.05) {
+    coreReasons.push(
+      `Illumination ${(illumination * 100).toFixed(1)}% is inconsistent with the phase geometry.`,
+    );
   }
 
-  if (Math.abs(m.illumination - expectedIlluminationFromAge) > 0.04) {
-    reasons.push(`Illumination ${(pct).toFixed(2)}% disagrees with moon age ${age.toFixed(2)}d.`);
+  // ── CORE 3: waxing/waning must agree with phase angle ──────────────────
+  const expectWaxing = angle < 180;
+  if (m.waxing !== expectWaxing && Math.abs(angle - 180) > 0.5 && angle > 0.5) {
+    coreReasons.push("Waxing/waning direction is inconsistent with the phase angle.");
   }
 
-  const visual = validateMoonVisualInputs({ phaseAngle: m.phaseAngle, illumination: m.illumination, waxing: m.waxing });
-  reasons.push(...visual.reasons);
-
-  // Illumination vs phase coarse bounds
-  const bounds: Record<string, [number, number]> = {
-    "New Moon": [0, 3],
-    "Waxing Crescent": [0, 55],
-    "First Quarter": [40, 60],
-    "Waxing Gibbous": [50, 99],
-    "Full Moon": [97, 100],
-    "Waning Gibbous": [50, 99],
-    "Last Quarter": [40, 60],
-    "Waning Crescent": [0, 55],
-  };
-  const b = bounds[m.name];
-  if (b && (pct < b[0] - 2 || pct > b[1] + 2)) {
-    reasons.push(`Illumination ${pct.toFixed(1)}% outside expected ${b[0]}–${b[1]}% for ${m.name}.`);
+  // ── CORE 4: moon age must fall within one synodic month ────────────────
+  if (Number.isFinite(m.age) && (m.age < 0 || m.age > 29.9)) {
+    coreReasons.push(`Moon age ${m.age.toFixed(2)}d is outside the valid 0–29.9 day range.`);
   }
 
-  return { ok: reasons.length === 0, reasons };
+  // ── OPTIONAL: constellation / zodiac metadata ──────────────────────────
+  if (!m.constellation || m.constellationSymbol === "✦") {
+    optionalReasons.push("Constellation/zodiac symbol unavailable.");
+  }
+
+  const coreOk = coreReasons.length === 0;
+  const confidence: MoonConfidence = !coreOk
+    ? "UNAVAILABLE"
+    : optionalReasons.length === 0
+      ? "VERIFIED"
+      : "VERIFIED_PARTIAL";
+
+  return { confidence, coreOk, coreReasons, optionalReasons };
+}
+
+/** Combine moon validation with availability of rise/set (also optional data). */
+export function combineConfidence(
+  base: MoonValidationResult,
+  opts: { hasRiseOrSet?: boolean } = {},
+): MoonValidationResult {
+  if (!base.coreOk) return base;
+  const optionalReasons = [...base.optionalReasons];
+  if (opts.hasRiseOrSet === false) {
+    optionalReasons.push("Moonrise/moonset not available for this location/date.");
+  }
+  const confidence: MoonConfidence =
+    optionalReasons.length === 0 ? "VERIFIED" : "VERIFIED_PARTIAL";
+  return { ...base, optionalReasons, confidence };
+}
+
+/** Short uppercase tag for the confidence badge. */
+export function confidenceTag(c: MoonConfidence): string {
+  switch (c) {
+    case "VERIFIED":
+      return "Verified";
+    case "VERIFIED_PARTIAL":
+      return "Verified (Partial)";
+    case "UNAVAILABLE":
+      return "Unavailable";
+  }
+}
+
+/** Human sentence describing the confidence level. */
+export function confidenceLabel(c: MoonConfidence): string {
+  switch (c) {
+    case "VERIFIED":
+      return "Verified astronomical calculation";
+    case "VERIFIED_PARTIAL":
+      return "Verified astronomical calculation — some secondary metadata unavailable";
+    case "UNAVAILABLE":
+      return "Unable to verify";
+  }
 }

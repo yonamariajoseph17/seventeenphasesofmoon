@@ -1,10 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { decodeLetter, type LetterStyle } from "@/lib/letter";
-import { accurateMoon, riseSetForCivilDate, eventMomentForCivilDate } from "@/lib/astro-accurate";
-import { validateMoon } from "@/lib/moon-validate";
-import { moonVisualDescription } from "@/lib/moon-visual";
-import { poeticLine } from "@/lib/poetic";
+import { fetchLetter, buildLetterSnapshot, type LetterRecord } from "@/lib/letter-store";
 import { MoonSvg } from "@/components/MoonSvg";
 import { StarField } from "@/components/StarField";
 
@@ -58,55 +55,74 @@ const STYLE_THEMES: Record<LetterStyle, { bg: string; fg: string; accent: string
   },
 };
 
-function localToUtc(date: string, time: string, tzHours: number): Date {
-  const [y, mo, d] = date.split("-").map(Number);
-  const [h, mi] = time.split(":").map(Number);
-  return new Date(Date.UTC(y, mo - 1, d, h, mi) - tzHours * 3_600_000);
-}
-
-function fmtDate(d: Date, tz: number) {
-  const s = new Date(d.getTime() + tz * 3_600_000);
+function fmtDateISO(iso: string, tz: number) {
+  const s = new Date(new Date(iso).getTime() + tz * 3_600_000);
   return s.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
 }
-function fmtTime(d: Date, tz: number) {
-  const s = new Date(d.getTime() + tz * 3_600_000);
+function fmtTimeISO(iso: string, tz: number) {
+  const s = new Date(new Date(iso).getTime() + tz * 3_600_000);
   return s.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
 }
 
+type LoadState =
+  | { status: "loading" }
+  | { status: "ready"; record: LetterRecord }
+  | { status: "notfound" };
+
 function LetterPage() {
   const { id } = Route.useParams();
-  const payload = useMemo(() => decodeLetter(id), [id]);
+  const [state, setState] = useState<LoadState>({ status: "loading" });
   const [screen, setScreen] = useState<1 | 2 | 3>(1);
   const [opening, setOpening] = useState(false);
 
-  if (!payload) {
+  useEffect(() => {
+    let cancelled = false;
+    setState({ status: "loading" });
+    (async () => {
+      // 1) Permanent, database-backed letter (short id).
+      const rec = await fetchLetter(id);
+      if (cancelled) return;
+      if (rec) {
+        setState({ status: "ready", record: rec });
+        return;
+      }
+      // 2) Backward compatibility: legacy self-contained encoded token.
+      const decoded = decodeLetter(id);
+      if (decoded) {
+        setState({ status: "ready", record: { payload: decoded, snapshot: buildLetterSnapshot(decoded) } });
+        return;
+      }
+      setState({ status: "notfound" });
+    })();
+    return () => { cancelled = true; };
+  }, [id]);
+
+  if (state.status === "loading") {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background px-6 text-center">
+        <p className="font-display text-xs tracking-[0.3em] text-muted-foreground uppercase">Opening the sky…</p>
+      </main>
+    );
+  }
+
+  if (state.status === "notfound") {
     return (
       <main className="flex min-h-screen items-center justify-center bg-background px-6 text-center">
         <div>
           <p className="font-display text-xs tracking-[0.3em] text-muted-foreground uppercase">Letter not found</p>
           <h1 className="mt-3 font-display text-3xl">This letter could not be opened</h1>
-          <p className="mt-3 text-sm text-muted-foreground">The link may be incomplete or damaged.</p>
-          <Link to="/" className="mt-6 inline-block rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground">Write your own moon letter</Link>
+          <p className="mt-3 text-sm text-muted-foreground">The link may be incomplete, expired, or mistyped.</p>
+          <Link to="/" className="mt-6 inline-block rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground">Create a Moon Letter</Link>
         </div>
       </main>
     );
   }
 
-  const theme = STYLE_THEMES[payload.style];
-  const [y, mo, d] = payload.date.split("-").map(Number);
-  const moment = payload.mode === "custom"
-    ? localToUtc(payload.date, payload.time, payload.tz)
-    : eventMomentForCivilDate(y, mo, d, payload.tz, payload.lat, payload.lon, payload.mode)?.date
-      ?? localToUtc(payload.date, payload.time, payload.tz);
-
-  const moon = accurateMoon(moment);
-  const validation = validateMoon(moon);
-  const rise = riseSetForCivilDate(y, mo, d, payload.tz, payload.lat, payload.lon);
-  const illumPct = moon.illumination * 100 >= 1
-    ? (moon.illumination * 100).toFixed(1)
-    : (moon.illumination * 100).toFixed(2);
-  const visual = moonVisualDescription(moon);
-  const poetic = poeticLine(moon, payload.to || payload.name);
+  const { payload, snapshot } = state.record;
+  const theme = STYLE_THEMES[payload.style] ?? STYLE_THEMES.midnight;
+  const seed = (() => { const [y, mo, d] = payload.date.split("-").map(Number); return (y * 31 + mo) * 31 + d; })();
+  const coreOk = snapshot.confidence !== "UNAVAILABLE";
+  const partial = snapshot.confidence === "VERIFIED_PARTIAL";
 
   function openLetter() {
     setOpening(true);
@@ -116,7 +132,7 @@ function LetterPage() {
   return (
     <main style={{ background: theme.bg, color: theme.fg, fontFamily: "'Inter', sans-serif" }} className="relative min-h-screen overflow-hidden">
       {payload.style !== "archive" && (
-        <StarField seed={(y * 31 + mo) * 31 + d} className="pointer-events-none fixed inset-0 h-full w-full opacity-60" count={120} />
+        <StarField seed={seed} className="pointer-events-none fixed inset-0 h-full w-full opacity-60" count={120} />
       )}
 
       {/* SCREEN 1 — Envelope */}
@@ -139,13 +155,11 @@ function LetterPage() {
             }}
           >
             <div className="absolute inset-0 rounded-md shadow-2xl" style={{ background: theme.envelope, border: `1px solid ${theme.accent}33` }} />
-            {/* Flap */}
             <div className="absolute inset-x-0 top-0 h-1/2 origin-top" style={{
               background: theme.envelope,
               clipPath: "polygon(0 0, 100% 0, 50% 100%)",
               borderTop: `1px solid ${theme.accent}33`,
             }} />
-            {/* Wax seal */}
             <div
               className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-2xl shadow-lg"
               style={{
@@ -155,7 +169,7 @@ function LetterPage() {
               }}
               aria-hidden
             >
-              {moon.emoji}
+              {snapshot.emoji}
             </div>
           </div>
 
@@ -169,7 +183,7 @@ function LetterPage() {
             {opening ? "Opening…" : "Open letter"}
           </button>
           <p className="mt-6 text-[10px] tracking-[0.3em] uppercase" style={{ color: theme.sub }}>
-            {fmtDate(moment, payload.tz)} · {payload.city}
+            {fmtDateISO(snapshot.momentISO, payload.tz)} · {payload.city}
           </p>
         </section>
       )}
@@ -179,15 +193,9 @@ function LetterPage() {
         <section className="relative mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-6 py-20 text-center animate-in fade-in duration-700">
           <p className="text-[11px] tracking-[0.4em] uppercase" style={{ color: theme.accent }}>For {payload.to || payload.name}</p>
           <div className="mt-10 max-w-xl">
-            {payload.msg ? (
-              <p className="text-balance text-2xl leading-relaxed md:text-3xl" style={{ fontFamily: theme.heading, fontStyle: "italic", fontWeight: 400 }}>
-                “{payload.msg}”
-              </p>
-            ) : (
-              <p className="text-balance text-2xl leading-relaxed md:text-3xl" style={{ fontFamily: theme.heading, fontStyle: "italic", fontWeight: 400 }}>
-                I wanted to show you the moon that existed the night you were here.
-              </p>
-            )}
+            <p className="text-balance text-2xl leading-relaxed md:text-3xl" style={{ fontFamily: theme.heading, fontStyle: "italic", fontWeight: 400 }}>
+              “{payload.msg || "I wanted to show you the moon that existed the night you were here."}”
+            </p>
             {payload.from && (
               <p className="mt-8 text-sm tracking-[0.3em] uppercase" style={{ color: theme.sub }}>— {payload.from}</p>
             )}
@@ -209,42 +217,53 @@ function LetterPage() {
           <div className="text-center">
             <p className="text-[11px] tracking-[0.4em] uppercase" style={{ color: theme.accent }}>The sky above {payload.to || payload.name}</p>
             <h1 className="mt-4 text-balance text-3xl md:text-5xl" style={{ fontFamily: theme.heading, fontStyle: "italic", fontWeight: 400 }}>
-              {fmtDate(moment, payload.tz)}
+              {fmtDateISO(snapshot.momentISO, payload.tz)}
             </h1>
             <p className="mt-2 text-xs tracking-[0.25em] uppercase" style={{ color: theme.sub }}>
-              {fmtTime(moment, payload.tz)} local · UTC{payload.tz >= 0 ? "+" : ""}{payload.tz} · {payload.city}
+              {fmtTimeISO(snapshot.momentISO, payload.tz)} local · UTC{payload.tz >= 0 ? "+" : ""}{payload.tz} · {payload.city}
             </p>
           </div>
 
           <div className="mt-12 flex flex-col items-center">
-            {validation.ok ? (
-              <MoonSvg phaseAngle={moon.phaseAngle} illumination={moon.illumination} waxing={moon.waxing} size={220} />
+            {coreOk ? (
+              <MoonSvg phaseAngle={snapshot.phaseAngle} illumination={snapshot.illumination} waxing={snapshot.waxing} size={220} />
             ) : (
               <div className="flex h-[200px] w-[200px] items-center justify-center rounded-full text-xs" style={{ border: `1px solid ${theme.accent}66`, color: theme.accent }}>
                 Unable to verify
               </div>
             )}
-            <p className="mt-6 text-2xl" style={{ fontFamily: theme.heading }}>{moon.emoji} {moon.name}</p>
-            <p className="mt-1 text-[11px] tracking-[0.25em] uppercase" style={{ color: theme.sub }}>{visual}</p>
+            <p className="mt-6 text-2xl" style={{ fontFamily: theme.heading }}>{snapshot.emoji} {snapshot.name}</p>
+            <p className="mt-1 text-[11px] tracking-[0.25em] uppercase" style={{ color: theme.sub }}>{snapshot.visual}</p>
           </div>
 
           {/* Facts (strictly scientific) */}
           <div className="mx-auto mt-12 grid max-w-xl grid-cols-2 gap-x-8 gap-y-5 text-sm">
-            <Fact theme={theme} k="Moon Phase" v={moon.name} />
-            <Fact theme={theme} k="Illumination" v={`${illumPct}%`} />
-            <Fact theme={theme} k="Moon Age" v={`${moon.age.toFixed(1)} days`} />
-            <Fact theme={theme} k="Direction" v={moon.waxing ? "Waxing" : "Waning"} />
-            <Fact theme={theme} k="Constellation" v={`${moon.constellationSymbol} ${moon.constellation}`} />
+            <Fact theme={theme} k="Moon Phase" v={snapshot.name} />
+            <Fact theme={theme} k="Illumination" v={`${snapshot.illumPct}%`} />
+            <Fact theme={theme} k="Moon Age" v={`${snapshot.age.toFixed(1)} days`} />
+            <Fact theme={theme} k="Direction" v={snapshot.waxing ? "Waxing" : "Waning"} />
+            <Fact theme={theme} k="Constellation" v={snapshot.constellation ? `${snapshot.constellationSymbol} ${snapshot.constellation}` : "Unavailable"} />
             <Fact theme={theme} k="Timezone" v={`UTC${payload.tz >= 0 ? "+" : ""}${payload.tz}`} />
-            <Fact theme={theme} k="Moonrise" v={rise.moonrise ? fmtTime(rise.moonrise, payload.tz) : "Unable to verify"} />
-            <Fact theme={theme} k="Moonset" v={rise.moonset ? fmtTime(rise.moonset, payload.tz) : "Unable to verify"} />
+            <Fact theme={theme} k="Moonrise" v={snapshot.moonriseISO ? fmtTimeISO(snapshot.moonriseISO, payload.tz) : "Not visible"} />
+            <Fact theme={theme} k="Moonset" v={snapshot.moonsetISO ? fmtTimeISO(snapshot.moonsetISO, payload.tz) : "Not visible"} />
+          </div>
+
+          {/* Confidence */}
+          <div className="mx-auto mt-8 max-w-xl text-center">
+            <p className="text-[10px] tracking-[0.35em] uppercase" style={{ color: theme.sub }}>
+              {snapshot.confidence === "VERIFIED"
+                ? "Verified astronomical calculation"
+                : partial
+                  ? "Verified astronomical calculation · some secondary metadata unavailable"
+                  : "Unable to verify"}
+            </p>
           </div>
 
           {/* Poetry — separated */}
-          <div className="mx-auto mt-12 max-w-xl text-center">
+          <div className="mx-auto mt-10 max-w-xl text-center">
             <p className="text-[10px] tracking-[0.4em] uppercase" style={{ color: theme.sub }}>A line for the night</p>
             <p className="mt-3 text-balance text-xl leading-relaxed md:text-2xl" style={{ fontFamily: theme.heading, fontStyle: "italic" }}>
-              “{poetic}”
+              “{snapshot.poetic}”
             </p>
           </div>
 

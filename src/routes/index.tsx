@@ -4,14 +4,15 @@ import { z } from "zod";
 import { toPng } from "html-to-image";
 import { zodiacFor } from "@/lib/astro";
 import { accurateMoon, riseSetForCivilDate, nextPhaseTransition, eventMomentForCivilDate, type AstroEventKind, type RiseSet } from "@/lib/astro-accurate";
-import { validateMoon } from "@/lib/moon-validate";
+import { validateMoon, combineConfidence, confidenceLabel, confidenceTag } from "@/lib/moon-validate";
 import { moonVisualDescription } from "@/lib/moon-visual";
 import { poeticLine } from "@/lib/poetic";
 import { milestoneFor } from "@/lib/milestones";
 import { MoonSvg } from "@/components/MoonSvg";
 import { StarField } from "@/components/StarField";
 import { Postcard, POSTCARD_STYLES, POSTCARD_FORMATS, type PostcardStyle, type PostcardFormat } from "@/components/Postcard";
-import { encodeLetter, LETTER_STYLES, type LetterStyle } from "@/lib/letter";
+import { LETTER_STYLES, type LetterStyle, type LetterPayload } from "@/lib/letter";
+import { createLetter } from "@/lib/letter-store";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -233,7 +234,10 @@ function Index() {
     [birthYear, birthMonth, birthDay, applied.tz, applied.lat, applied.lon],
   );
   const birthNextPhase = useMemo(() => nextPhaseTransition(birth), [birth]);
-  const birthValidation = useMemo(() => validateMoon(birthMoon), [birthMoon]);
+  const birthValidation = useMemo(
+    () => combineConfidence(validateMoon(birthMoon), { hasRiseOrSet: !!(birthRiseSet.moonrise || birthRiseSet.moonset) }),
+    [birthMoon, birthRiseSet],
+  );
   const birthIllumStr = birthMoon.illumination * 100 >= 1
     ? (birthMoon.illumination * 100).toFixed(1)
     : (birthMoon.illumination * 100).toFixed(2);
@@ -326,9 +330,12 @@ function Index() {
   const [ltFrom, setLtFrom] = useState("");
   const [ltMessage, setLtMessage] = useState("");
   const [ltCopied, setLtCopied] = useState(false);
+  const [ltId, setLtId] = useState<string | null>(null);
+  const [ltCreating, setLtCreating] = useState(false);
+  const [ltError, setLtError] = useState<string | null>(null);
 
-  const letterToken = useMemo(
-    () => encodeLetter({
+  const letterPayload = useMemo<LetterPayload>(
+    () => ({
       v: 1,
       name: applied.name,
       pronoun: applied.pronoun,
@@ -347,11 +354,33 @@ function Index() {
     [applied, ltTo, ltFrom, ltMessage, ltStyle],
   );
 
-  const letterUrl = typeof window !== "undefined"
-    ? `${window.location.origin}/letter/${letterToken}`
-    : `/letter/${letterToken}`;
+  // Editing the letter invalidates any previously generated permanent link.
+  useEffect(() => {
+    setLtId(null);
+    setLtError(null);
+  }, [letterPayload]);
+
+  const letterUrl = ltId
+    ? typeof window !== "undefined"
+      ? `${window.location.origin}/letter/${ltId}`
+      : `/letter/${ltId}`
+    : "";
+
+  async function generateLetter() {
+    setLtCreating(true);
+    setLtError(null);
+    try {
+      const id = await createLetter(letterPayload);
+      setLtId(id);
+    } catch {
+      setLtError("Could not create the letter link. Please try again.");
+    } finally {
+      setLtCreating(false);
+    }
+  }
 
   async function copyLetterLink() {
+    if (!letterUrl) return;
     try {
       await navigator.clipboard.writeText(letterUrl);
       setLtCopied(true);
@@ -571,7 +600,7 @@ function Index() {
         <div className="overflow-hidden rounded-2xl border border-border bg-card/40 p-8 backdrop-blur-sm md:p-12">
           <div className="grid items-center gap-10 md:grid-cols-[auto_1fr]">
             <div className="relative mx-auto">
-              {birthValidation.ok ? (
+              {birthValidation.coreOk ? (
                 <MoonSvg phaseAngle={birthMoon.phaseAngle} illumination={birthMoon.illumination} waxing={birthMoon.waxing} size={180} />
               ) : (
                 <div className="flex h-[180px] w-[180px] items-center justify-center rounded-full border border-amber-500/40 text-center text-xs text-amber-200">Unable to verify</div>
@@ -616,20 +645,25 @@ function Index() {
               {/* Confidence badge */}
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] tracking-[0.2em] uppercase ${
-                  birthValidation.ok
+                  birthValidation.confidence === "VERIFIED"
                     ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                    : "border-amber-500/40 bg-amber-500/10 text-amber-300"
+                    : birthValidation.confidence === "VERIFIED_PARTIAL"
+                      ? "border-sky-500/30 bg-sky-500/10 text-sky-300"
+                      : "border-amber-500/40 bg-amber-500/10 text-amber-300"
                 }`}>
                   <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                  {birthValidation.ok ? "Verified astronomical calculation" : "Uncertainty detected"}
+                  {confidenceTag(birthValidation.confidence)} · {confidenceLabel(birthValidation.confidence)}
                 </span>
                 <span className="text-[10px] tracking-[0.25em] text-muted-foreground/70 uppercase">
                   UTC{applied.tz >= 0 ? "+" : ""}{applied.tz} · {birthIllumStr}% · age {birthMoon.age.toFixed(2)}d
                 </span>
               </div>
-              {!birthValidation.ok && (
+              {birthValidation.coreOk && birthValidation.optionalReasons.length > 0 && (
+                <p className="mt-2 text-xs text-sky-200/70">Some secondary metadata unavailable.</p>
+              )}
+              {!birthValidation.coreOk && (
                 <ul className="mt-2 list-disc pl-5 text-xs text-amber-200/80">
-                  {birthValidation.reasons.map((r) => <li key={r}>{r}</li>)}
+                  {birthValidation.coreReasons.map((r) => <li key={r}>{r}</li>)}
                 </ul>
               )}
             </div>
@@ -821,39 +855,58 @@ function Index() {
             </div>
           </div>
 
-          <div className="mt-6 rounded-lg border border-border bg-background/40 p-3">
-            <p className="text-[10px] tracking-[0.3em] text-muted-foreground uppercase">Your letter link</p>
-            <p className="mt-1 truncate font-mono text-xs text-foreground/80">{letterUrl}</p>
-          </div>
+          {!ltId ? (
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                type="button"
+                onClick={generateLetter}
+                disabled={ltCreating}
+                className="rounded-md bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
+              >
+                {ltCreating ? "Creating your letter…" : "Create & save Moon Letter"}
+              </button>
+              {ltError && <p className="text-xs text-amber-300">{ltError}</p>}
+              <p className="text-[10px] tracking-[0.2em] text-muted-foreground/70 uppercase">
+                Saves a permanent link the recipient can reopen anytime.
+              </p>
+            </div>
+          ) : (
+            <>
+              <div className="mt-6 rounded-lg border border-border bg-background/40 p-3">
+                <p className="text-[10px] tracking-[0.3em] text-muted-foreground uppercase">Your permanent letter link</p>
+                <p className="mt-1 truncate font-mono text-xs text-foreground/80">{letterUrl}</p>
+              </div>
 
-          <div className="mt-4 flex flex-wrap gap-3">
-            <button
-              type="button"
-              onClick={copyLetterLink}
-              className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-            >
-              {ltCopied ? "Link copied" : "Copy letter link"}
-            </button>
-            <a
-              href={`/letter/${letterToken}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-md border border-accent px-5 py-2.5 text-sm text-accent transition-colors hover:bg-accent/10"
-            >
-              Preview letter
-            </a>
-            <a
-              href={`https://wa.me/?text=${encodeURIComponent(`A moon letter for ${ltTo.trim() || personName} — ${letterUrl}`)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="rounded-md border border-border px-5 py-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-            >
-              Share via WhatsApp
-            </a>
-          </div>
-          <p className="mt-3 text-[10px] tracking-[0.2em] text-muted-foreground/70 uppercase">
-            The link carries all astronomy data — no account needed.
-          </p>
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  type="button"
+                  onClick={copyLetterLink}
+                  className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+                >
+                  {ltCopied ? "Link copied" : "Copy letter link"}
+                </button>
+                <a
+                  href={`/letter/${ltId}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-md border border-accent px-5 py-2.5 text-sm text-accent transition-colors hover:bg-accent/10"
+                >
+                  Open letter
+                </a>
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(`A moon letter for ${ltTo.trim() || personName} — ${letterUrl}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-md border border-border px-5 py-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Share via WhatsApp
+                </a>
+              </div>
+              <p className="mt-3 text-[10px] tracking-[0.2em] text-muted-foreground/70 uppercase">
+                Saved to the cloud — works on mobile, WhatsApp, and when reopened later.
+              </p>
+            </>
+          )}
         </div>
       </section>
 
@@ -944,7 +997,7 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
       </div>
 
       <div className="relative mt-6 flex justify-center">
-        {validation.ok ? (
+        {validation.coreOk ? (
           <MoonSvg phaseAngle={m.phaseAngle} illumination={m.illumination} waxing={m.waxing} size={130} />
         ) : (
           <div className="flex h-[130px] w-[130px] items-center justify-center rounded-full border border-amber-500/40 text-center text-[10px] text-amber-200">Unable to verify</div>
