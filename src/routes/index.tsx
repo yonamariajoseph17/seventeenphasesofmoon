@@ -645,20 +645,25 @@ function Index() {
               {/* Confidence badge */}
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] tracking-[0.2em] uppercase ${
-                  birthValidation.ok
+                  birthValidation.confidence === "VERIFIED"
                     ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
-                    : "border-amber-500/40 bg-amber-500/10 text-amber-300"
+                    : birthValidation.confidence === "VERIFIED_PARTIAL"
+                      ? "border-sky-500/30 bg-sky-500/10 text-sky-300"
+                      : "border-amber-500/40 bg-amber-500/10 text-amber-300"
                 }`}>
                   <span className="h-1.5 w-1.5 rounded-full bg-current" />
-                  {birthValidation.ok ? "Verified astronomical calculation" : "Uncertainty detected"}
+                  {confidenceTag(birthValidation.confidence)} · {confidenceLabel(birthValidation.confidence)}
                 </span>
                 <span className="text-[10px] tracking-[0.25em] text-muted-foreground/70 uppercase">
                   UTC{applied.tz >= 0 ? "+" : ""}{applied.tz} · {birthIllumStr}% · age {birthMoon.age.toFixed(2)}d
                 </span>
               </div>
-              {!birthValidation.ok && (
+              {birthValidation.coreOk && birthValidation.optionalReasons.length > 0 && (
+                <p className="mt-2 text-xs text-sky-200/70">Some secondary metadata unavailable.</p>
+              )}
+              {!birthValidation.coreOk && (
                 <ul className="mt-2 list-disc pl-5 text-xs text-amber-200/80">
-                  {birthValidation.reasons.map((r) => <li key={r}>{r}</li>)}
+                  {birthValidation.coreReasons.map((r) => <li key={r}>{r}</li>)}
                 </ul>
               )}
             </div>
