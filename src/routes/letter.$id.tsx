@@ -4,6 +4,7 @@ import { decodeLetter, type LetterStyle } from "@/lib/letter";
 import { fetchLetter, buildLetterSnapshot, type LetterRecord } from "@/lib/letter-store";
 import { MoonSvg } from "@/components/MoonSvg";
 import { StarField } from "@/components/StarField";
+import { useAmbient } from "@/lib/useAmbient";
 
 export const Route = createFileRoute("/letter/$id")({
   component: LetterPage,
