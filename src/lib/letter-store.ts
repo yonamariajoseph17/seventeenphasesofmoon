@@ -13,6 +13,24 @@ import { poeticLine } from "@/lib/poetic";
 import { validateMoon, combineConfidence, type MoonConfidence } from "@/lib/moon-validate";
 import type { LetterPayload } from "@/lib/letter";
 
+export interface LetterYearMoon {
+  year: number;
+  age: number;            // how old the person turns that year (year - birthYear)
+  momentISO: string;
+  phaseAngle: number;
+  illumination: number;
+  illumPct: string;
+  moonAge: number;        // lunar age in days
+  waxing: boolean;
+  name: string;
+  emoji: string;
+  constellation: string;
+  constellationSymbol: string;
+  visual: string;
+  moonriseISO: string | null;
+  moonsetISO: string | null;
+}
+
 export interface LetterSnapshot {
   momentISO: string;
   phaseAngle: number;
@@ -29,6 +47,8 @@ export interface LetterSnapshot {
   moonriseISO: string | null;
   moonsetISO: string | null;
   confidence: MoonConfidence;
+  /** One verified moon per year, from birth year through the current year on the same date. */
+  years: LetterYearMoon[];
 }
 
 export interface LetterRecord {
@@ -48,6 +68,49 @@ export function momentForPayload(p: LetterPayload): Date {
   if (p.mode === "custom") return localToUtc(p.date, p.time, p.tz);
   const ev = eventMomentForCivilDate(y, mo, d, p.tz, p.lat, p.lon, p.mode);
   return ev?.date ?? localToUtc(p.date, p.time, p.tz);
+}
+
+const pad2 = (n: number) => String(n).padStart(2, "0");
+
+/** Resolve the moment for the same calendar date in a different year. */
+function momentForYear(p: LetterPayload, year: number, mo: number, d: number): Date {
+  const dateStr = `${year}-${pad2(mo)}-${pad2(d)}`;
+  if (p.mode !== "custom") {
+    const ev = eventMomentForCivilDate(year, mo, d, p.tz, p.lat, p.lon, p.mode);
+    if (ev) return ev.date;
+  }
+  return localToUtc(dateStr, p.time, p.tz);
+}
+
+/** Build one verified moon entry per year, from birth year through the current year. */
+function buildYearTimeline(p: LetterPayload, birthYear: number, mo: number, d: number): LetterYearMoon[] {
+  const currentYear = new Date().getFullYear();
+  const lastYear = Math.max(birthYear, currentYear);
+  const out: LetterYearMoon[] = [];
+  for (let year = birthYear; year <= lastYear; year++) {
+    const moment = momentForYear(p, year, mo, d);
+    const moon = accurateMoon(moment);
+    const rs = riseSetForCivilDate(year, mo, d, p.tz, p.lat, p.lon);
+    const illumPctNum = moon.illumination * 100;
+    out.push({
+      year,
+      age: year - birthYear,
+      momentISO: moment.toISOString(),
+      phaseAngle: moon.phaseAngle,
+      illumination: moon.illumination,
+      illumPct: illumPctNum >= 1 ? illumPctNum.toFixed(1) : illumPctNum.toFixed(2),
+      moonAge: moon.age,
+      waxing: moon.waxing,
+      name: moon.name,
+      emoji: moon.emoji,
+      constellation: moon.constellation,
+      constellationSymbol: moon.constellationSymbol,
+      visual: moonVisualDescription(moon),
+      moonriseISO: rs.moonrise ? rs.moonrise.toISOString() : null,
+      moonsetISO: rs.moonset ? rs.moonset.toISOString() : null,
+    });
+  }
+  return out;
 }
 
 /** Compute and freeze the verified astronomy for a letter. */
@@ -76,6 +139,7 @@ export function buildLetterSnapshot(p: LetterPayload): LetterSnapshot {
     moonriseISO: rs.moonrise ? rs.moonrise.toISOString() : null,
     moonsetISO: rs.moonset ? rs.moonset.toISOString() : null,
     confidence: validation.confidence,
+    years: buildYearTimeline(p, y, mo, d),
   };
 }
 
