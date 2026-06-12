@@ -276,6 +276,50 @@ function LetterPage() {
             </div>
           )}
 
+          {/* Every year — the same date, a different moon */}
+          {snapshot.years && snapshot.years.length > 1 && (
+            <div className="mx-auto mt-16 max-w-3xl">
+              <div className="text-center">
+                <p className="text-[10px] tracking-[0.4em] uppercase" style={{ color: theme.sub }}>Every year, the same date</p>
+                <h2 className="mt-3 text-2xl md:text-4xl" style={{ fontFamily: theme.heading, fontStyle: "italic", fontWeight: 400 }}>
+                  A different moon, each time
+                </h2>
+                <p className="mt-2 text-xs" style={{ color: theme.sub }}>
+                  {snapshot.years[0].year} – {snapshot.years[snapshot.years.length - 1].year} · {payload.city}
+                </p>
+              </div>
+
+              <div className="mt-10 grid grid-cols-2 gap-5 sm:grid-cols-3">
+                {snapshot.years.map((yr) => (
+                  <div
+                    key={yr.year}
+                    className="flex flex-col items-center rounded-2xl p-4 text-center"
+                    style={{ border: `1px solid ${theme.accent}22`, background: payload.style === "archive" ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.03)" }}
+                  >
+                    <p className="text-[10px] tracking-[0.3em] uppercase" style={{ color: theme.accent }}>{yr.year}</p>
+                    <p className="text-[9px] tracking-[0.2em] uppercase" style={{ color: theme.sub }}>
+                      {yr.age === 0 ? "Born" : `Turning ${yr.age}`}
+                    </p>
+                    <div className="mt-3">
+                      <MoonSvg phaseAngle={yr.phaseAngle} illumination={yr.illumination} waxing={yr.waxing} size={84} />
+                    </div>
+                    <p className="mt-3 text-sm" style={{ fontFamily: theme.heading }}>{yr.emoji} {yr.name}</p>
+                    <p className="mt-1 text-[10px]" style={{ color: theme.sub }}>
+                      {yr.illumPct}% · {yr.waxing ? "waxing" : "waning"}
+                    </p>
+                    <p className="text-[10px]" style={{ color: theme.sub }}>
+                      {yr.constellationSymbol} {yr.constellation}
+                    </p>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-6 text-center text-[9px] tracking-[0.35em] uppercase" style={{ color: theme.sub, opacity: 0.7 }}>
+                Each moon independently computed · astronomy-engine
+              </p>
+            </div>
+          )}
+
+
           <div className="mt-12 flex flex-wrap justify-center gap-3">
             <ShareButtons theme={theme} to={payload.to || payload.name} />
             <Link to="/" className="rounded-full px-5 py-2.5 text-[11px] tracking-[0.3em] uppercase" style={{ border: `1px solid ${theme.sub}`, color: theme.sub }}>
