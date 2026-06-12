@@ -13,6 +13,24 @@ import { poeticLine } from "@/lib/poetic";
 import { validateMoon, combineConfidence, type MoonConfidence } from "@/lib/moon-validate";
 import type { LetterPayload } from "@/lib/letter";
 
+export interface LetterYearMoon {
+  year: number;
+  age: number;            // how old the person turns that year (year - birthYear)
+  momentISO: string;
+  phaseAngle: number;
+  illumination: number;
+  illumPct: string;
+  moonAge: number;        // lunar age in days
+  waxing: boolean;
+  name: string;
+  emoji: string;
+  constellation: string;
+  constellationSymbol: string;
+  visual: string;
+  moonriseISO: string | null;
+  moonsetISO: string | null;
+}
+
 export interface LetterSnapshot {
   momentISO: string;
   phaseAngle: number;
@@ -29,6 +47,8 @@ export interface LetterSnapshot {
   moonriseISO: string | null;
   moonsetISO: string | null;
   confidence: MoonConfidence;
+  /** One verified moon per year, from birth year through the current year on the same date. */
+  years: LetterYearMoon[];
 }
 
 export interface LetterRecord {
