@@ -71,11 +71,11 @@ export function StarField({ seed, className, count = 120, rich = true }: Props) 
             height: "1.5px",
             background: "linear-gradient(90deg, transparent, var(--color-star), transparent)",
             opacity: 0,
-            ["--shoot-x" as string]: `${sh.len * 1.6}px`,
-            ["--shoot-y" as string]: `${sh.len * 0.5}px`,
-            ["--shoot-rot" as string]: "20deg",
+            "--shoot-x": `${sh.len * 1.6}px`,
+            "--shoot-y": `${sh.len * 0.5}px`,
+            "--shoot-rot": "20deg",
             animation: `shoot ${sh.dur}s ease-in ${sh.delay}s infinite`,
-          }}
+          } as React.CSSProperties}
         />
       ))}
     </div>
