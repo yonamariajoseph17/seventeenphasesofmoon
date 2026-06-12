@@ -1137,7 +1137,7 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
 
   return (
     <article className="group relative overflow-hidden rounded-2xl border border-border bg-card/30 p-6 backdrop-blur-sm transition-all hover:border-accent/60 hover:bg-card/50">
-      <StarField seed={seed} className="pointer-events-none absolute inset-0 h-full w-full opacity-40 transition-opacity group-hover:opacity-70" count={40} />
+      <StarField seed={seed} rich={false} className="pointer-events-none absolute inset-0 h-full w-full opacity-40 transition-opacity group-hover:opacity-70" count={40} />
 
       <div className="relative flex items-start justify-between">
         <div>
