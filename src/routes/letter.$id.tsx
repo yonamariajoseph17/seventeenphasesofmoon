@@ -137,6 +137,29 @@ function LetterPage() {
         <StarField seed={seed} className="pointer-events-none fixed inset-0 h-full w-full opacity-60" count={120} />
       )}
 
+      {/* Ambient music — default muted, toggle always visible */}
+      <button
+        onClick={ambient.toggle}
+        aria-label={ambient.enabled ? "Mute ambient music" : "Play ambient music"}
+        className="fixed top-4 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full backdrop-blur-sm transition-opacity hover:opacity-100"
+        style={{ background: `${theme.accent}1f`, border: `1px solid ${theme.accent}55`, color: theme.accent }}
+      >
+        {ambient.enabled ? (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M11 5 6 9H2v6h4l5 4z" />
+            <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+            <path d="M19 5a9 9 0 0 1 0 14" />
+          </svg>
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M11 5 6 9H2v6h4l5 4z" />
+            <line x1="22" y1="9" x2="16" y2="15" />
+            <line x1="16" y1="9" x2="22" y2="15" />
+          </svg>
+        )}
+      </button>
+
+
       {/* SCREEN 1 — Envelope */}
       {screen === 1 && (
         <section className="relative mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-6 py-16 text-center">
