@@ -75,6 +75,7 @@ function LetterPage() {
   const [state, setState] = useState<LoadState>({ status: "loading" });
   const [screen, setScreen] = useState<1 | 2 | 3>(1);
   const [opening, setOpening] = useState(false);
+  const ambient = useAmbient();
 
   useEffect(() => {
     let cancelled = false;
