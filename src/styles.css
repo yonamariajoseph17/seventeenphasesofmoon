@@ -95,6 +95,13 @@
     from { transform: translateY(0); }
     to { transform: translateY(-20px); }
   }
+  @keyframes shoot {
+    0% { transform: translate(0, 0) rotate(var(--shoot-rot, 18deg)); opacity: 0; }
+    6% { opacity: 1; }
+    18% { opacity: 1; }
+    32% { transform: translate(var(--shoot-x, 220px), var(--shoot-y, 70px)) rotate(var(--shoot-rot, 18deg)); opacity: 0; }
+    100% { opacity: 0; }
+  }
   .animate-twinkle { animation: twinkle 3s ease-in-out infinite; }
   .input {
     width: 100%;
