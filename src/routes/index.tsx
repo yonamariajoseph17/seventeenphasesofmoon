@@ -253,8 +253,8 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const DEFAULTS: FormValues = {
-  name: "Her",
-  pronoun: "she/her",
+  name: "",
+  pronoun: "they/them",
   date: "2004-04-17",
   time: "12:00",
   city: "Coimbatore, Tamil Nadu",
