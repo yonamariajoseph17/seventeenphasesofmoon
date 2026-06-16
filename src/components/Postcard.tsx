@@ -35,38 +35,39 @@ interface Props {
 const STYLE_SHEETS: Record<PostcardStyle, {
   bg: string; fg: string; accent: string; sub: string; heading: string; body: string; vignette?: string;
 }> = {
+  // Heirloom palettes — ivory, deep navy, charcoal, silver. Museum-restrained.
   romantic: {
-    bg: "radial-gradient(ellipse at 30% 20%, #3a1f3a 0%, #1a0b1f 55%, #07030d 100%)",
-    fg: "#f6e6ea", accent: "#f0b3c3", sub: "#c79aa9",
-    heading: "'Cormorant Garamond', serif", body: "'Inter', sans-serif",
-    vignette: "radial-gradient(ellipse at 50% 100%, rgba(240,179,195,0.12), transparent 60%)",
+    bg: "radial-gradient(ellipse at 50% 25%, #20242e 0%, #14161d 55%, #0b0c10 100%)",
+    fg: "#ece8df", accent: "#c8b9a0", sub: "#9a948a",
+    heading: "'Cormorant Garamond', serif", body: "'Cormorant Garamond', serif",
+    vignette: "radial-gradient(ellipse at 50% 100%, rgba(200,185,160,0.08), transparent 65%)",
   },
   minimal: {
-    bg: "linear-gradient(180deg, #0a0a0f 0%, #050507 100%)",
-    fg: "#ededf2", accent: "#ffffff", sub: "#8a8a96",
+    bg: "linear-gradient(180deg, #111317 0%, #0a0b0e 100%)",
+    fg: "#e8e8ea", accent: "#bdbdc2", sub: "#7c7c84",
     heading: "'Inter', sans-serif", body: "'Inter', sans-serif",
   },
   vintage: {
-    bg: "radial-gradient(ellipse at 50% 30%, #2a2316 0%, #14110a 60%, #0a0805 100%)",
-    fg: "#efe4c8", accent: "#d4a64a", sub: "#a08b5e",
+    bg: "radial-gradient(ellipse at 50% 30%, #211c12 0%, #14110b 60%, #0b0906 100%)",
+    fg: "#e6dcc4", accent: "#bb9c63", sub: "#998d6f",
     heading: "'Cormorant Garamond', serif", body: "'Cormorant Garamond', serif",
-    vignette: "radial-gradient(ellipse at 50% 100%, rgba(212,166,74,0.15), transparent 70%)",
+    vignette: "radial-gradient(ellipse at 50% 100%, rgba(187,156,99,0.1), transparent 70%)",
   },
   cinematic: {
-    bg: "linear-gradient(180deg, #0b1024 0%, #060812 60%, #02030a 100%)",
-    fg: "#f1f3ff", accent: "#c9b88a", sub: "#8a90a8",
+    bg: "linear-gradient(180deg, #0e1320 0%, #080b14 60%, #04060c 100%)",
+    fg: "#e7eaf0", accent: "#b3bcc9", sub: "#828a99",
     heading: "'Cormorant Garamond', serif", body: "'Inter', sans-serif",
-    vignette: "radial-gradient(ellipse at 50% 0%, rgba(201,184,138,0.18), transparent 55%)",
+    vignette: "radial-gradient(ellipse at 50% 0%, rgba(179,188,201,0.1), transparent 55%)",
   },
   midnight: {
-    bg: "radial-gradient(ellipse at 50% 20%, #14224a 0%, #08102a 55%, #02040f 100%)",
-    fg: "#e8edff", accent: "#9fb3ff", sub: "#7a86b5",
+    bg: "radial-gradient(ellipse at 50% 22%, #131c34 0%, #0a1124 55%, #03060f 100%)",
+    fg: "#e4e8f2", accent: "#a8b6d4", sub: "#7884a0",
     heading: "'Cormorant Garamond', serif", body: "'Inter', sans-serif",
-    vignette: "radial-gradient(ellipse at 50% 100%, rgba(159,179,255,0.14), transparent 60%)",
+    vignette: "radial-gradient(ellipse at 50% 100%, rgba(168,182,212,0.1), transparent 60%)",
   },
   archive: {
-    bg: "linear-gradient(180deg, #f3eee2 0%, #e6dfcc 100%)",
-    fg: "#1a1a1a", accent: "#7a5a2a", sub: "#5e554a",
+    bg: "linear-gradient(180deg, #f4f0e6 0%, #e9e2d2 100%)",
+    fg: "#1c1c1c", accent: "#7a6a4a", sub: "#5e564a",
     heading: "'Cormorant Garamond', serif", body: "'Cormorant Garamond', serif",
   },
 };
