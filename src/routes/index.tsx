@@ -786,34 +786,35 @@ function Index() {
         <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-3">
           <StatCard label={`Days with ${personName} under the stars`} value={totalDays.toLocaleString()} />
           <StatCard label="Sun sign" value={`${birthZodiac.symbol} ${birthZodiac.sign}`} sub={`${birthZodiac.element} · ruled by ${birthZodiac.ruling}`} />
-          <StatCard label="Moon tonight" value={`${todayMoon.emoji} ${todayMoon.name}`} sub={`${Math.round(todayMoon.illumination * 100)}% illuminated`} />
+          <StatCard label="Moon tonight" value={todayMoon.name} sub={`${Math.round(todayMoon.illumination * 100)}% illuminated`} />
         </div>
       </section>
 
-      {/* The night they were born */}
-      <section className="relative mx-auto max-w-5xl px-6 pb-24">
-        <div className="overflow-hidden rounded-2xl border border-border bg-card/40 p-8 backdrop-blur-sm md:p-12">
-          <div className="grid items-center gap-10 md:grid-cols-[auto_1fr]">
-            <div className="relative mx-auto">
-              {birthValidation.coreOk ? (
-                <MoonSvg phaseAngle={birthMoon.phaseAngle} illumination={birthMoon.illumination} waxing={birthMoon.waxing} size={180} />
-              ) : (
-                <div className="flex h-[180px] w-[180px] items-center justify-center rounded-full border border-amber-500/40 text-center text-xs text-amber-200">Unable to verify</div>
-              )}
+      {/* The night they were born — moon is the centerpiece */}
+      <section className="relative mx-auto max-w-3xl px-6 pb-28 text-center">
+        <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">Night one</p>
+        <h2 className="mt-2 font-display text-3xl md:text-4xl">{fmtDate(birth, applied.tz)}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{birthTimeLabel} · {applied.city} · {tzText}</p>
+
+        <div className="my-12 flex justify-center">
+          {birthValidation.coreOk ? (
+            <div className="h-[220px] w-[220px] md:h-[300px] md:w-[300px]">
+              <MoonSvg phaseAngle={birthMoon.phaseAngle} illumination={birthMoon.illumination} waxing={birthMoon.waxing} size={300} />
             </div>
-            <div>
-              <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">Night one</p>
-              <h2 className="mt-2 font-display text-3xl md:text-4xl">{fmtDate(birth, applied.tz)}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {birthTimeLabel} · {applied.city}
-              </p>
-              <p className="mt-3 text-muted-foreground">
-                Above {applied.city}, the Moon was a <span className="text-foreground">{birthMoon.name.toLowerCase()}</span>
-                {" "}at <span className="text-foreground">{birthMoon.illumination * 100 >= 0.05 ? (birthMoon.illumination * 100).toFixed(1) : (birthMoon.illumination * 100).toFixed(2)}%</span> illumination,
-                {" "}{birthMoon.age.toFixed(1)} days into its cycle, {birthMoon.waxing ? "waxing" : "waning"}.
-                {" "}Visual: <span className="text-foreground">{birthVisualLabel}</span>.
-                {" "}It sat in <span className="text-foreground">{birthMoon.constellationSymbol} {birthMoon.constellation}</span> when {pronouns.subject} {pronouns.was} born.
-              </p>
+          ) : (
+            <div className="flex h-[220px] w-[220px] items-center justify-center rounded-full border border-amber-500/40 text-center text-xs text-amber-200 md:h-[300px] md:w-[300px]">Unable to verify</div>
+          )}
+        </div>
+
+        <div className="mx-auto max-w-2xl text-left">
+          <p className="font-display text-2xl md:text-3xl">{birthMoon.name}</p>
+          <p className="mt-3 text-muted-foreground">
+            Above {applied.city}, the Moon was a <span className="text-foreground">{birthMoon.name.toLowerCase()}</span>
+            {" "}at <span className="text-foreground">{birthMoon.illumination * 100 >= 0.05 ? (birthMoon.illumination * 100).toFixed(1) : (birthMoon.illumination * 100).toFixed(2)}%</span> illumination,
+            {" "}{birthMoon.age.toFixed(1)} days into its cycle, {birthMoon.waxing ? "waxing" : "waning"}.
+            {" "}Visual: <span className="text-foreground">{birthVisualLabel}</span>.
+            {" "}Moon in <span className="text-foreground">{birthMoon.constellation}</span> when {personName} {pronouns.was} born.
+          </p>
               <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-muted-foreground sm:grid-cols-3">
                 {birthRiseSet.moonrise && (
                   <div><dt className="tracking-[0.2em] uppercase">Moonrise</dt><dd className="text-foreground/90">{fmtTime(birthRiseSet.moonrise, applied.tz)}</dd></div>
