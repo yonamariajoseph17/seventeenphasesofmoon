@@ -7,9 +7,11 @@ import { accurateMoon, riseSetForCivilDate, nextPhaseTransition, eventMomentForC
 import { validateMoon, combineConfidence, confidenceLabel, confidenceTag } from "@/lib/moon-validate";
 import { moonVisualDescription } from "@/lib/moon-visual";
 import { poeticLine } from "@/lib/poetic";
-import { milestoneFor } from "@/lib/milestones";
+import { tzLabel } from "@/lib/tz";
 import { MoonSvg } from "@/components/MoonSvg";
 import { StarField } from "@/components/StarField";
+import { SoundscapeControl } from "@/components/SoundscapeControl";
+import { useSoundscape } from "@/lib/useAmbient";
 import { Postcard, POSTCARD_STYLES, POSTCARD_FORMATS, type PostcardStyle, type PostcardFormat } from "@/components/Postcard";
 import { LETTER_STYLES, type LetterStyle, type LetterPayload } from "@/lib/letter";
 import { createLetter } from "@/lib/letter-store";
@@ -18,8 +20,8 @@ export const Route = createFileRoute("/")({
   component: Index,
   head: () => ({
     meta: [
-      { title: "Their Sky · A diary in moonlight" },
-      { name: "description", content: "Every birthday's moon phase and night sky, traced from the first night to today — for anyone you love." },
+      { title: "Sky We Share · A diary in moonlight" },
+      { name: "description", content: "Every birthday. The same sky. A different moon. The verified night sky traced from someone's first night to today — for anyone you love." },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -251,8 +253,8 @@ const formSchema = z.object({
 type FormValues = z.infer<typeof formSchema>;
 
 const DEFAULTS: FormValues = {
-  name: "Her",
-  pronoun: "she/her",
+  name: "",
+  pronoun: "they/them",
   date: "2004-04-17",
   time: "12:00",
   city: "Coimbatore, Tamil Nadu",
@@ -399,8 +401,10 @@ function Index() {
   const birthVisualLabel = moonVisualDescription(birthMoon);
 
   const pronouns = PRONOUN_MAP[applied.pronoun];
-  const personName = applied.name.trim() || cap(pronouns.subject);
-  const possessive = `${personName}'s`;
+  const hasName = applied.name.trim().length > 0;
+  const personName = applied.name.trim() || pronouns.object; // "them" until a name is entered
+  const possessive = hasName ? `${applied.name.trim()}'s` : cap(pronouns.possessive); // "Their"
+  const tzText = tzLabel(applied.tz);
   const isSavedMatch = savedPresets.some(
     (p) =>
       p.name.toLowerCase() === form.city.trim().toLowerCase()
@@ -542,40 +546,63 @@ function Index() {
     } catch { /* ignore */ }
   }
 
-
+  // ── Soundscape + closing moment ─────────────────────────────────────
+  const soundscape = useSoundscape();
+  const [showClosing, setShowClosing] = useState(true);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   return (
     <main className="relative min-h-screen overflow-hidden">
       <StarField seed={42} className="pointer-events-none fixed inset-0 h-full w-full opacity-70" count={140} />
       <div className="pointer-events-none fixed inset-0" style={{ background: "radial-gradient(ellipse at 50% 0%, oklch(0.3 0.12 280 / 0.4), transparent 60%)" }} />
 
-      {/* Hero */}
-      <section className="relative mx-auto flex max-w-5xl flex-col items-center px-6 pt-20 pb-12 text-center md:pt-28">
-        <p className="font-display text-sm tracking-[0.4em] text-accent uppercase">A love letter in moonlight</p>
-        <h1 className="mt-6 text-balance font-display text-5xl leading-[1.05] md:text-7xl">
-          The sky we&apos;ve shared with <em className="text-accent">{personName}</em>,
+      <SoundscapeControl current={soundscape.current} onSelect={soundscape.select} />
+
+      {/* Cinematic above-the-fold hero */}
+      <section className="relative flex min-h-[88vh] flex-col items-center justify-center px-6 text-center">
+        <div className="pointer-events-none absolute left-1/2 top-1/2 h-[60vmin] w-[60vmin] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-60 blur-3xl" style={{ background: "radial-gradient(circle, oklch(0.8 0.08 280 / 0.45), transparent 70%)" }} />
+        <div className="relative animate-fade-in">
+          <div className="mx-auto mb-8 flex justify-center">
+            <MoonSvg phaseAngle={todayMoon.phaseAngle} illumination={todayMoon.illumination} waxing={todayMoon.waxing} size={120} />
+          </div>
+          <h1 className="text-balance font-display text-6xl leading-[1.02] tracking-tight md:text-8xl">Sky We Share</h1>
+          <p className="mx-auto mt-6 max-w-md text-balance text-base text-muted-foreground md:text-lg">
+            Every birthday. The same sky. A different moon.
+          </p>
+          <a href="#begin" className="mt-12 inline-flex items-center gap-2 rounded-full border border-accent/40 px-6 py-3 text-xs tracking-[0.3em] text-accent uppercase transition-colors hover:bg-accent/10">
+            Enter a name to begin <span aria-hidden>↓</span>
+          </a>
+        </div>
+      </section>
+
+      {/* Personalized intro */}
+      <section className="relative mx-auto flex max-w-5xl flex-col items-center px-6 pt-24 pb-12 text-center md:pt-32">
+        <p className="font-display text-sm tracking-[0.4em] text-accent uppercase">A diary in moonlight</p>
+        <h2 className="mt-6 text-balance font-display text-4xl leading-[1.05] md:text-6xl">
+          The sky we&apos;ve shared with <em className="text-accent not-italic">{personName}</em>,
           <br />
           <span className="text-muted-foreground/80">
             since {birth.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}
           </span>
-        </h1>
+        </h2>
         <p className="mt-6 max-w-xl text-balance text-base text-muted-foreground md:text-lg">
           Every birthday, the moon returns a little different. Here is its quiet diary — drawn over {applied.city},
-          from the night {pronouns.subject} arrived to the sky tonight.
+          from the first night to the sky tonight.
         </p>
       </section>
 
       {/* Birth details form */}
-      <section className="relative mx-auto max-w-3xl px-6 pb-16">
+      <section id="begin" className="relative mx-auto max-w-3xl px-6 pb-16 scroll-mt-20">
         <form
           onSubmit={submit}
           className="rounded-2xl border border-border bg-card/40 p-6 backdrop-blur-sm md:p-8"
         >
           <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">{possessive} birth details</p>
-          <h2 className="mt-2 font-display text-2xl md:text-3xl">When and where the sky opened for {pronouns.object}</h2>
+          <h2 className="mt-2 font-display text-2xl md:text-3xl">When and where the sky opened for {personName}</h2>
+          <p className="mt-2 text-sm text-muted-foreground">We calculate the rest from your city automatically.</p>
 
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Their name" error={errors.name}>
+            <Field label="Name" error={errors.name}>
               <input
                 type="text"
                 value={form.name}
@@ -603,14 +630,6 @@ function Index() {
                 max="2100-12-31"
               />
             </Field>
-            <Field label="Birth time (local)" error={errors.time}>
-              <input
-                type="time"
-                value={form.time}
-                onChange={(e) => setForm({ ...form, time: e.target.value })}
-                className="input"
-              />
-            </Field>
             <Field label="City" error={errors.city}>
               <input
                 list="cities"
@@ -625,40 +644,62 @@ function Index() {
                 {allPresets.map((c) => <option key={c.name} value={c.name} />)}
               </datalist>
             </Field>
-            <Field label="UTC offset (hours)" error={errors.tz}>
-              <input
-                type="number"
-                step="0.25"
-                min={-12}
-                max={14}
-                value={form.tz}
-                onChange={(e) => setForm({ ...form, tz: Number(e.target.value) })}
-                className="input"
-              />
-            </Field>
-            <Field label="Latitude (°N)" error={errors.lat}>
-              <input
-                type="number"
-                step="0.0001"
-                min={-90}
-                max={90}
-                value={form.lat}
-                onChange={(e) => setForm({ ...form, lat: Number(e.target.value) })}
-                className="input"
-              />
-            </Field>
-            <Field label="Longitude (°E)" error={errors.lon}>
-              <input
-                type="number"
-                step="0.0001"
-                min={-180}
-                max={180}
-                value={form.lon}
-                onChange={(e) => setForm({ ...form, lon: Number(e.target.value) })}
-                className="input"
-              />
-            </Field>
           </div>
+
+          {/* Advanced settings — hidden by default */}
+          <button
+            type="button"
+            onClick={() => setShowAdvanced((s) => !s)}
+            className="mt-5 inline-flex items-center gap-1.5 text-xs tracking-[0.2em] text-accent uppercase transition-colors hover:text-foreground"
+          >
+            Advanced settings <span aria-hidden>{showAdvanced ? "↑" : "↓"}</span>
+          </button>
+
+          {showAdvanced && (
+            <div className="mt-4 grid grid-cols-1 gap-4 rounded-xl border border-border/60 bg-card/30 p-4 sm:grid-cols-2 animate-fade-in">
+              <Field label="Birth time (local)" error={errors.time}>
+                <input
+                  type="time"
+                  value={form.time}
+                  onChange={(e) => setForm({ ...form, time: e.target.value })}
+                  className="input"
+                />
+              </Field>
+              <Field label="UTC offset (hours)" error={errors.tz}>
+                <input
+                  type="number"
+                  step="0.25"
+                  min={-12}
+                  max={14}
+                  value={form.tz}
+                  onChange={(e) => setForm({ ...form, tz: Number(e.target.value) })}
+                  className="input"
+                />
+              </Field>
+              <Field label="Latitude (°N)" error={errors.lat}>
+                <input
+                  type="number"
+                  step="0.0001"
+                  min={-90}
+                  max={90}
+                  value={form.lat}
+                  onChange={(e) => setForm({ ...form, lat: Number(e.target.value) })}
+                  className="input"
+                />
+              </Field>
+              <Field label="Longitude (°E)" error={errors.lon}>
+                <input
+                  type="number"
+                  step="0.0001"
+                  min={-180}
+                  max={180}
+                  value={form.lon}
+                  onChange={(e) => setForm({ ...form, lon: Number(e.target.value) })}
+                  className="input"
+                />
+              </Field>
+            </div>
+          )}
 
           {/* Saved locations */}
           <div className="mt-6 rounded-xl border border-border/60 bg-card/30 p-4">
@@ -745,34 +786,35 @@ function Index() {
         <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-3">
           <StatCard label={`Days with ${personName} under the stars`} value={totalDays.toLocaleString()} />
           <StatCard label="Sun sign" value={`${birthZodiac.symbol} ${birthZodiac.sign}`} sub={`${birthZodiac.element} · ruled by ${birthZodiac.ruling}`} />
-          <StatCard label="Moon tonight" value={`${todayMoon.emoji} ${todayMoon.name}`} sub={`${Math.round(todayMoon.illumination * 100)}% illuminated`} />
+          <StatCard label="Moon tonight" value={todayMoon.name} sub={`${Math.round(todayMoon.illumination * 100)}% illuminated`} />
         </div>
       </section>
 
-      {/* The night they were born */}
-      <section className="relative mx-auto max-w-5xl px-6 pb-24">
-        <div className="overflow-hidden rounded-2xl border border-border bg-card/40 p-8 backdrop-blur-sm md:p-12">
-          <div className="grid items-center gap-10 md:grid-cols-[auto_1fr]">
-            <div className="relative mx-auto">
-              {birthValidation.coreOk ? (
-                <MoonSvg phaseAngle={birthMoon.phaseAngle} illumination={birthMoon.illumination} waxing={birthMoon.waxing} size={180} />
-              ) : (
-                <div className="flex h-[180px] w-[180px] items-center justify-center rounded-full border border-amber-500/40 text-center text-xs text-amber-200">Unable to verify</div>
-              )}
+      {/* The night they were born — moon is the centerpiece */}
+      <section className="relative mx-auto max-w-3xl px-6 pb-28 text-center">
+        <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">Night one</p>
+        <h2 className="mt-2 font-display text-3xl md:text-4xl">{fmtDate(birth, applied.tz)}</h2>
+        <p className="mt-1 text-sm text-muted-foreground">{birthTimeLabel} · {applied.city} · {tzText}</p>
+
+        <div className="my-12 flex justify-center">
+          {birthValidation.coreOk ? (
+            <div className="h-[220px] w-[220px] md:h-[300px] md:w-[300px]">
+              <MoonSvg phaseAngle={birthMoon.phaseAngle} illumination={birthMoon.illumination} waxing={birthMoon.waxing} size={300} />
             </div>
-            <div>
-              <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">Night one</p>
-              <h2 className="mt-2 font-display text-3xl md:text-4xl">{fmtDate(birth, applied.tz)}</h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                {birthTimeLabel} · {applied.city}
-              </p>
-              <p className="mt-3 text-muted-foreground">
-                Above {applied.city}, the Moon was a <span className="text-foreground">{birthMoon.name.toLowerCase()}</span>
-                {" "}at <span className="text-foreground">{birthMoon.illumination * 100 >= 0.05 ? (birthMoon.illumination * 100).toFixed(1) : (birthMoon.illumination * 100).toFixed(2)}%</span> illumination,
-                {" "}{birthMoon.age.toFixed(1)} days into its cycle, {birthMoon.waxing ? "waxing" : "waning"}.
-                {" "}Visual: <span className="text-foreground">{birthVisualLabel}</span>.
-                {" "}It sat in <span className="text-foreground">{birthMoon.constellationSymbol} {birthMoon.constellation}</span> when {pronouns.subject} {pronouns.was} born.
-              </p>
+          ) : (
+            <div className="flex h-[220px] w-[220px] items-center justify-center rounded-full border border-amber-500/40 text-center text-xs text-amber-200 md:h-[300px] md:w-[300px]">Unable to verify</div>
+          )}
+        </div>
+
+        <div className="mx-auto max-w-2xl text-left">
+          <p className="font-display text-2xl md:text-3xl">{birthMoon.name}</p>
+          <p className="mt-3 text-muted-foreground">
+            Above {applied.city}, the Moon was a <span className="text-foreground">{birthMoon.name.toLowerCase()}</span>
+            {" "}at <span className="text-foreground">{birthMoon.illumination * 100 >= 0.05 ? (birthMoon.illumination * 100).toFixed(1) : (birthMoon.illumination * 100).toFixed(2)}%</span> illumination,
+            {" "}{birthMoon.age.toFixed(1)} days into its cycle, {birthMoon.waxing ? "waxing" : "waning"}.
+            {" "}Visual: <span className="text-foreground">{birthVisualLabel}</span>.
+            {" "}Moon in <span className="text-foreground">{birthMoon.constellation}</span> when {personName} {pronouns.was} born.
+          </p>
               <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-muted-foreground sm:grid-cols-3">
                 {birthRiseSet.moonrise && (
                   <div><dt className="tracking-[0.2em] uppercase">Moonrise</dt><dd className="text-foreground/90">{fmtTime(birthRiseSet.moonrise, applied.tz)}</dd></div>
@@ -809,7 +851,7 @@ function Index() {
                   {confidenceTag(birthValidation.confidence)} · {confidenceLabel(birthValidation.confidence)}
                 </span>
                 <span className="text-[10px] tracking-[0.25em] text-muted-foreground/70 uppercase">
-                  UTC{applied.tz >= 0 ? "+" : ""}{applied.tz} · {birthIllumStr}% · age {birthMoon.age.toFixed(2)}d
+                  {tzText} · {birthIllumStr}% · age {birthMoon.age.toFixed(2)}d
                 </span>
               </div>
               {birthValidation.coreOk && birthValidation.optionalReasons.length > 0 && (
@@ -820,8 +862,6 @@ function Index() {
                   {birthValidation.coreReasons.map((r) => <li key={r}>{r}</li>)}
                 </ul>
               )}
-            </div>
-          </div>
         </div>
       </section>
 
@@ -1172,12 +1212,6 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
             {rs.moonrise && rs.moonset && " · "}
             {rs.moonset && <>set <span className="text-foreground/85">{fmtTime(rs.moonset, tz)}</span></>}
           </p>
-        )}
-        {month === 4 && day === 17 && milestoneFor(year) && (
-          <div className="mt-3 rounded-lg border border-accent/20 bg-accent/5 p-3">
-            <p className="text-[10px] tracking-[0.25em] text-accent uppercase">That same day</p>
-            <p className="mt-1 text-xs leading-relaxed text-foreground/85">{milestoneFor(year)}</p>
-          </div>
         )}
       </div>
     </article>

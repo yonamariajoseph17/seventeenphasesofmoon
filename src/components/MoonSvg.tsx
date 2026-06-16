@@ -72,6 +72,10 @@ export function MoonSvg({ phaseAngle, illumination, waxing, size = 120 }: Props)
   const glowOpacity = tier === "near-invisible" ? 0.05 : tier === "thin-crescent" ? 0.16 : tier === "crescent" ? 0.3 : 0.55;
   // Soft terminator: wider blur near quarter phases, tight near new/full.
   const softness = tier === "near-invisible" || tier === "thin-crescent" ? 0.6 : tier === "full" ? 0.8 : 2.2;
+  // Earthshine: the "old moon in the new moon's arms" — visible only at thin phases.
+  const earthshine = tier === "near-invisible" ? 0.5 : tier === "thin-crescent" ? 0.42 : tier === "crescent" ? 0.22 : 0;
+
+
 
   return (
     <svg viewBox="-60 -60 120 120" width={size} height={size} role="img" aria-label={`Moon, ${(illumination * 100).toFixed(0)}% illuminated`}>
@@ -107,11 +111,31 @@ export function MoonSvg({ phaseAngle, illumination, waxing, size = 120 }: Props)
         </clipPath>
       </defs>
 
-      {/* Outer atmospheric glow */}
+      {/* Outer atmospheric glow / halo — soft silver bloom against the dark sky */}
       <circle cx="0" cy="0" r="59" fill={`url(#glow-${uid})`} opacity={glowOpacity} />
+      <circle cx="0" cy="0" r={r + 3} fill="none" stroke="oklch(0.92 0.04 250)" strokeWidth="1.5" opacity={glowOpacity * 0.5} />
 
-      {/* Night side (earthshine-dark disc) */}
+      {/* Night side (dark disc) */}
       <circle cx="0" cy="0" r={r} fill={`url(#dark-${uid})`} />
+
+      {/* Earthshine — faint ash-grey glow on the unlit side during crescent phases */}
+      {earthshine > 0 && (
+        <g clipPath={`url(#disc-${uid})`} opacity={earthshine}>
+          <circle cx="0" cy="0" r={r} fill="oklch(0.34 0.02 255)" />
+          {MARIA.map((m, i) => (
+            <ellipse
+              key={`e${i}`}
+              cx={m.cx}
+              cy={m.cy}
+              rx={m.rx}
+              ry={m.ry}
+              transform={`rotate(${m.rot} ${m.cx} ${m.cy})`}
+              fill="oklch(0.26 0.02 255)"
+              opacity={m.o}
+            />
+          ))}
+        </g>
+      )}
 
       {/* Illuminated surface, revealed only on the lit side */}
       <g mask={`url(#lit-${uid})`}>
