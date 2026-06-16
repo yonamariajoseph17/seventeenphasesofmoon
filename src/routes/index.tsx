@@ -851,7 +851,7 @@ function Index() {
                   {confidenceTag(birthValidation.confidence)} · {confidenceLabel(birthValidation.confidence)}
                 </span>
                 <span className="text-[10px] tracking-[0.25em] text-muted-foreground/70 uppercase">
-                  UTC{applied.tz >= 0 ? "+" : ""}{applied.tz} · {birthIllumStr}% · age {birthMoon.age.toFixed(2)}d
+                  {tzText} · {birthIllumStr}% · age {birthMoon.age.toFixed(2)}d
                 </span>
               </div>
               {birthValidation.coreOk && birthValidation.optionalReasons.length > 0 && (
@@ -862,8 +862,6 @@ function Index() {
                   {birthValidation.coreReasons.map((r) => <li key={r}>{r}</li>)}
                 </ul>
               )}
-            </div>
-          </div>
         </div>
       </section>
 
