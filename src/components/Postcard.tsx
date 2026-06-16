@@ -150,9 +150,9 @@ export const Postcard = forwardRef<HTMLDivElement, Props>(function Postcard(p, r
       <div style={{ position: "relative", textAlign: "center" }}>
         <p style={{
           fontFamily: sh.heading, fontSize: isStory ? 44 : 36, margin: 0, fontWeight: 400,
-          fontStyle: p.style === "romantic" ? "italic" : "normal",
+          fontStyle: p.style === "romantic" ? "italic" : "normal", letterSpacing: 1,
         }}>
-          {p.moon.emoji} {p.moon.name}
+          {p.moon.name}
         </p>
         <p style={{ fontSize: 16, color: sh.sub, margin: "8px 0 0", letterSpacing: 2 }}>
           {p.illumPct}% illuminated · {p.moon.age.toFixed(1)} days · {p.moon.waxing ? "Waxing" : "Waning"} · Moon in {p.moon.constellation}
