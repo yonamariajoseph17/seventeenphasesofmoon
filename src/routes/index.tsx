@@ -20,8 +20,8 @@ export const Route = createFileRoute("/")({
   component: Index,
   head: () => ({
     meta: [
-      { title: "Their Sky · A diary in moonlight" },
-      { name: "description", content: "Every birthday's moon phase and night sky, traced from the first night to today — for anyone you love." },
+      { title: "Sky We Share · A diary in moonlight" },
+      { name: "description", content: "Every birthday. The same sky. A different moon. The verified night sky traced from someone's first night to today — for anyone you love." },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
