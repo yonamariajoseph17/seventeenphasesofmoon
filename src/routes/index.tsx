@@ -592,16 +592,17 @@ function Index() {
       </section>
 
       {/* Birth details form */}
-      <section className="relative mx-auto max-w-3xl px-6 pb-16">
+      <section id="begin" className="relative mx-auto max-w-3xl px-6 pb-16 scroll-mt-20">
         <form
           onSubmit={submit}
           className="rounded-2xl border border-border bg-card/40 p-6 backdrop-blur-sm md:p-8"
         >
           <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">{possessive} birth details</p>
-          <h2 className="mt-2 font-display text-2xl md:text-3xl">When and where the sky opened for {pronouns.object}</h2>
+          <h2 className="mt-2 font-display text-2xl md:text-3xl">When and where the sky opened for {personName}</h2>
+          <p className="mt-2 text-sm text-muted-foreground">We calculate the rest from your city automatically.</p>
 
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Their name" error={errors.name}>
+            <Field label="Name" error={errors.name}>
               <input
                 type="text"
                 value={form.name}
@@ -629,14 +630,6 @@ function Index() {
                 max="2100-12-31"
               />
             </Field>
-            <Field label="Birth time (local)" error={errors.time}>
-              <input
-                type="time"
-                value={form.time}
-                onChange={(e) => setForm({ ...form, time: e.target.value })}
-                className="input"
-              />
-            </Field>
             <Field label="City" error={errors.city}>
               <input
                 list="cities"
@@ -651,40 +644,62 @@ function Index() {
                 {allPresets.map((c) => <option key={c.name} value={c.name} />)}
               </datalist>
             </Field>
-            <Field label="UTC offset (hours)" error={errors.tz}>
-              <input
-                type="number"
-                step="0.25"
-                min={-12}
-                max={14}
-                value={form.tz}
-                onChange={(e) => setForm({ ...form, tz: Number(e.target.value) })}
-                className="input"
-              />
-            </Field>
-            <Field label="Latitude (°N)" error={errors.lat}>
-              <input
-                type="number"
-                step="0.0001"
-                min={-90}
-                max={90}
-                value={form.lat}
-                onChange={(e) => setForm({ ...form, lat: Number(e.target.value) })}
-                className="input"
-              />
-            </Field>
-            <Field label="Longitude (°E)" error={errors.lon}>
-              <input
-                type="number"
-                step="0.0001"
-                min={-180}
-                max={180}
-                value={form.lon}
-                onChange={(e) => setForm({ ...form, lon: Number(e.target.value) })}
-                className="input"
-              />
-            </Field>
           </div>
+
+          {/* Advanced settings — hidden by default */}
+          <button
+            type="button"
+            onClick={() => setShowAdvanced((s) => !s)}
+            className="mt-5 inline-flex items-center gap-1.5 text-xs tracking-[0.2em] text-accent uppercase transition-colors hover:text-foreground"
+          >
+            Advanced settings <span aria-hidden>{showAdvanced ? "↑" : "↓"}</span>
+          </button>
+
+          {showAdvanced && (
+            <div className="mt-4 grid grid-cols-1 gap-4 rounded-xl border border-border/60 bg-card/30 p-4 sm:grid-cols-2 animate-fade-in">
+              <Field label="Birth time (local)" error={errors.time}>
+                <input
+                  type="time"
+                  value={form.time}
+                  onChange={(e) => setForm({ ...form, time: e.target.value })}
+                  className="input"
+                />
+              </Field>
+              <Field label="UTC offset (hours)" error={errors.tz}>
+                <input
+                  type="number"
+                  step="0.25"
+                  min={-12}
+                  max={14}
+                  value={form.tz}
+                  onChange={(e) => setForm({ ...form, tz: Number(e.target.value) })}
+                  className="input"
+                />
+              </Field>
+              <Field label="Latitude (°N)" error={errors.lat}>
+                <input
+                  type="number"
+                  step="0.0001"
+                  min={-90}
+                  max={90}
+                  value={form.lat}
+                  onChange={(e) => setForm({ ...form, lat: Number(e.target.value) })}
+                  className="input"
+                />
+              </Field>
+              <Field label="Longitude (°E)" error={errors.lon}>
+                <input
+                  type="number"
+                  step="0.0001"
+                  min={-180}
+                  max={180}
+                  value={form.lon}
+                  onChange={(e) => setForm({ ...form, lon: Number(e.target.value) })}
+                  className="input"
+                />
+              </Field>
+            </div>
+          )}
 
           {/* Saved locations */}
           <div className="mt-6 rounded-xl border border-border/60 bg-card/30 p-4">
