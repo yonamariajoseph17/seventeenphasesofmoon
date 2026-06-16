@@ -546,26 +546,48 @@ function Index() {
     } catch { /* ignore */ }
   }
 
-
+  // ── Soundscape + closing moment ─────────────────────────────────────
+  const soundscape = useSoundscape();
+  const [showClosing, setShowClosing] = useState(true);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   return (
     <main className="relative min-h-screen overflow-hidden">
       <StarField seed={42} className="pointer-events-none fixed inset-0 h-full w-full opacity-70" count={140} />
       <div className="pointer-events-none fixed inset-0" style={{ background: "radial-gradient(ellipse at 50% 0%, oklch(0.3 0.12 280 / 0.4), transparent 60%)" }} />
 
-      {/* Hero */}
-      <section className="relative mx-auto flex max-w-5xl flex-col items-center px-6 pt-20 pb-12 text-center md:pt-28">
-        <p className="font-display text-sm tracking-[0.4em] text-accent uppercase">A love letter in moonlight</p>
-        <h1 className="mt-6 text-balance font-display text-5xl leading-[1.05] md:text-7xl">
-          The sky we&apos;ve shared with <em className="text-accent">{personName}</em>,
+      <SoundscapeControl current={soundscape.current} onSelect={soundscape.select} />
+
+      {/* Cinematic above-the-fold hero */}
+      <section className="relative flex min-h-[88vh] flex-col items-center justify-center px-6 text-center">
+        <div className="pointer-events-none absolute left-1/2 top-1/2 h-[60vmin] w-[60vmin] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-60 blur-3xl" style={{ background: "radial-gradient(circle, oklch(0.8 0.08 280 / 0.45), transparent 70%)" }} />
+        <div className="relative animate-fade-in">
+          <div className="mx-auto mb-8 flex justify-center">
+            <MoonSvg phaseAngle={todayMoon.phaseAngle} illumination={todayMoon.illumination} waxing={todayMoon.waxing} size={120} />
+          </div>
+          <h1 className="text-balance font-display text-6xl leading-[1.02] tracking-tight md:text-8xl">Sky We Share</h1>
+          <p className="mx-auto mt-6 max-w-md text-balance text-base text-muted-foreground md:text-lg">
+            Every birthday. The same sky. A different moon.
+          </p>
+          <a href="#begin" className="mt-12 inline-flex items-center gap-2 rounded-full border border-accent/40 px-6 py-3 text-xs tracking-[0.3em] text-accent uppercase transition-colors hover:bg-accent/10">
+            Enter a name to begin <span aria-hidden>↓</span>
+          </a>
+        </div>
+      </section>
+
+      {/* Personalized intro */}
+      <section className="relative mx-auto flex max-w-5xl flex-col items-center px-6 pt-24 pb-12 text-center md:pt-32">
+        <p className="font-display text-sm tracking-[0.4em] text-accent uppercase">A diary in moonlight</p>
+        <h2 className="mt-6 text-balance font-display text-4xl leading-[1.05] md:text-6xl">
+          The sky we&apos;ve shared with <em className="text-accent not-italic">{personName}</em>,
           <br />
           <span className="text-muted-foreground/80">
             since {birth.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" })}
           </span>
-        </h1>
+        </h2>
         <p className="mt-6 max-w-xl text-balance text-base text-muted-foreground md:text-lg">
           Every birthday, the moon returns a little different. Here is its quiet diary — drawn over {applied.city},
-          from the night {pronouns.subject} arrived to the sky tonight.
+          from the first night to the sky tonight.
         </p>
       </section>
 
