@@ -7,9 +7,11 @@ import { accurateMoon, riseSetForCivilDate, nextPhaseTransition, eventMomentForC
 import { validateMoon, combineConfidence, confidenceLabel, confidenceTag } from "@/lib/moon-validate";
 import { moonVisualDescription } from "@/lib/moon-visual";
 import { poeticLine } from "@/lib/poetic";
-import { milestoneFor } from "@/lib/milestones";
+import { tzLabel } from "@/lib/tz";
 import { MoonSvg } from "@/components/MoonSvg";
 import { StarField } from "@/components/StarField";
+import { SoundscapeControl } from "@/components/SoundscapeControl";
+import { useSoundscape } from "@/lib/useAmbient";
 import { Postcard, POSTCARD_STYLES, POSTCARD_FORMATS, type PostcardStyle, type PostcardFormat } from "@/components/Postcard";
 import { LETTER_STYLES, type LetterStyle, type LetterPayload } from "@/lib/letter";
 import { createLetter } from "@/lib/letter-store";
