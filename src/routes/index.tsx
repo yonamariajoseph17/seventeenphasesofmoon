@@ -1175,12 +1175,6 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
             {rs.moonset && <>set <span className="text-foreground/85">{fmtTime(rs.moonset, tz)}</span></>}
           </p>
         )}
-        {month === 4 && day === 17 && milestoneFor(year) && (
-          <div className="mt-3 rounded-lg border border-accent/20 bg-accent/5 p-3">
-            <p className="text-[10px] tracking-[0.25em] text-accent uppercase">That same day</p>
-            <p className="mt-1 text-xs leading-relaxed text-foreground/85">{milestoneFor(year)}</p>
-          </div>
-        )}
       </div>
     </article>
   );
