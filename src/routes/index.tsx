@@ -401,8 +401,10 @@ function Index() {
   const birthVisualLabel = moonVisualDescription(birthMoon);
 
   const pronouns = PRONOUN_MAP[applied.pronoun];
-  const personName = applied.name.trim() || cap(pronouns.subject);
-  const possessive = `${personName}'s`;
+  const hasName = applied.name.trim().length > 0;
+  const personName = applied.name.trim() || pronouns.object; // "them" until a name is entered
+  const possessive = hasName ? `${applied.name.trim()}'s` : cap(pronouns.possessive); // "Their"
+  const tzText = tzLabel(applied.tz);
   const isSavedMatch = savedPresets.some(
     (p) =>
       p.name.toLowerCase() === form.city.trim().toLowerCase()
