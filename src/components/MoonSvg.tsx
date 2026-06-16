@@ -72,6 +72,10 @@ export function MoonSvg({ phaseAngle, illumination, waxing, size = 120 }: Props)
   const glowOpacity = tier === "near-invisible" ? 0.05 : tier === "thin-crescent" ? 0.16 : tier === "crescent" ? 0.3 : 0.55;
   // Soft terminator: wider blur near quarter phases, tight near new/full.
   const softness = tier === "near-invisible" || tier === "thin-crescent" ? 0.6 : tier === "full" ? 0.8 : 2.2;
+  // Earthshine: the "old moon in the new moon's arms" — visible only at thin phases.
+  const earthshine = tier === "near-invisible" ? 0.5 : tier === "thin-crescent" ? 0.42 : tier === "crescent" ? 0.22 : 0;
+
+
 
   return (
     <svg viewBox="-60 -60 120 120" width={size} height={size} role="img" aria-label={`Moon, ${(illumination * 100).toFixed(0)}% illuminated`}>
