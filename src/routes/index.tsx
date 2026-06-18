@@ -13,8 +13,8 @@ import { StarField } from "@/components/StarField";
 import { SoundscapeControl } from "@/components/SoundscapeControl";
 import { useSoundscape } from "@/lib/useAmbient";
 import { Postcard, POSTCARD_STYLES, POSTCARD_FORMATS, type PostcardStyle, type PostcardFormat } from "@/components/Postcard";
-import { LETTER_STYLES, type LetterStyle, type LetterPayload } from "@/lib/letter";
-import { createLetter } from "@/lib/letter-store";
+import { LETTER_STYLES, LETTER_OCCASIONS, OCCASION_LABELS, type LetterStyle, type LetterOccasion, type LetterPayload } from "@/lib/letter";
+import { createLetter, uploadLetterSong, SONG_ACCEPT, SONG_MAX_BYTES } from "@/lib/letter-store";
 
 export const Route = createFileRoute("/")({
   component: Index,
