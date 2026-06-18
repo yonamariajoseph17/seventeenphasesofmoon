@@ -1128,6 +1128,29 @@ function Index() {
         </div>
       </section>
 
+      {/* Closing moment — a quiet breath before the end */}
+      {showClosing && (
+        <section className="relative mx-auto flex max-w-2xl flex-col items-center px-6 pb-32 text-center">
+          <div className="mb-10 flex justify-center">
+            <MoonSvg phaseAngle={todayMoon.phaseAngle} illumination={todayMoon.illumination} waxing={todayMoon.waxing} size={96} />
+          </div>
+          <p className="font-display text-xs tracking-[0.4em] text-accent uppercase">The same sky, still turning</p>
+          <h2 className="mt-6 text-balance font-display text-3xl leading-[1.1] md:text-5xl">
+            Tonight the moon hangs over {applied.city}, as it once did the night {personName} arrived.
+          </h2>
+          <p className="mt-6 max-w-md text-balance text-sm text-muted-foreground md:text-base">
+            Nothing here is invented. Every phase, every rise and set, is computed from the real
+            positions of the Sun and Moon — a quiet record kept for {personName}.
+          </p>
+          <a
+            href="#begin"
+            className="mt-12 inline-flex items-center gap-2 rounded-full border border-accent/40 px-6 py-3 text-xs tracking-[0.3em] text-accent uppercase transition-colors hover:bg-accent/10"
+          >
+            Begin again <span aria-hidden>↑</span>
+          </a>
+        </section>
+      )}
+
       <footer className="relative border-t border-border/50 py-10 text-center text-xs tracking-widest text-muted-foreground uppercase">
         Made under the same sky · for {personName} · {applied.city}
       </footer>
@@ -1199,7 +1222,7 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
       </div>
 
       <div className="relative mt-6 space-y-1.5">
-        <p className="font-display text-lg text-foreground">{m.emoji} {m.name}</p>
+        <p className="font-display text-lg text-foreground">{m.name}</p>
         <p className="text-xs text-muted-foreground">
           {illumStr}% illuminated · age {m.age.toFixed(1)}d · {m.waxing ? "waxing" : "waning"}
         </p>
