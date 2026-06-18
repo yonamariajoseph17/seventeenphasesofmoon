@@ -484,6 +484,7 @@ function Index() {
 
   // ── Moon Letter ─────────────────────────────────────────────────────
   const [ltStyle, setLtStyle] = useState<LetterStyle>("midnight");
+  const [ltOccasion, setLtOccasion] = useState<LetterOccasion>("birthday");
   const [ltTo, setLtTo] = useState("");
   const [ltFrom, setLtFrom] = useState("");
   const [ltMessage, setLtMessage] = useState("");
@@ -491,6 +492,8 @@ function Index() {
   const [ltId, setLtId] = useState<string | null>(null);
   const [ltCreating, setLtCreating] = useState(false);
   const [ltError, setLtError] = useState<string | null>(null);
+  const [ltSongFile, setLtSongFile] = useState<File | null>(null);
+  const songInputRef = useRef<HTMLInputElement>(null);
 
   const letterPayload = useMemo<LetterPayload>(
     () => ({
@@ -508,8 +511,9 @@ function Index() {
       from: ltFrom.trim() || undefined,
       msg: ltMessage.trim() || undefined,
       style: ltStyle,
+      occasion: ltOccasion,
     }),
-    [applied, ltTo, ltFrom, ltMessage, ltStyle],
+    [applied, ltTo, ltFrom, ltMessage, ltStyle, ltOccasion],
   );
 
   // Editing the letter invalidates any previously generated permanent link.
@@ -517,6 +521,18 @@ function Index() {
     setLtId(null);
     setLtError(null);
   }, [letterPayload]);
+
+  function pickSong(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) return;
+    if (file.size > SONG_MAX_BYTES) {
+      setLtError("Song must be 20MB or smaller.");
+      setLtSongFile(null);
+      return;
+    }
+    setLtError(null);
+    setLtSongFile(file);
+  }
 
   const letterUrl = ltId
     ? typeof window !== "undefined"
@@ -528,14 +544,21 @@ function Index() {
     setLtCreating(true);
     setLtError(null);
     try {
-      const id = await createLetter(letterPayload);
+      let payload = letterPayload;
+      if (ltSongFile) {
+        const songUrl = await uploadLetterSong(ltSongFile);
+        payload = { ...payload, song: songUrl };
+      }
+      const id = await createLetter(payload);
       setLtId(id);
-    } catch {
-      setLtError("Could not create the letter link. Please try again.");
+    } catch (err) {
+      setLtError(err instanceof Error ? err.message : "Could not create the letter link. Please try again.");
     } finally {
       setLtCreating(false);
     }
   }
+
+
 
   async function copyLetterLink() {
     if (!letterUrl) return;
