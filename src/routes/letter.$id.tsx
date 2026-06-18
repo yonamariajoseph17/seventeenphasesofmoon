@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useMemo, useState } from "react";
-import { decodeLetter, type LetterStyle } from "@/lib/letter";
+import { useEffect, useState } from "react";
+import { decodeLetter, OCCASION_LINES, type LetterStyle } from "@/lib/letter";
 import { fetchLetter, buildLetterSnapshot, type LetterRecord } from "@/lib/letter-store";
 import { MoonSvg } from "@/components/MoonSvg";
-import { StarField } from "@/components/StarField";
+import { LetterBackground } from "@/components/LetterBackground";
+import { ScrollLetter } from "@/components/ScrollLetter";
+import { LetterAudio } from "@/components/LetterAudio";
 import { useAmbient } from "@/lib/useAmbient";
 import { tzLabel } from "@/lib/tz";
 
@@ -18,43 +20,17 @@ export const Route = createFileRoute("/letter/$id")({
   }),
 });
 
-const STYLE_THEMES: Record<LetterStyle, { bg: string; fg: string; accent: string; sub: string; envelope: string; heading: string }> = {
-  midnight: {
-    bg: "radial-gradient(ellipse at 50% 0%, #14224a 0%, #08102a 55%, #02040f 100%)",
-    fg: "#e8edff", accent: "#9fb3ff", sub: "#7a86b5",
-    envelope: "linear-gradient(160deg, #0c1640 0%, #060b22 100%)",
-    heading: "'Cormorant Garamond', serif",
-  },
-  romantic: {
-    bg: "radial-gradient(ellipse at 30% 20%, #3a1f3a 0%, #1a0b1f 55%, #07030d 100%)",
-    fg: "#f6e6ea", accent: "#f0b3c3", sub: "#c79aa9",
-    envelope: "linear-gradient(160deg, #3a1f3a 0%, #1a0b1f 100%)",
-    heading: "'Cormorant Garamond', serif",
-  },
-  vintage: {
-    bg: "radial-gradient(ellipse at 50% 30%, #2a2316 0%, #14110a 60%, #0a0805 100%)",
-    fg: "#efe4c8", accent: "#d4a64a", sub: "#a08b5e",
-    envelope: "linear-gradient(160deg, #3a2f1c 0%, #1a1408 100%)",
-    heading: "'Cormorant Garamond', serif",
-  },
-  archive: {
-    bg: "linear-gradient(180deg, #f3eee2 0%, #e6dfcc 100%)",
-    fg: "#1a1a1a", accent: "#7a5a2a", sub: "#5e554a",
-    envelope: "linear-gradient(160deg, #efe6d2 0%, #d8cdb2 100%)",
-    heading: "'Cormorant Garamond', serif",
-  },
-  minimal: {
-    bg: "linear-gradient(180deg, #0a0a0f 0%, #050507 100%)",
-    fg: "#ededf2", accent: "#ffffff", sub: "#8a8a96",
-    envelope: "linear-gradient(160deg, #14141a 0%, #06060a 100%)",
-    heading: "'Inter', sans-serif",
-  },
-  golden: {
-    bg: "radial-gradient(ellipse at 50% 20%, #2a1d05 0%, #140d02 60%, #060300 100%)",
-    fg: "#fbeec1", accent: "#f3c969", sub: "#b89858",
-    envelope: "linear-gradient(160deg, #3a2705 0%, #170d02 100%)",
-    heading: "'Cormorant Garamond', serif",
-  },
+interface Theme {
+  fg: string; accent: string; sub: string; heading: string; onAccent: string; isLight: boolean;
+}
+
+const STYLE_THEMES: Record<LetterStyle, Theme> = {
+  midnight: { fg: "#e8edff", accent: "#9fb3ff", sub: "#8090c0", heading: "'Cormorant Garamond', serif", onAccent: "#0a1024", isLight: false },
+  romantic: { fg: "#f8e8ec", accent: "#f0b9c6", sub: "#d29fae", heading: "'Cormorant Garamond', serif", onAccent: "#2a0d1a", isLight: false },
+  vintage: { fg: "#3a2a14", accent: "#8a5a1e", sub: "#6e5a38", heading: "'Cormorant Garamond', serif", onAccent: "#fdf6e6", isLight: true },
+  archive: { fg: "#ece3d6", accent: "#d6aa78", sub: "#a08e78", heading: "'Cormorant Garamond', serif", onAccent: "#1a1410", isLight: false },
+  minimal: { fg: "#1a1a1f", accent: "#2a2a32", sub: "#6a6a74", heading: "'Inter', sans-serif", onAccent: "#ffffff", isLight: true },
+  golden: { fg: "#fbeec1", accent: "#f3c969", sub: "#b89858", heading: "'Cormorant Garamond', serif", onAccent: "#1a1202", isLight: false },
 };
 
 function fmtDateISO(iso: string, tz: number) {
@@ -74,27 +50,22 @@ type LoadState =
 function LetterPage() {
   const { id } = Route.useParams();
   const [state, setState] = useState<LoadState>({ status: "loading" });
-  const [screen, setScreen] = useState<1 | 2 | 3>(1);
-  const [opening, setOpening] = useState(false);
+  const [stage, setStage] = useState<"scroll" | "moon">("scroll");
+  const [songStarted, setSongStarted] = useState(false);
   const ambient = useAmbient();
 
   useEffect(() => {
     let cancelled = false;
     setState({ status: "loading" });
+    setStage("scroll");
+    setSongStarted(false);
     (async () => {
-      // 1) Permanent, database-backed letter (short id).
       const rec = await fetchLetter(id);
       if (cancelled) return;
-      if (rec) {
-        setState({ status: "ready", record: rec });
-        return;
-      }
-      // 2) Backward compatibility: legacy self-contained encoded token.
+      if (rec) { setState({ status: "ready", record: rec }); return; }
+      // Backward compatibility: legacy self-contained encoded token.
       const decoded = decodeLetter(id);
-      if (decoded) {
-        setState({ status: "ready", record: { payload: decoded, snapshot: buildLetterSnapshot(decoded) } });
-        return;
-      }
+      if (decoded) { setState({ status: "ready", record: { payload: decoded, snapshot: buildLetterSnapshot(decoded) } }); return; }
       setState({ status: "notfound" });
     })();
     return () => { cancelled = true; };
@@ -126,122 +97,75 @@ function LetterPage() {
   const seed = (() => { const [y, mo, d] = payload.date.split("-").map(Number); return (y * 31 + mo) * 31 + d; })();
   const coreOk = snapshot.confidence !== "UNAVAILABLE";
   const partial = snapshot.confidence === "VERIFIED_PARTIAL";
-
-  function openLetter() {
-    setOpening(true);
-    setTimeout(() => { setScreen(2); setOpening(false); }, 900);
-  }
+  const forName = payload.to || payload.name;
+  const occasionLine = OCCASION_LINES[payload.occasion ?? "general"];
+  const hasSong = !!payload.song;
+  const cardBg = theme.isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)";
 
   return (
-    <main style={{ background: theme.bg, color: theme.fg, fontFamily: "'Inter', sans-serif" }} className="relative min-h-screen overflow-hidden">
-      {payload.style !== "archive" && (
-        <StarField seed={seed} className="pointer-events-none fixed inset-0 h-full w-full opacity-60" count={120} />
+    <main style={{ color: theme.fg, fontFamily: "'Inter', sans-serif" }} className="relative min-h-screen overflow-hidden">
+      <LetterBackground style={payload.style} seed={seed} />
+
+      {/* Audio — a personal song if uploaded, otherwise a gentle soundscape toggle */}
+      {hasSong ? (
+        <LetterAudio src={payload.song!} autoStart={songStarted} accent={theme.accent} panelBg={`${theme.accent}1c`} />
+      ) : (
+        <button
+          onClick={ambient.toggle}
+          aria-label={ambient.enabled ? "Mute ambient music" : "Play ambient music"}
+          className="fixed top-4 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full backdrop-blur-sm transition-opacity hover:opacity-100"
+          style={{ background: `${theme.accent}1f`, border: `1px solid ${theme.accent}55`, color: theme.accent }}
+        >
+          {ambient.enabled ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 5 6 9H2v6h4l5 4z" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /><path d="M19 5a9 9 0 0 1 0 14" />
+            </svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M11 5 6 9H2v6h4l5 4z" /><line x1="22" y1="9" x2="16" y2="15" /><line x1="16" y1="9" x2="22" y2="15" />
+            </svg>
+          )}
+        </button>
       )}
 
-      {/* Ambient music — default muted, toggle always visible */}
-      <button
-        onClick={ambient.toggle}
-        aria-label={ambient.enabled ? "Mute ambient music" : "Play ambient music"}
-        className="fixed top-4 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full backdrop-blur-sm transition-opacity hover:opacity-100"
-        style={{ background: `${theme.accent}1f`, border: `1px solid ${theme.accent}55`, color: theme.accent }}
-      >
-        {ambient.enabled ? (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M11 5 6 9H2v6h4l5 4z" />
-            <path d="M15.5 8.5a5 5 0 0 1 0 7" />
-            <path d="M19 5a9 9 0 0 1 0 14" />
-          </svg>
-        ) : (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M11 5 6 9H2v6h4l5 4z" />
-            <line x1="22" y1="9" x2="16" y2="15" />
-            <line x1="16" y1="9" x2="22" y2="15" />
-          </svg>
-        )}
-      </button>
-
-
-      {/* SCREEN 1 — Envelope */}
-      {screen === 1 && (
-        <section className="relative mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-6 py-16 text-center">
-          <p className="text-[11px] tracking-[0.4em] uppercase" style={{ color: theme.accent }}>For {payload.to || payload.name}</p>
-          <h1 className="mt-6 max-w-xl text-balance text-3xl leading-tight md:text-5xl" style={{ fontFamily: theme.heading, fontStyle: "italic", fontWeight: 400 }}>
-            A letter written beneath the same sky
-          </h1>
-
-          <div
-            className="relative mt-12 transition-all duration-700 ease-out"
-            style={{
-              width: "min(360px, 80vw)",
-              aspectRatio: "1.6 / 1",
-              transform: opening ? "translateY(-30px) rotateX(70deg) scale(0.92)" : "translateY(0) rotateX(0) scale(1)",
-              opacity: opening ? 0 : 1,
-              transformOrigin: "top center",
-              perspective: "1000px",
-            }}
-          >
-            <div className="absolute inset-0 rounded-md shadow-2xl" style={{ background: theme.envelope, border: `1px solid ${theme.accent}33` }} />
-            <div className="absolute inset-x-0 top-0 h-1/2 origin-top" style={{
-              background: theme.envelope,
-              clipPath: "polygon(0 0, 100% 0, 50% 100%)",
-              borderTop: `1px solid ${theme.accent}33`,
-            }} />
-            <div
-              className="absolute left-1/2 top-1/2 flex h-16 w-16 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full text-2xl shadow-lg"
-              style={{
-                background: `radial-gradient(circle at 35% 30%, ${theme.accent}, ${theme.accent}88 70%, ${theme.accent}55)`,
-                border: `1px solid ${theme.accent}`,
-                color: theme.bg.includes("f3eee2") ? "#1a1a1a" : "#0a0a0a",
-              }}
-              aria-hidden
-            >
-              {snapshot.emoji}
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={openLetter}
-            disabled={opening}
-            className="mt-12 rounded-full px-7 py-3 text-xs tracking-[0.3em] uppercase transition-opacity disabled:opacity-50"
-            style={{ border: `1px solid ${theme.accent}`, color: theme.accent, background: "transparent" }}
-          >
-            {opening ? "Opening…" : "Open letter"}
-          </button>
-          <p className="mt-6 text-[10px] tracking-[0.3em] uppercase" style={{ color: theme.sub }}>
-            {fmtDateISO(snapshot.momentISO, payload.tz)} · {payload.city}
+      {/* STAGE 1 — Ancient scroll reveal */}
+      {stage === "scroll" && (
+        <ScrollLetter
+          accent={theme.accent}
+          forName={forName}
+          dateLine={`${fmtDateISO(snapshot.momentISO, payload.tz)} · ${payload.city}`}
+          onOpen={() => setSongStarted(true)}
+        >
+          <p className="ink-line text-sm italic leading-relaxed sm:text-base" style={{ animationDelay: "0.5s", color: "#5a4324" }}>
+            {occasionLine}
           </p>
-        </section>
-      )}
-
-      {/* SCREEN 2 — Message */}
-      {screen === 2 && (
-        <section className="relative mx-auto flex min-h-screen max-w-2xl flex-col items-center justify-center px-6 py-20 text-center animate-in fade-in duration-700">
-          <p className="text-[11px] tracking-[0.4em] uppercase" style={{ color: theme.accent }}>For {payload.to || payload.name}</p>
-          <div className="mt-10 max-w-xl">
-            <p className="text-balance text-2xl leading-relaxed md:text-3xl" style={{ fontFamily: theme.heading, fontStyle: "italic", fontWeight: 400 }}>
-              “{payload.msg || "I wanted to show you the moon that existed the night you were here."}”
+          <p
+            className="ink-line mt-7 text-balance text-2xl leading-relaxed sm:text-3xl"
+            style={{ animationDelay: "1.3s", fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic" }}
+          >
+            “{payload.msg || "I wanted to show you the moon that existed the night you were here."}”
+          </p>
+          {payload.from && (
+            <p className="ink-line mt-8 text-xs tracking-[0.3em] uppercase" style={{ animationDelay: "2.1s", color: "#6e5a38" }}>
+              — {payload.from}
             </p>
-            {payload.from && (
-              <p className="mt-8 text-sm tracking-[0.3em] uppercase" style={{ color: theme.sub }}>— {payload.from}</p>
-            )}
-          </div>
+          )}
           <button
             type="button"
-            onClick={() => setScreen(3)}
-            className="mt-14 rounded-full px-7 py-3 text-xs tracking-[0.3em] uppercase"
-            style={{ background: theme.accent, color: theme.bg.includes("f3eee2") ? "#ffffff" : "#0a0a0a" }}
+            onClick={() => setStage("moon")}
+            className="ink-line mt-10 rounded-full px-7 py-3 text-[11px] tracking-[0.3em] uppercase transition-opacity hover:opacity-80"
+            style={{ animationDelay: "2.7s", border: "1px solid #7a5a2e", color: "#3a2a14", background: "transparent" }}
           >
             See your moon
           </button>
-        </section>
+        </ScrollLetter>
       )}
 
-      {/* SCREEN 3 — Moon details */}
-      {screen === 3 && (
+      {/* STAGE 2 — Moon details */}
+      {stage === "moon" && (
         <section className="relative mx-auto max-w-3xl px-6 py-16 animate-in fade-in duration-700 md:py-24">
           <div className="text-center">
-            <p className="text-[11px] tracking-[0.4em] uppercase" style={{ color: theme.accent }}>The sky above {payload.to || payload.name}</p>
+            <p className="text-[11px] tracking-[0.4em] uppercase" style={{ color: theme.accent }}>The sky above {forName}</p>
             <h1 className="mt-4 text-balance text-3xl md:text-5xl" style={{ fontFamily: theme.heading, fontStyle: "italic", fontWeight: 400 }}>
               {fmtDateISO(snapshot.momentISO, payload.tz)}
             </h1>
@@ -262,7 +186,6 @@ function LetterPage() {
             <p className="mt-1 text-[11px] tracking-[0.25em] uppercase" style={{ color: theme.sub }}>{snapshot.visual}</p>
           </div>
 
-          {/* Facts (strictly scientific) */}
           <div className="mx-auto mt-12 grid max-w-xl grid-cols-2 gap-x-8 gap-y-5 text-sm">
             <Fact theme={theme} k="Moon Phase" v={snapshot.name} />
             <Fact theme={theme} k="Illumination" v={`${snapshot.illumPct}%`} />
@@ -274,7 +197,6 @@ function LetterPage() {
             <Fact theme={theme} k="Moonset" v={snapshot.moonsetISO ? fmtTimeISO(snapshot.moonsetISO, payload.tz) : "Not visible"} />
           </div>
 
-          {/* Confidence */}
           <div className="mx-auto mt-8 max-w-xl text-center">
             <p className="text-[10px] tracking-[0.35em] uppercase" style={{ color: theme.sub }}>
               {snapshot.confidence === "VERIFIED"
@@ -285,7 +207,6 @@ function LetterPage() {
             </p>
           </div>
 
-          {/* Poetry — separated */}
           <div className="mx-auto mt-10 max-w-xl text-center">
             <p className="text-[10px] tracking-[0.4em] uppercase" style={{ color: theme.sub }}>A line for the night</p>
             <p className="mt-3 text-balance text-xl leading-relaxed md:text-2xl" style={{ fontFamily: theme.heading, fontStyle: "italic" }}>
@@ -294,7 +215,7 @@ function LetterPage() {
           </div>
 
           {payload.msg && (
-            <div className="mx-auto mt-10 max-w-xl rounded-2xl p-6 text-center" style={{ border: `1px solid ${theme.accent}33`, background: payload.style === "archive" ? "rgba(255,255,255,0.4)" : "rgba(255,255,255,0.03)" }}>
+            <div className="mx-auto mt-10 max-w-xl rounded-2xl p-6 text-center" style={{ border: `1px solid ${theme.accent}33`, background: cardBg }}>
               <p className="text-[10px] tracking-[0.3em] uppercase" style={{ color: theme.sub }}>
                 {payload.from ? `From ${payload.from}` : "A note for you"}
               </p>
@@ -302,7 +223,6 @@ function LetterPage() {
             </div>
           )}
 
-          {/* Every year — the same date, a different moon */}
           {snapshot.years && snapshot.years.length > 1 && (
             <div className="mx-auto mt-16 max-w-3xl">
               <div className="text-center">
@@ -317,11 +237,7 @@ function LetterPage() {
 
               <div className="mt-10 grid grid-cols-2 gap-5 sm:grid-cols-3">
                 {snapshot.years.map((yr) => (
-                  <div
-                    key={yr.year}
-                    className="flex flex-col items-center rounded-2xl p-4 text-center"
-                    style={{ border: `1px solid ${theme.accent}22`, background: payload.style === "archive" ? "rgba(255,255,255,0.35)" : "rgba(255,255,255,0.03)" }}
-                  >
+                  <div key={yr.year} className="flex flex-col items-center rounded-2xl p-4 text-center" style={{ border: `1px solid ${theme.accent}22`, background: cardBg }}>
                     <p className="text-[10px] tracking-[0.3em] uppercase" style={{ color: theme.accent }}>{yr.year}</p>
                     <p className="text-[9px] tracking-[0.2em] uppercase" style={{ color: theme.sub }}>
                       {yr.age === 0 ? "Born" : `Turning ${yr.age}`}
@@ -330,12 +246,8 @@ function LetterPage() {
                       <MoonSvg phaseAngle={yr.phaseAngle} illumination={yr.illumination} waxing={yr.waxing} size={84} />
                     </div>
                     <p className="mt-3 text-sm" style={{ fontFamily: theme.heading }}>{yr.name}</p>
-                    <p className="mt-1 text-[10px]" style={{ color: theme.sub }}>
-                      {yr.illumPct}% · {yr.waxing ? "waxing" : "waning"}
-                    </p>
-                    <p className="text-[10px]" style={{ color: theme.sub }}>
-                      {yr.constellationSymbol} {yr.constellation}
-                    </p>
+                    <p className="mt-1 text-[10px]" style={{ color: theme.sub }}>{yr.illumPct}% · {yr.waxing ? "waxing" : "waning"}</p>
+                    <p className="text-[10px]" style={{ color: theme.sub }}>{yr.constellationSymbol} {yr.constellation}</p>
                   </div>
                 ))}
               </div>
@@ -345,9 +257,8 @@ function LetterPage() {
             </div>
           )}
 
-
           <div className="mt-12 flex flex-wrap justify-center gap-3">
-            <ShareButtons theme={theme} to={payload.to || payload.name} />
+            <ShareButtons theme={theme} to={forName} />
             <Link to="/" className="rounded-full px-5 py-2.5 text-[11px] tracking-[0.3em] uppercase" style={{ border: `1px solid ${theme.sub}`, color: theme.sub }}>
               Write your own
             </Link>
@@ -362,7 +273,7 @@ function LetterPage() {
   );
 }
 
-function Fact({ theme, k, v }: { theme: typeof STYLE_THEMES[LetterStyle]; k: string; v: string }) {
+function Fact({ theme, k, v }: { theme: Theme; k: string; v: string }) {
   return (
     <div>
       <p className="text-[10px] tracking-[0.3em] uppercase" style={{ color: theme.sub }}>{k}</p>
@@ -371,7 +282,7 @@ function Fact({ theme, k, v }: { theme: typeof STYLE_THEMES[LetterStyle]; k: str
   );
 }
 
-function ShareButtons({ theme, to }: { theme: typeof STYLE_THEMES[LetterStyle]; to: string }) {
+function ShareButtons({ theme, to }: { theme: Theme; to: string }) {
   const [copied, setCopied] = useState(false);
   const url = typeof window !== "undefined" ? window.location.href : "";
   const text = `A moon letter for ${to}`;
@@ -392,7 +303,7 @@ function ShareButtons({ theme, to }: { theme: typeof STYLE_THEMES[LetterStyle]; 
         type="button"
         onClick={copy}
         className="rounded-full px-5 py-2.5 text-[11px] tracking-[0.3em] uppercase"
-        style={{ background: theme.accent, color: theme.bg.includes("f3eee2") ? "#ffffff" : "#0a0a0a" }}
+        style={{ background: theme.accent, color: theme.onAccent }}
       >
         {copied ? "Link copied" : "Copy link"}
       </button>
