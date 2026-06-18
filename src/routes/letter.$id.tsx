@@ -5,6 +5,7 @@ import { fetchLetter, buildLetterSnapshot, type LetterRecord } from "@/lib/lette
 import { MoonSvg } from "@/components/MoonSvg";
 import { StarField } from "@/components/StarField";
 import { useAmbient } from "@/lib/useAmbient";
+import { tzLabel } from "@/lib/tz";
 
 export const Route = createFileRoute("/letter/$id")({
   component: LetterPage,
@@ -245,7 +246,7 @@ function LetterPage() {
               {fmtDateISO(snapshot.momentISO, payload.tz)}
             </h1>
             <p className="mt-2 text-xs tracking-[0.25em] uppercase" style={{ color: theme.sub }}>
-              {fmtTimeISO(snapshot.momentISO, payload.tz)} local · UTC{payload.tz >= 0 ? "+" : ""}{payload.tz} · {payload.city}
+              {fmtTimeISO(snapshot.momentISO, payload.tz)} local · {tzLabel(payload.tz)} · {payload.city}
             </p>
           </div>
 
@@ -257,7 +258,7 @@ function LetterPage() {
                 Unable to verify
               </div>
             )}
-            <p className="mt-6 text-2xl" style={{ fontFamily: theme.heading }}>{snapshot.emoji} {snapshot.name}</p>
+            <p className="mt-6 text-2xl" style={{ fontFamily: theme.heading }}>{snapshot.name}</p>
             <p className="mt-1 text-[11px] tracking-[0.25em] uppercase" style={{ color: theme.sub }}>{snapshot.visual}</p>
           </div>
 
@@ -268,7 +269,7 @@ function LetterPage() {
             <Fact theme={theme} k="Moon Age" v={`${snapshot.age.toFixed(1)} days`} />
             <Fact theme={theme} k="Direction" v={snapshot.waxing ? "Waxing" : "Waning"} />
             <Fact theme={theme} k="Constellation" v={snapshot.constellation ? `${snapshot.constellationSymbol} ${snapshot.constellation}` : "Unavailable"} />
-            <Fact theme={theme} k="Timezone" v={`UTC${payload.tz >= 0 ? "+" : ""}${payload.tz}`} />
+            <Fact theme={theme} k="Timezone" v={tzLabel(payload.tz)} />
             <Fact theme={theme} k="Moonrise" v={snapshot.moonriseISO ? fmtTimeISO(snapshot.moonriseISO, payload.tz) : "Not visible"} />
             <Fact theme={theme} k="Moonset" v={snapshot.moonsetISO ? fmtTimeISO(snapshot.moonsetISO, payload.tz) : "Not visible"} />
           </div>
@@ -328,7 +329,7 @@ function LetterPage() {
                     <div className="mt-3">
                       <MoonSvg phaseAngle={yr.phaseAngle} illumination={yr.illumination} waxing={yr.waxing} size={84} />
                     </div>
-                    <p className="mt-3 text-sm" style={{ fontFamily: theme.heading }}>{yr.emoji} {yr.name}</p>
+                    <p className="mt-3 text-sm" style={{ fontFamily: theme.heading }}>{yr.name}</p>
                     <p className="mt-1 text-[10px]" style={{ color: theme.sub }}>
                       {yr.illumPct}% · {yr.waxing ? "waxing" : "waning"}
                     </p>
