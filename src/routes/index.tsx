@@ -1199,7 +1199,7 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
       </div>
 
       <div className="relative mt-6 space-y-1.5">
-        <p className="font-display text-lg text-foreground">{m.emoji} {m.name}</p>
+        <p className="font-display text-lg text-foreground">{m.name}</p>
         <p className="text-xs text-muted-foreground">
           {illumStr}% illuminated · age {m.age.toFixed(1)}d · {m.waxing ? "waxing" : "waning"}
         </p>
