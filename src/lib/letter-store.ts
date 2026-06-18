@@ -170,14 +170,15 @@ export async function createLetter(p: LetterPayload): Promise<string> {
 
 /** Restore a saved letter by id. Returns null when the id does not exist. */
 export async function fetchLetter(id: string): Promise<LetterRecord | null> {
+  // Read through a security-definer lookup keyed on the exact id. Direct table
+  // selects are denied, so letters cannot be enumerated — only opened by link.
   const { data, error } = await supabase
-    .from("moon_letters")
-    .select("payload, snapshot")
-    .eq("id", id)
+    .rpc("get_moon_letter", { letter_id: id })
     .maybeSingle();
   if (error || !data) return null;
+  const row = data as { payload: unknown; snapshot: unknown };
   return {
-    payload: data.payload as unknown as LetterPayload,
-    snapshot: data.snapshot as unknown as LetterSnapshot,
+    payload: row.payload as unknown as LetterPayload,
+    snapshot: row.snapshot as unknown as LetterSnapshot,
   };
 }
