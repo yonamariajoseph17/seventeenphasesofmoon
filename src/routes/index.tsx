@@ -13,8 +13,8 @@ import { StarField } from "@/components/StarField";
 import { SoundscapeControl } from "@/components/SoundscapeControl";
 import { useSoundscape } from "@/lib/useAmbient";
 import { Postcard, POSTCARD_STYLES, POSTCARD_FORMATS, type PostcardStyle, type PostcardFormat } from "@/components/Postcard";
-import { LETTER_STYLES, type LetterStyle, type LetterPayload } from "@/lib/letter";
-import { createLetter } from "@/lib/letter-store";
+import { LETTER_STYLES, LETTER_OCCASIONS, OCCASION_LABELS, type LetterStyle, type LetterOccasion, type LetterPayload } from "@/lib/letter";
+import { createLetter, uploadLetterSong, SONG_ACCEPT, SONG_MAX_BYTES } from "@/lib/letter-store";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -484,6 +484,7 @@ function Index() {
 
   // ── Moon Letter ─────────────────────────────────────────────────────
   const [ltStyle, setLtStyle] = useState<LetterStyle>("midnight");
+  const [ltOccasion, setLtOccasion] = useState<LetterOccasion>("birthday");
   const [ltTo, setLtTo] = useState("");
   const [ltFrom, setLtFrom] = useState("");
   const [ltMessage, setLtMessage] = useState("");
@@ -491,6 +492,8 @@ function Index() {
   const [ltId, setLtId] = useState<string | null>(null);
   const [ltCreating, setLtCreating] = useState(false);
   const [ltError, setLtError] = useState<string | null>(null);
+  const [ltSongFile, setLtSongFile] = useState<File | null>(null);
+  const songInputRef = useRef<HTMLInputElement>(null);
 
   const letterPayload = useMemo<LetterPayload>(
     () => ({
@@ -508,8 +511,9 @@ function Index() {
       from: ltFrom.trim() || undefined,
       msg: ltMessage.trim() || undefined,
       style: ltStyle,
+      occasion: ltOccasion,
     }),
-    [applied, ltTo, ltFrom, ltMessage, ltStyle],
+    [applied, ltTo, ltFrom, ltMessage, ltStyle, ltOccasion],
   );
 
   // Editing the letter invalidates any previously generated permanent link.
@@ -517,6 +521,18 @@ function Index() {
     setLtId(null);
     setLtError(null);
   }, [letterPayload]);
+
+  function pickSong(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    if (!file) return;
+    if (file.size > SONG_MAX_BYTES) {
+      setLtError("Song must be 20MB or smaller.");
+      setLtSongFile(null);
+      return;
+    }
+    setLtError(null);
+    setLtSongFile(file);
+  }
 
   const letterUrl = ltId
     ? typeof window !== "undefined"
@@ -528,14 +544,21 @@ function Index() {
     setLtCreating(true);
     setLtError(null);
     try {
-      const id = await createLetter(letterPayload);
+      let payload = letterPayload;
+      if (ltSongFile) {
+        const songUrl = await uploadLetterSong(ltSongFile);
+        payload = { ...payload, song: songUrl };
+      }
+      const id = await createLetter(payload);
       setLtId(id);
-    } catch {
-      setLtError("Could not create the letter link. Please try again.");
+    } catch (err) {
+      setLtError(err instanceof Error ? err.message : "Could not create the letter link. Please try again.");
     } finally {
       setLtCreating(false);
     }
   }
+
+
 
   async function copyLetterLink() {
     if (!letterUrl) return;
@@ -1048,6 +1071,63 @@ function Index() {
               ))}
             </div>
           </div>
+
+          {/* Occasion — sets the quiet opening line the recipient reads first */}
+          <div className="mt-5">
+            <span className="mb-2 block text-xs tracking-[0.2em] text-muted-foreground uppercase">Occasion</span>
+            <div className="flex flex-wrap gap-2">
+              {LETTER_OCCASIONS.map((o) => (
+                <button
+                  key={o}
+                  type="button"
+                  onClick={() => setLtOccasion(o)}
+                  className={`rounded-full border px-3 py-1.5 text-xs tracking-[0.15em] transition-colors ${
+                    ltOccasion === o ? "border-accent bg-accent/15 text-accent" : "border-border text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {OCCASION_LABELS[o]}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Personal song — plays gently when the recipient opens the letter */}
+          <div className="mt-5">
+            <span className="mb-2 block text-xs tracking-[0.2em] text-muted-foreground uppercase">Their song</span>
+            <input
+              ref={songInputRef}
+              type="file"
+              accept={SONG_ACCEPT}
+              onChange={pickSong}
+              className="hidden"
+            />
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => songInputRef.current?.click()}
+                className="rounded-full border border-accent/50 px-4 py-2 text-xs tracking-[0.2em] text-accent uppercase transition-colors hover:bg-accent/10"
+              >
+                Add your song ♪
+              </button>
+              {ltSongFile && (
+                <span className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="max-w-[12rem] truncate text-foreground/85">{ltSongFile.name}</span>
+                  <button
+                    type="button"
+                    onClick={() => { setLtSongFile(null); if (songInputRef.current) songInputRef.current.value = ""; }}
+                    className="text-muted-foreground/70 hover:text-foreground"
+                    aria-label="Remove song"
+                  >
+                    ✕
+                  </button>
+                </span>
+              )}
+            </div>
+            <p className="mt-2 text-[11px] text-muted-foreground/80">
+              {ltSongFile ? "Their song will play when they open this." : "MP3, WAV, M4A or OGG · up to 20MB. Optional — falls back to a gentle soundscape."}
+            </p>
+          </div>
+
 
           {!ltId ? (
             <div className="mt-6 flex flex-col gap-3">
