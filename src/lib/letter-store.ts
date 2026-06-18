@@ -153,6 +153,33 @@ function shortId(len = 8): string {
   return out;
 }
 
+export const SONG_MAX_BYTES = 20 * 1024 * 1024; // 20MB
+export const SONG_ACCEPT = ".mp3,.wav,.m4a,.ogg,audio/*";
+const SONG_EXT = /\.(mp3|wav|m4a|ogg)$/i;
+// ~10 years so the recipient can reopen the letter and still hear the song.
+const SONG_URL_TTL = 60 * 60 * 24 * 365 * 10;
+
+/**
+ * Upload a personal song and return a long-lived signed URL the recipient can
+ * play. Stored in a private bucket; access is only via the signed link.
+ */
+export async function uploadLetterSong(file: File): Promise<string> {
+  if (file.size > SONG_MAX_BYTES) throw new Error("Song must be 20MB or smaller.");
+  const extMatch = file.name.match(SONG_EXT);
+  const ext = extMatch ? extMatch[1].toLowerCase() : "mp3";
+  const path = `${shortId(12)}.${ext}`;
+  const { error } = await supabase.storage
+    .from("letter-songs")
+    .upload(path, file, { contentType: file.type || undefined, upsert: false });
+  if (error) throw error;
+  const { data, error: signErr } = await supabase.storage
+    .from("letter-songs")
+    .createSignedUrl(path, SONG_URL_TTL);
+  if (signErr || !data?.signedUrl) throw signErr ?? new Error("Could not prepare the song link.");
+  return data.signedUrl;
+}
+
+
 /** Persist a letter and return its permanent short id. */
 export async function createLetter(p: LetterPayload): Promise<string> {
   const snapshot = buildLetterSnapshot(p);
