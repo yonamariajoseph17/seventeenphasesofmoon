@@ -40,7 +40,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_moon_letter: {
+        Args: { letter_id: string }
+        Returns: {
+          payload: Json
+          snapshot: Json
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
