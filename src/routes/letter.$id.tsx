@@ -187,15 +187,18 @@ function LetterPage() {
           </div>
 
           <div className="mx-auto mt-12 grid max-w-xl grid-cols-2 gap-x-8 gap-y-5 text-sm">
-            <Fact theme={theme} k="Moon Phase" v={snapshot.name} />
-            <Fact theme={theme} k="Illumination" v={`${snapshot.illumPct}%`} />
-            <Fact theme={theme} k="Moon Age" v={`${snapshot.age.toFixed(1)} days`} />
+            <Fact theme={theme} k="Moon Phase" v={snapshot.name || "—"} />
+            <Fact theme={theme} k="Illumination" v={snapshot.illumPct ? `${snapshot.illumPct}%` : "—"} />
+            <Fact theme={theme} k="Moon Age" v={Number.isFinite(snapshot.age) ? `${snapshot.age.toFixed(1)} days` : "—"} />
             <Fact theme={theme} k="Direction" v={snapshot.waxing ? "Waxing" : "Waning"} />
-            <Fact theme={theme} k="Constellation" v={snapshot.constellation ? `${snapshot.constellationSymbol} ${snapshot.constellation}` : "Unavailable"} />
+            <Fact theme={theme} k="Constellation" v={snapshot.constellation ? `${snapshot.constellationSymbol} ${snapshot.constellation}` : "—"} />
             <Fact theme={theme} k="Timezone" v={tzLabel(payload.tz)} />
-            <Fact theme={theme} k="Moonrise" v={snapshot.moonriseISO ? fmtTimeISO(snapshot.moonriseISO, payload.tz) : "Not visible"} />
-            <Fact theme={theme} k="Moonset" v={snapshot.moonsetISO ? fmtTimeISO(snapshot.moonsetISO, payload.tz) : "Not visible"} />
+            <Fact theme={theme} k="Moonrise" v={snapshot.moonriseISO ? fmtTimeISO(snapshot.moonriseISO, payload.tz) : "—"} />
+            <Fact theme={theme} k="Moonset" v={snapshot.moonsetISO ? fmtTimeISO(snapshot.moonsetISO, payload.tz) : "—"} />
+            <Fact theme={theme} k="Sunrise" v={snapshot.sunriseISO ? fmtTimeISO(snapshot.sunriseISO, payload.tz) : "—"} />
+            <Fact theme={theme} k="Sunset" v={snapshot.sunsetISO ? fmtTimeISO(snapshot.sunsetISO, payload.tz) : "—"} />
           </div>
+
 
           <div className="mx-auto mt-8 max-w-xl text-center">
             <p className="text-[10px] tracking-[0.35em] uppercase" style={{ color: theme.sub }}>
