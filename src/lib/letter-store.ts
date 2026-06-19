@@ -46,6 +46,8 @@ export interface LetterSnapshot {
   poetic: string;
   moonriseISO: string | null;
   moonsetISO: string | null;
+  sunriseISO: string | null;
+  sunsetISO: string | null;
   confidence: MoonConfidence;
   /** One verified moon per year, from birth year through the current year on the same date. */
   years: LetterYearMoon[];
