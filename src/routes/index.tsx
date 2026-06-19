@@ -493,20 +493,27 @@ function Index() {
                 max="2100-12-31"
               />
             </Field>
-            <Field label="City" error={errors.city}>
+            <Field label="City, district or state" error={errors.city}>
               <input
                 list="cities"
                 type="text"
                 value={form.city}
                 maxLength={80}
                 onChange={(e) => setCity(e.target.value)}
-                placeholder="City, region"
+                placeholder="e.g. Salem · Madurai · Madras · 600001"
                 className="input"
+                autoComplete="off"
               />
               <datalist id="cities">
-                {allPresets.map((c) => <option key={c.name} value={c.name} />)}
+                {citySuggestions.map((c) => <option key={c.name} value={c.name} />)}
               </datalist>
+              {!cityKnown && form.city.trim().length >= 2 && (
+                <p className="mt-1.5 text-xs text-amber-300/80">
+                  Approximate location — set exact latitude &amp; longitude in Advanced settings for a precise sky.
+                </p>
+              )}
             </Field>
+
           </div>
 
           {/* Advanced settings — hidden by default */}
