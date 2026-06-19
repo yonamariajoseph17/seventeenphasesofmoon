@@ -140,6 +140,8 @@ export function buildLetterSnapshot(p: LetterPayload): LetterSnapshot {
     poetic: poeticLine(moon, p.to || p.name),
     moonriseISO: rs.moonrise ? rs.moonrise.toISOString() : null,
     moonsetISO: rs.moonset ? rs.moonset.toISOString() : null,
+    sunriseISO: rs.sunrise ? rs.sunrise.toISOString() : null,
+    sunsetISO: rs.sunset ? rs.sunset.toISOString() : null,
     confidence: validation.confidence,
     years: buildYearTimeline(p, y, mo, d),
   };
