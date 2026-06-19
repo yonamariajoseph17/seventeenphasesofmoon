@@ -178,6 +178,27 @@ function Index() {
     });
   }, [savedPresets]);
 
+  // Smart, ranked autocomplete (city / district / state / alias) after 2 chars.
+  const citySuggestions = useMemo<CityPreset[]>(() => {
+    const q = form.city.trim();
+    if (q.length < 2) return savedPresets.slice(0, 10);
+    const saved = savedPresets.filter((p) => p.name.toLowerCase().includes(q.toLowerCase()));
+    const seen = new Set<string>();
+    return [...saved, ...searchPresets(q, 14)].filter((p) => {
+      const k = p.name.toLowerCase();
+      if (seen.has(k)) return false;
+      seen.add(k);
+      return true;
+    }).slice(0, 14);
+  }, [form.city, savedPresets]);
+
+  // Whether the typed city resolves to a known coordinate (else it's approximate).
+  const cityKnown = useMemo(() => {
+    const q = form.city.trim();
+    if (!q) return true;
+    return !!(allPresets.find((c) => c.name.toLowerCase() === q.toLowerCase()) || resolvePreset(q));
+  }, [form.city, allPresets]);
+
   const birthYear = Number(applied.date.slice(0, 4));
   const birthMonth = Number(applied.date.slice(5, 7));
   const birthDay = Number(applied.date.slice(8, 10));
