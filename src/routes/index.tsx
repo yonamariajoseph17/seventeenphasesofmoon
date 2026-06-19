@@ -31,8 +31,6 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-import { ALL_PRESETS, INDIA_PRESETS, resolvePreset, searchPresets, type CityPreset } from "@/lib/india-locations";
-
 const BUILTIN_PRESETS: CityPreset[] = ALL_PRESETS;
 
 const MODE_OPTIONS = ["custom", "sunrise", "sunset"] as const;
