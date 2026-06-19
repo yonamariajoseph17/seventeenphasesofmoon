@@ -245,7 +245,10 @@ function Index() {
   }
 
   function setCity(name: string) {
-    const preset = allPresets.find((c) => c.name.toLowerCase() === name.toLowerCase());
+    // Exact match first (incl. user-saved presets), then alias resolution
+    // (Bombay → Mumbai, Madras → Chennai, …), so coordinates always auto-fill.
+    const preset =
+      allPresets.find((c) => c.name.toLowerCase() === name.toLowerCase()) ?? resolvePreset(name);
     setForm((f) => preset
       ? { ...f, city: preset.name, tz: preset.tz, lat: preset.lat, lon: preset.lon }
       : { ...f, city: name });
