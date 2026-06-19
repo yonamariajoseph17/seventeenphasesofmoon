@@ -370,7 +370,7 @@ export const INDIA_PRESETS: CityPreset[] = [
   I("Silchar, Assam", 24.8333, 92.7789),
   I("Nagaon, Assam", 26.3463, 92.6838),
   I("Tinsukia, Assam", 27.4922, 95.3468),
-  I("Tezpur, Assam", 26.6338, 92.8, ),
+  I("Tezpur, Assam", 26.6338, 92.7926),
   I("Bongaigaon, Assam", 26.4769, 90.5583),
   I("Dispur, Assam", 26.1433, 91.7898),
 
