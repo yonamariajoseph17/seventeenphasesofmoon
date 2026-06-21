@@ -16,6 +16,12 @@ import { Postcard, POSTCARD_STYLES, POSTCARD_FORMATS, type PostcardStyle, type P
 import { LETTER_STYLES, LETTER_OCCASIONS, OCCASION_LABELS, type LetterStyle, type LetterOccasion, type LetterPayload } from "@/lib/letter";
 import { createLetter, uploadLetterSong, SONG_ACCEPT, SONG_MAX_BYTES } from "@/lib/letter-store";
 import { ALL_PRESETS, resolvePreset, searchPresets, type CityPreset } from "@/lib/india-locations";
+import { isMilestoneAge } from "@/lib/milestones";
+import {
+  FLOWERS, WRAPS, RIBBON_COLORS, FLOWER_MAP, MAX_STEMS, TAG_MAX,
+  type BouquetSpec, type WrapId,
+} from "@/lib/bouquet";
+import { Bouquet } from "@/components/Bouquet";
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -335,6 +341,30 @@ function Index() {
   const [ltSongFile, setLtSongFile] = useState<File | null>(null);
   const songInputRef = useRef<HTMLInputElement>(null);
 
+  // ── Bouquet builder (optional gift that welcomes the letter) ──────────
+  const [bqStems, setBqStems] = useState<BouquetSpec["stems"]>([]);
+  const [bqWrap, setBqWrap] = useState<WrapId>("kraft");
+  const [bqRibbon, setBqRibbon] = useState<string>(RIBBON_COLORS[0].hex);
+  const [bqTag, setBqTag] = useState("");
+  const [bqFlower, setBqFlower] = useState<string>(FLOWERS[0].id);
+  const [bqColor, setBqColor] = useState<string>(FLOWERS[0].colors[0].id);
+  const [bqMeaning, setBqMeaning] = useState<string | null>(null);
+
+  const bqSpec = useMemo<BouquetSpec>(
+    () => ({ stems: bqStems, wrap: bqWrap, ribbon: bqRibbon, tag: bqTag.trim() || undefined }),
+    [bqStems, bqWrap, bqRibbon, bqTag],
+  );
+
+  function addStem() {
+    if (bqStems.length >= MAX_STEMS) return;
+    setBqStems((s) => [...s, { flower: bqFlower, color: bqColor }]);
+    const f = FLOWER_MAP[bqFlower];
+    if (f) setBqMeaning(`${f.name} — ${f.meaning}`);
+  }
+  function removeStem(i: number) {
+    setBqStems((s) => s.filter((_, idx) => idx !== i));
+  }
+
   const letterPayload = useMemo<LetterPayload>(
     () => ({
       v: 1,
@@ -352,9 +382,11 @@ function Index() {
       msg: ltMessage.trim() || undefined,
       style: ltStyle,
       occasion: ltOccasion,
+      bouquet: bqStems.length > 0 ? bqSpec : undefined,
     }),
-    [applied, ltTo, ltFrom, ltMessage, ltStyle, ltOccasion],
+    [applied, ltTo, ltFrom, ltMessage, ltStyle, ltOccasion, bqStems, bqSpec],
   );
+
 
   // Editing the letter invalidates any previously generated permanent link.
   useEffect(() => {
@@ -938,6 +970,141 @@ function Index() {
             </div>
           </div>
 
+          {/* Bouquet builder — optional gift that blooms before the letter */}
+          <div className="mt-6 rounded-xl border border-border/60 bg-card/30 p-4">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <span className="text-xs tracking-[0.2em] text-muted-foreground uppercase">Add a bouquet · optional</span>
+              <span className="text-[11px] text-muted-foreground/70">{bqStems.length}/{MAX_STEMS} stems</span>
+            </div>
+
+            <div className="mt-4 grid gap-5 md:grid-cols-[1fr_240px]">
+              {/* Controls */}
+              <div>
+                <span className="mb-2 block text-[11px] tracking-[0.2em] text-muted-foreground uppercase">Choose a flower</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {FLOWERS.map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => { setBqFlower(f.id); setBqColor(f.colors[0].id); }}
+                      className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
+                        bqFlower === f.id ? "border-accent bg-accent/15 text-accent" : "border-border text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {f.name}
+                    </button>
+                  ))}
+                </div>
+
+                <span className="mt-4 mb-2 block text-[11px] tracking-[0.2em] text-muted-foreground uppercase">Colour</span>
+                <div className="flex flex-wrap gap-2">
+                  {(FLOWER_MAP[bqFlower]?.colors ?? []).map((c) => (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => setBqColor(c.id)}
+                      title={c.name}
+                      className={`h-7 w-7 rounded-full border-2 transition-transform hover:scale-110 ${bqColor === c.id ? "ring-2 ring-accent ring-offset-1 ring-offset-background" : ""}`}
+                      style={{ background: c.petal, borderColor: c.shade }}
+                      aria-label={c.name}
+                    />
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  onClick={addStem}
+                  disabled={bqStems.length >= MAX_STEMS}
+                  className="mt-4 rounded-full border border-accent/50 px-4 py-2 text-xs tracking-[0.2em] text-accent uppercase transition-colors hover:bg-accent/10 disabled:opacity-40"
+                >
+                  Add to bouquet ✦
+                </button>
+                {bqMeaning && (
+                  <p className="mt-3 flex items-start gap-2 text-[11px] text-muted-foreground">
+                    <span>{bqMeaning}</span>
+                    <button type="button" onClick={() => setBqMeaning(null)} className="text-muted-foreground/60 hover:text-foreground" aria-label="Dismiss">✕</button>
+                  </p>
+                )}
+
+                {bqStems.length > 0 && (
+                  <ul className="mt-4 flex flex-wrap gap-1.5">
+                    {bqStems.map((s, i) => {
+                      const f = FLOWER_MAP[s.flower];
+                      const col = f?.colors.find((c) => c.id === s.color);
+                      return (
+                        <li key={i} className="flex items-center gap-1 rounded-full border border-border/60 bg-card/50 py-0.5 pr-1 pl-2 text-[11px]">
+                          <span className="h-2.5 w-2.5 rounded-full" style={{ background: col?.petal }} />
+                          {f?.name}
+                          <button type="button" onClick={() => removeStem(i)} aria-label="Remove" className="flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground hover:bg-destructive/20 hover:text-destructive">×</button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+
+                <div className="mt-5 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <span className="mb-2 block text-[11px] tracking-[0.2em] text-muted-foreground uppercase">Wrapping</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {WRAPS.map((w) => (
+                        <button
+                          key={w.id}
+                          type="button"
+                          onClick={() => setBqWrap(w.id)}
+                          className={`rounded-full border px-2.5 py-1 text-xs transition-colors ${
+                            bqWrap === w.id ? "border-accent bg-accent/15 text-accent" : "border-border text-muted-foreground hover:text-foreground"
+                          }`}
+                        >
+                          {w.name}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <span className="mb-2 block text-[11px] tracking-[0.2em] text-muted-foreground uppercase">Ribbon</span>
+                    <div className="flex flex-wrap gap-2">
+                      {RIBBON_COLORS.map((rc) => (
+                        <button
+                          key={rc.id}
+                          type="button"
+                          onClick={() => setBqRibbon(rc.hex)}
+                          title={rc.name}
+                          className={`h-6 w-6 rounded-full border transition-transform hover:scale-110 ${bqRibbon === rc.hex ? "ring-2 ring-accent ring-offset-1 ring-offset-background" : "border-border"}`}
+                          style={{ background: rc.hex }}
+                          aria-label={rc.name}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <Field label={`Gift tag (optional · ${bqTag.length}/${TAG_MAX})`}>
+                    <input
+                      type="text"
+                      value={bqTag}
+                      maxLength={TAG_MAX}
+                      onChange={(e) => setBqTag(e.target.value)}
+                      placeholder="A few words on the tag…"
+                      className="input"
+                    />
+                  </Field>
+                </div>
+              </div>
+
+              {/* Live preview */}
+              <div className="flex items-center justify-center rounded-xl border border-border/50 bg-background/40 p-3">
+                {bqStems.length > 0 ? (
+                  <Bouquet spec={bqSpec} width={220} />
+                ) : (
+                  <p className="px-4 text-center text-xs text-muted-foreground/70">
+                    Your bouquet appears here as you add flowers. A bouquet fades in days; the letter stays.
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Personal song — plays gently when the recipient opens the letter */}
           <div className="mt-5">
             <span className="mb-2 block text-xs tracking-[0.2em] text-muted-foreground uppercase">Their song</span>
@@ -1124,9 +1291,27 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
   const timeLabel = timeWithVerifiedEvent(date, tz, rs);
   const illumPct = m.illumination * 100;
   const illumStr = illumPct >= 1 ? illumPct.toFixed(1) : illumPct.toFixed(2);
+  const age = year - birthYear;
+  const isRecent = year === currentYear;
+  const milestone = age > 0 && isMilestoneAge(age);
 
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-border bg-card/30 p-6 backdrop-blur-sm transition-all hover:border-accent/60 hover:bg-card/50">
+    <article
+      className={`group relative overflow-hidden rounded-2xl border p-6 backdrop-blur-sm transition-all hover:bg-card/50 ${
+        isRecent
+          ? "border-accent/70 bg-card/50"
+          : milestone
+            ? "border-amber-300/50 bg-card/40"
+            : "border-border bg-card/30 hover:border-accent/60"
+      }`}
+      style={{
+        boxShadow: isRecent
+          ? "0 0 28px -8px var(--accent)"
+          : milestone
+            ? "0 0 22px -10px #e7c069"
+            : undefined,
+      }}
+    >
       <StarField seed={seed} rich={false} className="pointer-events-none absolute inset-0 h-full w-full opacity-40 transition-opacity group-hover:opacity-70" count={40} />
 
       <div className="relative flex items-start justify-between">
@@ -1135,10 +1320,19 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
           <p className="mt-1 font-display text-2xl">{dateLabel}</p>
           <p className="text-xs text-muted-foreground">{timeLabel}</p>
         </div>
-        <span className="rounded-full border border-border/60 px-2 py-0.5 text-[10px] tracking-widest text-muted-foreground uppercase">
-          {year === birthYear ? "Birth" : year === currentYear ? "Now" : ""}
+        <span
+          className={`rounded-full border px-2 py-0.5 text-[10px] tracking-widest uppercase ${
+            isRecent
+              ? "border-accent/60 bg-accent/15 text-accent"
+              : milestone
+                ? "border-amber-300/50 bg-amber-300/10 text-amber-200"
+                : "border-border/60 text-muted-foreground"
+          }`}
+        >
+          {year === birthYear ? "Birth" : isRecent ? "This year" : milestone ? `${age}` : ""}
         </span>
       </div>
+
 
       <div className="relative mt-6 flex justify-center">
         {validation.coreOk ? (
