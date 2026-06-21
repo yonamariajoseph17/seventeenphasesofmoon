@@ -1130,9 +1130,27 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
   const timeLabel = timeWithVerifiedEvent(date, tz, rs);
   const illumPct = m.illumination * 100;
   const illumStr = illumPct >= 1 ? illumPct.toFixed(1) : illumPct.toFixed(2);
+  const age = year - birthYear;
+  const isRecent = year === currentYear;
+  const milestone = age > 0 && isMilestoneAge(age);
 
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-border bg-card/30 p-6 backdrop-blur-sm transition-all hover:border-accent/60 hover:bg-card/50">
+    <article
+      className={`group relative overflow-hidden rounded-2xl border p-6 backdrop-blur-sm transition-all hover:bg-card/50 ${
+        isRecent
+          ? "border-accent/70 bg-card/50"
+          : milestone
+            ? "border-amber-300/50 bg-card/40"
+            : "border-border bg-card/30 hover:border-accent/60"
+      }`}
+      style={{
+        boxShadow: isRecent
+          ? "0 0 28px -8px var(--accent)"
+          : milestone
+            ? "0 0 22px -10px #e7c069"
+            : undefined,
+      }}
+    >
       <StarField seed={seed} rich={false} className="pointer-events-none absolute inset-0 h-full w-full opacity-40 transition-opacity group-hover:opacity-70" count={40} />
 
       <div className="relative flex items-start justify-between">
@@ -1141,10 +1159,19 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
           <p className="mt-1 font-display text-2xl">{dateLabel}</p>
           <p className="text-xs text-muted-foreground">{timeLabel}</p>
         </div>
-        <span className="rounded-full border border-border/60 px-2 py-0.5 text-[10px] tracking-widest text-muted-foreground uppercase">
-          {year === birthYear ? "Birth" : year === currentYear ? "Now" : ""}
+        <span
+          className={`rounded-full border px-2 py-0.5 text-[10px] tracking-widest uppercase ${
+            isRecent
+              ? "border-accent/60 bg-accent/15 text-accent"
+              : milestone
+                ? "border-amber-300/50 bg-amber-300/10 text-amber-200"
+                : "border-border/60 text-muted-foreground"
+          }`}
+        >
+          {year === birthYear ? "Birth" : isRecent ? "This year" : milestone ? `${age}` : ""}
         </span>
       </div>
+
 
       <div className="relative mt-6 flex justify-center">
         {validation.coreOk ? (
