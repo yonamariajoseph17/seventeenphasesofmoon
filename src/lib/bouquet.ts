@@ -132,8 +132,8 @@ export interface WrapStyle {
 }
 
 export const WRAPS: WrapStyle[] = [
-  { id: "kraft", name: "Kraft paper", light: "#cBA374", mid: "#a8814f", dark: "#7c5c33", ribbon: true },
-  { id: "linen", name: "Linen", light: "#e6ddca", mid: "#cbbf a3".replace(" ", ""), dark: "#a89b7c", ribbon: true },
+  { id: "kraft", name: "Kraft paper", light: "#c8a374", mid: "#a8814f", dark: "#7c5c33", ribbon: true },
+  { id: "linen", name: "Linen", light: "#e6ddca", mid: "#cbbfa3", dark: "#a89b7c", ribbon: true },
   { id: "vintage", name: "Vintage paper", light: "#d8c5a0", mid: "#b59f76", dark: "#8a7450", ribbon: true },
   { id: "satin", name: "Satin", light: "#e9d6dd", mid: "#cfa9b6", dark: "#a87f8e", ribbon: true },
   { id: "twine", name: "Twine", light: "#cdb487", mid: "#a98f63", dark: "#7d6741", ribbon: false },
@@ -149,7 +149,7 @@ export const RIBBON_COLORS: Array<{ id: string; name: string; hex: string }> = [
   { id: "sage", name: "Sage", hex: "#a8b896" },
   { id: "dusk", name: "Dusk", hex: "#8a7fb0" },
   { id: "wine", name: "Wine", hex: "#8e2f43" },
-  { id: "gold", name: "Gold", hex: "#d6 a8 4a".replace(/ /g, "") },
+  { id: "gold", name: "Gold", hex: "#d6a84a" },
   { id: "charcoal", name: "Charcoal", hex: "#3f3a44" },
 ];
 
