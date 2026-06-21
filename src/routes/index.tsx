@@ -341,6 +341,30 @@ function Index() {
   const [ltSongFile, setLtSongFile] = useState<File | null>(null);
   const songInputRef = useRef<HTMLInputElement>(null);
 
+  // ── Bouquet builder (optional gift that welcomes the letter) ──────────
+  const [bqStems, setBqStems] = useState<BouquetSpec["stems"]>([]);
+  const [bqWrap, setBqWrap] = useState<WrapId>("kraft");
+  const [bqRibbon, setBqRibbon] = useState<string>(RIBBON_COLORS[0].hex);
+  const [bqTag, setBqTag] = useState("");
+  const [bqFlower, setBqFlower] = useState<string>(FLOWERS[0].id);
+  const [bqColor, setBqColor] = useState<string>(FLOWERS[0].colors[0].id);
+  const [bqMeaning, setBqMeaning] = useState<string | null>(null);
+
+  const bqSpec = useMemo<BouquetSpec>(
+    () => ({ stems: bqStems, wrap: bqWrap, ribbon: bqRibbon, tag: bqTag.trim() || undefined }),
+    [bqStems, bqWrap, bqRibbon, bqTag],
+  );
+
+  function addStem() {
+    if (bqStems.length >= MAX_STEMS) return;
+    setBqStems((s) => [...s, { flower: bqFlower, color: bqColor }]);
+    const f = FLOWER_MAP[bqFlower];
+    if (f) setBqMeaning(`${f.name} — ${f.meaning}`);
+  }
+  function removeStem(i: number) {
+    setBqStems((s) => s.filter((_, idx) => idx !== i));
+  }
+
   const letterPayload = useMemo<LetterPayload>(
     () => ({
       v: 1,
@@ -358,9 +382,11 @@ function Index() {
       msg: ltMessage.trim() || undefined,
       style: ltStyle,
       occasion: ltOccasion,
+      bouquet: bqStems.length > 0 ? bqSpec : undefined,
     }),
-    [applied, ltTo, ltFrom, ltMessage, ltStyle, ltOccasion],
+    [applied, ltTo, ltFrom, ltMessage, ltStyle, ltOccasion, bqStems, bqSpec],
   );
+
 
   // Editing the letter invalidates any previously generated permanent link.
   useEffect(() => {
