@@ -1105,7 +1105,8 @@ function Index() {
             </div>
           </div>
 
-
+          {/* Personal song — plays gently when the recipient opens the letter */}
+          <div className="mt-5">
             <span className="mb-2 block text-xs tracking-[0.2em] text-muted-foreground uppercase">Their song</span>
             <input
               ref={songInputRef}
