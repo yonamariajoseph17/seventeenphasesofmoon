@@ -89,11 +89,20 @@ function eventForCivilDate(year: number, month: number, day: number, tz: number,
   const observer = new Astro.Observer(lat, lon, 0);
   const body = kind.startsWith("moon") ? Astro.Body.Moon : Astro.Body.Sun;
   const direction: 1 | -1 = kind.endsWith("rise") ? +1 : -1;
-  const startUtc = Date.UTC(year, month - 1, day) - tz * 3_600_000;
-  const found = Astro.SearchRiseSet(body, observer, direction, Astro.MakeTime(new Date(startUtc)), 1.1)?.date ?? null;
-  if (!found) return null;
-  const p = localCivilParts(found, tz);
-  return p.year === year && p.month === month && p.day === day ? found : null;
+
+  const startUtc = Date.UTC(year, month - 1, day) - tz * 3_600_000 - 6 * 3_600_000;
+  let time = Astro.MakeTime(new Date(startUtc));
+
+  for (let i = 0; i < 3; i++) {
+    const result = Astro.SearchRiseSet(body, observer, direction, time, 1.5);
+    if (!result) return null;
+    const p = localCivilParts(result.date, tz);
+    if (p.year === year && p.month === month && p.day === day) {
+      return result.date;
+    }
+    time = Astro.MakeTime(new Date(result.date.getTime() + 60_000));
+  }
+  return null;
 }
 
 export function riseSetForCivilDate(year: number, month: number, day: number, tz: number, lat: number, lon: number): RiseSet {
