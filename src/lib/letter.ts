@@ -32,13 +32,6 @@ export const OCCASION_LABELS: Record<LetterOccasion, string> = {
   general: "General",
 };
 
-export interface BouquetGift {
-  stems: Array<{ flower: string; color: string }>;
-  wrap: "kraft" | "linen" | "vintage" | "satin" | "twine";
-  ribbon: string;
-  tag?: string;
-}
-
 export interface LetterPayload {
   v: 1;                 // schema version
   name: string;         // person the moon was calculated for
@@ -56,9 +49,7 @@ export interface LetterPayload {
   style: LetterStyle;
   occasion?: LetterOccasion;  // sets the emotional opening line
   song?: string;        // signed URL of an uploaded personal song
-  bouquet?: BouquetGift;      // optional digital bouquet that welcomes the letter
 }
-
 
 function utf8ToB64Url(str: string): string {
   const bytes = new TextEncoder().encode(str);

@@ -29,13 +29,3 @@ export const APRIL_17_MILESTONES: Record<number, string> = {
 export function milestoneFor(year: number): string | undefined {
   return APRIL_17_MILESTONES[year];
 }
-
-/** Ages worth marking in a long birthday scroll, to break visual monotony. */
-export const MILESTONE_AGES = new Set([
-  1, 5, 10, 13, 16, 18, 21, 25, 30, 40, 50, 60, 70, 75, 80, 90, 100,
-]);
-
-export function isMilestoneAge(age: number): boolean {
-  return MILESTONE_AGES.has(age);
-}
-
