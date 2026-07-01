@@ -16,6 +16,7 @@ import { Postcard, POSTCARD_STYLES, POSTCARD_FORMATS, type PostcardStyle, type P
 import { LETTER_STYLES, LETTER_OCCASIONS, OCCASION_LABELS, type LetterStyle, type LetterOccasion, type LetterPayload } from "@/lib/letter";
 import { createLetter, uploadLetterSong, SONG_ACCEPT, SONG_MAX_BYTES } from "@/lib/letter-store";
 import { ALL_PRESETS, resolvePreset, searchPresets, type CityPreset } from "@/lib/india-locations";
+import { isMilestoneAge } from "@/lib/milestones";
 
 export const Route = createFileRoute("/")({
   component: Index,
