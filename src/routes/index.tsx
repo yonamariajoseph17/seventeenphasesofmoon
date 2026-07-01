@@ -1117,7 +1117,8 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
   const rs = riseSetForCivilDate(year, month, day, tz, lat, lon);
   const validation = validateMoon(m);
   const seed = year * 10000 + month * 100 + day;
-  const ageLabel = `Turning ${year - birthYear}`;
+  const age = year - birthYear;
+  const ageLabel = `Turning ${age}`;
   const dateLabel = shifted.toLocaleDateString("en-US", {
     month: "long", day: "numeric", year: "numeric", timeZone: "UTC",
   });
@@ -1125,8 +1126,19 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
   const illumPct = m.illumination * 100;
   const illumStr = illumPct >= 1 ? illumPct.toFixed(1) : illumPct.toFixed(2);
 
+  const isRecent = year === currentYear && currentYear !== birthYear;
+  const isMilestone = !isRecent && age > 0 && isMilestoneAge(age);
+
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-border bg-card/30 p-6 backdrop-blur-sm transition-all hover:border-accent/60 hover:bg-card/50">
+    <article
+      className={`group relative overflow-hidden rounded-2xl border bg-card/30 p-6 backdrop-blur-sm transition-all hover:bg-card/50 ${
+        isRecent
+          ? "border-accent/70 shadow-[0_0_0_1px_hsl(var(--accent)/0.4),0_0_26px_hsl(var(--accent)/0.28)] hover:border-accent"
+          : isMilestone
+            ? "border-amber-300/50 shadow-[0_0_0_1px_rgba(243,201,105,0.35),0_0_18px_rgba(243,201,105,0.22)] hover:border-amber-300/70"
+            : "border-border hover:border-accent/60"
+      }`}
+    >
       <StarField seed={seed} rich={false} className="pointer-events-none absolute inset-0 h-full w-full opacity-40 transition-opacity group-hover:opacity-70" count={40} />
 
       <div className="relative flex items-start justify-between">
@@ -1135,10 +1147,21 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
           <p className="mt-1 font-display text-2xl">{dateLabel}</p>
           <p className="text-xs text-muted-foreground">{timeLabel}</p>
         </div>
-        <span className="rounded-full border border-border/60 px-2 py-0.5 text-[10px] tracking-widest text-muted-foreground uppercase">
-          {year === birthYear ? "Birth" : year === currentYear ? "Now" : ""}
-        </span>
+        {isRecent ? (
+          <span className="rounded-full border border-accent/60 bg-accent/15 px-2 py-0.5 text-[10px] tracking-widest text-accent uppercase">
+            This year
+          </span>
+        ) : isMilestone ? (
+          <span className="rounded-full border border-amber-300/60 bg-amber-300/15 px-2 py-0.5 text-[10px] tracking-widest text-amber-200 uppercase">
+            Milestone
+          </span>
+        ) : (
+          <span className="rounded-full border border-border/60 px-2 py-0.5 text-[10px] tracking-widest text-muted-foreground uppercase">
+            {year === birthYear ? "Birth" : ""}
+          </span>
+        )}
       </div>
+
 
       <div className="relative mt-6 flex justify-center">
         {validation.coreOk ? (
