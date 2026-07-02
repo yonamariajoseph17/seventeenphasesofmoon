@@ -792,6 +792,18 @@ function Index() {
               </Field>
             </div>
             <div className="mt-4">
+              <Field label="Your name (sender)">
+                <input
+                  type="text"
+                  value={pcSender}
+                  maxLength={40}
+                  onChange={(e) => setPcSender(e.target.value)}
+                  placeholder="From…"
+                  className="input"
+                />
+              </Field>
+            </div>
+            <div className="mt-4">
               <Field label="Personal message (optional)">
                 <textarea
                   value={pcMessage}
