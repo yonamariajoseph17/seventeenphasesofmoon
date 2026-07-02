@@ -7,21 +7,18 @@ export const POSTCARD_STYLES = [
 ] as const;
 export type PostcardStyle = (typeof POSTCARD_STYLES)[number];
 
-export const POSTCARD_FORMATS = {
-  square: { w: 1080, h: 1080, label: "Square · 1080×1080" },
-  story: { w: 1080, h: 1920, label: "Story · 1080×1920" },
-  print: { w: 1500, h: 1050, label: "Postcard · 6×4.2 in" },
-} as const;
-export type PostcardFormat = keyof typeof POSTCARD_FORMATS;
+// One true physical postcard size — landscape 6×4 proportions, high-res.
+export const POSTCARD_W = 1650;
+export const POSTCARD_H = 1100;
 
 interface Props {
   style: PostcardStyle;
-  format: PostcardFormat;
   moon: AccurateMoonInfo;
   date: Date;
   tz: number;
   city: string;
   recipient: string;
+  sender?: string;
   occasion: string;
   message: string;
   poetic: string;
@@ -32,172 +29,202 @@ interface Props {
   moonsetLabel?: string;
 }
 
-const STYLE_SHEETS: Record<PostcardStyle, {
-  bg: string; fg: string; accent: string; sub: string; heading: string; body: string; vignette?: string;
-}> = {
-  // Heirloom palettes — ivory, deep navy, charcoal, silver. Museum-restrained.
+interface Stock {
+  card: string;        // base card-stock background
+  ink: string;         // primary ink
+  sub: string;         // secondary ink
+  accent: string;      // accent ink
+  line: string;        // ruled / divider line color
+  heading: string;
+  body: string;
+  light: boolean;      // light stock (dark ink) vs dark stock (light ink)
+  grainOpacity: number;
+}
+
+// Physical card-stock palettes — warm cream / aged paper / deep navy board.
+const STOCKS: Record<PostcardStyle, Stock> = {
   romantic: {
-    bg: "radial-gradient(ellipse at 50% 25%, #20242e 0%, #14161d 55%, #0b0c10 100%)",
-    fg: "#ece8df", accent: "#c8b9a0", sub: "#9a948a",
+    card: "linear-gradient(155deg, #f7f0e4 0%, #efe4d1 55%, #e7d8c0 100%)",
+    ink: "#3a3128", sub: "#8a7c68", accent: "#b08b5a", line: "#cdbb9f",
     heading: "'Cormorant Garamond', serif", body: "'Cormorant Garamond', serif",
-    vignette: "radial-gradient(ellipse at 50% 100%, rgba(200,185,160,0.08), transparent 65%)",
+    light: true, grainOpacity: 0.06,
   },
   minimal: {
-    bg: "linear-gradient(180deg, #111317 0%, #0a0b0e 100%)",
-    fg: "#e8e8ea", accent: "#bdbdc2", sub: "#7c7c84",
+    card: "linear-gradient(155deg, #f4f4f2 0%, #e9e9e6 100%)",
+    ink: "#26262a", sub: "#83838a", accent: "#5a5a62", line: "#cfcfca",
     heading: "'Inter', sans-serif", body: "'Inter', sans-serif",
+    light: true, grainOpacity: 0.05,
   },
   vintage: {
-    bg: "radial-gradient(ellipse at 50% 30%, #211c12 0%, #14110b 60%, #0b0906 100%)",
-    fg: "#e6dcc4", accent: "#bb9c63", sub: "#998d6f",
+    card: "linear-gradient(155deg, #ece0c4 0%, #ddcda6 55%, #cbb888 100%)",
+    ink: "#40331d", sub: "#8a7448", accent: "#9c7a3c", line: "#c1a875",
     heading: "'Cormorant Garamond', serif", body: "'Cormorant Garamond', serif",
-    vignette: "radial-gradient(ellipse at 50% 100%, rgba(187,156,99,0.1), transparent 70%)",
+    light: true, grainOpacity: 0.1,
   },
   cinematic: {
-    bg: "linear-gradient(180deg, #0e1320 0%, #080b14 60%, #04060c 100%)",
-    fg: "#e7eaf0", accent: "#b3bcc9", sub: "#828a99",
+    card: "linear-gradient(155deg, #141a28 0%, #0d1220 60%, #080b14 100%)",
+    ink: "#eef1f6", sub: "#9aa4b6", accent: "#b9c4d6", line: "#33405a",
     heading: "'Cormorant Garamond', serif", body: "'Inter', sans-serif",
-    vignette: "radial-gradient(ellipse at 50% 0%, rgba(179,188,201,0.1), transparent 55%)",
+    light: false, grainOpacity: 0.07,
   },
   midnight: {
-    bg: "radial-gradient(ellipse at 50% 22%, #131c34 0%, #0a1124 55%, #03060f 100%)",
-    fg: "#e4e8f2", accent: "#a8b6d4", sub: "#7884a0",
+    card: "linear-gradient(155deg, #16203c 0%, #0d1530 55%, #060a1c 100%)",
+    ink: "#e9edf7", sub: "#9fabcb", accent: "#b6c4e6", line: "#33406a",
     heading: "'Cormorant Garamond', serif", body: "'Inter', sans-serif",
-    vignette: "radial-gradient(ellipse at 50% 100%, rgba(168,182,212,0.1), transparent 60%)",
+    light: false, grainOpacity: 0.07,
   },
   archive: {
-    bg: "linear-gradient(180deg, #f4f0e6 0%, #e9e2d2 100%)",
-    fg: "#1c1c1c", accent: "#7a6a4a", sub: "#5e564a",
+    card: "linear-gradient(155deg, #f4efe3 0%, #ece3d0 100%)",
+    ink: "#2a251c", sub: "#7d7461", accent: "#7a6a47", line: "#cabfa6",
     heading: "'Cormorant Garamond', serif", body: "'Cormorant Garamond', serif",
+    light: true, grainOpacity: 0.09,
   },
 };
 
-// Tiny deterministic star pattern for the postcard background
-function PostcardStars({ seed = 7, count = 80, color }: { seed?: number; count?: number; color: string }) {
-  let s = seed;
-  const r = () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
-  const stars = Array.from({ length: count }, () => ({
-    x: r() * 100, y: r() * 100, sz: 0.5 + r() * 1.8, o: 0.25 + r() * 0.6,
-  }));
+// Fine paper-grain overlay (subtle fractal noise, tuned per stock).
+function PaperGrain({ opacity, light }: { opacity: number; light: boolean }) {
   return (
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none" }}>
-      {stars.map((st, i) => (
-        <circle key={i} cx={st.x} cy={st.y} r={st.sz * 0.08} fill={color} opacity={st.o} />
-      ))}
+    <svg
+      aria-hidden
+      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", mixBlendMode: light ? "multiply" : "screen", opacity }}
+    >
+      <filter id="pg">
+        <feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="3" seed="11" stitchTiles="stitch" />
+        <feColorMatrix type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" />
+      </filter>
+      <rect width="100%" height="100%" filter="url(#pg)" />
     </svg>
   );
 }
 
-export const Postcard = forwardRef<HTMLDivElement, Props>(function Postcard(p, ref) {
-  const sh = STYLE_SHEETS[p.style];
-  const dim = POSTCARD_FORMATS[p.format];
-  const isLight = p.style === "archive";
-  const isStory = p.format === "story";
-  const padding = isStory ? 80 : 64;
-  const moonSize = isStory ? 360 : p.format === "print" ? 280 : 320;
-  const seed = Math.floor(p.date.getTime() / 86_400_000) || 7;
+const CARD_STYLE = (bg: string): React.CSSProperties => ({
+  width: POSTCARD_W,
+  height: POSTCARD_H,
+  background: bg,
+  position: "relative",
+  overflow: "hidden",
+  borderRadius: 28,
+  boxSizing: "border-box",
+  boxShadow: "inset 0 0 0 1.5px rgba(0,0,0,0.06)",
+});
+
+/* ─────────────────────────────  FRONT  ───────────────────────────── */
+export const PostcardFront = forwardRef<HTMLDivElement, Props>(function PostcardFront(p, ref) {
+  const s = STOCKS[p.style];
+  const moonSize = 420;
 
   return (
-    <div
-      ref={ref}
-      style={{
-        width: dim.w,
-        height: dim.h,
-        background: sh.bg,
-        color: sh.fg,
-        position: "relative",
-        overflow: "hidden",
-        fontFamily: sh.body,
-        padding,
-        display: "flex",
-        flexDirection: "column",
-        boxSizing: "border-box",
-      }}
-    >
-      {!isLight && <PostcardStars seed={seed} count={isStory ? 140 : 90} color={sh.fg} />}
-      {sh.vignette && <div style={{ position: "absolute", inset: 0, background: sh.vignette, pointerEvents: "none" }} />}
+    <div ref={ref} style={{ ...CARD_STYLE(s.card), fontFamily: s.body, color: s.ink, padding: 84, display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <PaperGrain opacity={s.grainOpacity} light={s.light} />
+
+      {/* subtle printed frame */}
+      <div style={{ position: "absolute", inset: 30, border: `1.5px solid ${s.line}`, borderRadius: 18, opacity: 0.6, pointerEvents: "none" }} />
 
       {/* Header */}
       <div style={{ position: "relative", textAlign: "center" }}>
-        <p style={{
-          fontFamily: sh.body, fontSize: 14, letterSpacing: 6, textTransform: "uppercase",
-          color: sh.accent, margin: 0,
-        }}>
+        <p style={{ margin: 0, fontFamily: s.body, fontSize: 17, letterSpacing: 7, textTransform: "uppercase", color: s.accent }}>
           {p.occasion || "A moon for you"}
         </p>
         {p.recipient && (
-          <h1 style={{
-            fontFamily: sh.heading, fontSize: isStory ? 88 : 72, margin: "12px 0 0",
-            fontStyle: p.style === "vintage" || p.style === "romantic" ? "italic" : "normal",
-            lineHeight: 1.05, fontWeight: 400,
-          }}>
+          <h1 style={{ margin: "10px 0 0", fontFamily: s.heading, fontSize: 74, fontWeight: 400, lineHeight: 1.02, fontStyle: p.style === "vintage" || p.style === "romantic" ? "italic" : "normal" }}>
             For {p.recipient}
           </h1>
         )}
       </div>
 
-      {/* Moon */}
-      <div style={{
-        position: "relative", flex: 1, display: "flex", alignItems: "center", justifyContent: "center",
-        margin: isStory ? "60px 0" : "32px 0",
-      }}>
-        <div style={{ filter: isLight ? "invert(1) hue-rotate(180deg)" : "none" }}>
+      {/* Moon — hero, seated in a soft printed sky medallion so it reads on any stock */}
+      <div style={{ position: "relative", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", margin: "18px 0" }}>
+        <div style={{ position: "absolute", width: moonSize + 150, height: moonSize + 150, borderRadius: "50%", background: "radial-gradient(circle, rgba(8,10,20,0.92) 40%, rgba(8,10,20,0) 72%)" }} />
+        <div style={{ position: "relative" }}>
           <MoonSvg phaseAngle={p.moon.phaseAngle} illumination={p.moon.illumination} waxing={p.moon.waxing} size={moonSize} />
         </div>
       </div>
 
-      {/* Verified data block */}
-      <div style={{ position: "relative", textAlign: "center" }}>
-        <p style={{
-          fontFamily: sh.heading, fontSize: isStory ? 44 : 36, margin: 0, fontWeight: 400,
-          fontStyle: p.style === "romantic" ? "italic" : "normal", letterSpacing: 1,
-        }}>
+      {/* Phase + poetic line */}
+      <div style={{ position: "relative", textAlign: "center", maxWidth: 1200 }}>
+        <p style={{ margin: 0, fontFamily: s.heading, fontSize: 40, fontWeight: 400, letterSpacing: 1, fontStyle: p.style === "romantic" ? "italic" : "normal" }}>
           {p.moon.name}
         </p>
-        <p style={{ fontSize: 16, color: sh.sub, margin: "8px 0 0", letterSpacing: 2 }}>
-          {p.illumPct}% illuminated · {p.moon.age.toFixed(1)} days · {p.moon.waxing ? "Waxing" : "Waning"} · Moon in {p.moon.constellation}
-        </p>
-
-        {/* Poetic line — derived ONLY from verified data */}
-        <p style={{
-          fontFamily: sh.heading, fontSize: isStory ? 34 : 28, margin: "40px auto 0",
-          maxWidth: isStory ? 880 : 760, lineHeight: 1.35, fontStyle: "italic",
-          color: sh.fg,
-        }}>
+        <p style={{ margin: "20px auto 0", maxWidth: 1000, fontFamily: s.heading, fontSize: 30, lineHeight: 1.35, fontStyle: "italic", color: s.ink, opacity: 0.9 }}>
           “{p.poetic}”
         </p>
-
-        {p.message && (
-          <p style={{
-            fontSize: isStory ? 22 : 18, color: sh.sub, margin: "28px auto 0",
-            maxWidth: isStory ? 820 : 700, lineHeight: 1.55,
-          }}>
-            {p.message}
-          </p>
-        )}
-
-        {/* Footer: date + place + rise/set */}
-        <div style={{
-          marginTop: isStory ? 60 : 40, display: "flex", justifyContent: "center",
-          gap: 32, flexWrap: "wrap", fontSize: 13, letterSpacing: 3, textTransform: "uppercase", color: sh.sub,
-        }}>
-          <span>{p.dateLabel}</span>
-          <span>·</span>
-          <span>{p.timeLabel}</span>
-          <span>·</span>
-          <span>{p.city}</span>
-        </div>
-        {(p.moonriseLabel || p.moonsetLabel) && (
-          <p style={{ marginTop: 10, fontSize: 12, letterSpacing: 3, textTransform: "uppercase", color: sh.sub }}>
-            {p.moonriseLabel && <>moonrise {p.moonriseLabel}</>}
-            {p.moonriseLabel && p.moonsetLabel && " · "}
-            {p.moonsetLabel && <>moonset {p.moonsetLabel}</>}
-          </p>
-        )}
-        <p style={{ marginTop: 18, fontSize: 10, letterSpacing: 4, textTransform: "uppercase", color: sh.sub, opacity: 0.7 }}>
-          Verified · astronomy-engine (VSOP87 / ELP2000)
-        </p>
       </div>
+
+      {/* Bottom edge — location · date · time */}
+      <div style={{ position: "relative", marginTop: 26, display: "flex", gap: 26, justifyContent: "center", fontSize: 15, letterSpacing: 3, textTransform: "uppercase", color: s.sub }}>
+        <span>{p.city}</span><span>·</span><span>{p.dateLabel}</span><span>·</span><span>{p.timeLabel}</span>
+      </div>
+    </div>
+  );
+});
+
+/* ─────────────────────────────  BACK  ───────────────────────────── */
+export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardBack(p, ref) {
+  const s = STOCKS[p.style];
+  const dear = p.recipient ? `Dear ${p.recipient},` : "Dear friend,";
+  const signoff = p.sender ? `— ${p.sender}` : "— with love";
+
+  return (
+    <div ref={ref} style={{ ...CARD_STYLE(s.card), fontFamily: s.body, color: s.ink, padding: 76, display: "flex" }}>
+      <PaperGrain opacity={s.grainOpacity} light={s.light} />
+
+      {/* Left half — handwritten message */}
+      <div style={{ position: "relative", flex: 1.15, paddingRight: 60, display: "flex", flexDirection: "column" }}>
+        <p style={{ margin: 0, fontFamily: "'Caveat', cursive", fontSize: 44, color: s.ink }}>{dear}</p>
+        <p style={{ margin: "22px 0 0", fontFamily: "'Caveat', cursive", fontSize: 34, lineHeight: 1.5, color: s.ink, opacity: 0.92, flex: 1, whiteSpace: "pre-wrap" }}>
+          {p.message || "Wherever you are tonight, the same moon is watching over you."}
+        </p>
+        <p style={{ margin: "20px 0 0", fontFamily: "'Caveat', cursive", fontSize: 40, color: s.accent }}>{signoff}</p>
+      </div>
+
+      {/* Vertical dividing line */}
+      <div style={{ position: "relative", width: 0, borderLeft: `2px solid ${s.line}`, opacity: 0.75, margin: "6px 0" }} />
+
+      {/* Right half — stamp + address lines */}
+      <div style={{ position: "relative", flex: 1, paddingLeft: 60, display: "flex", flexDirection: "column" }}>
+        {/* Stamp + postmark */}
+        <div style={{ display: "flex", justifyContent: "flex-end", position: "relative", height: 210 }}>
+          <div style={{ position: "relative" }}>
+            <div style={{
+              width: 158, height: 194, border: `2px dashed ${s.line}`, borderRadius: 6,
+              display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+              background: p.style === "cinematic" || p.style === "midnight" ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.02)",
+            }}>
+              <div style={{ borderRadius: "50%", background: "radial-gradient(circle, rgba(8,10,20,0.9) 45%, rgba(8,10,20,0) 75%)", padding: 6 }}>
+                <MoonSvg phaseAngle={p.moon.phaseAngle} illumination={p.moon.illumination} waxing={p.moon.waxing} size={96} />
+              </div>
+              <p style={{ margin: "6px 0 0", fontSize: 9, letterSpacing: 2, textTransform: "uppercase", color: s.sub }}>Sky We Share</p>
+            </div>
+            {/* circular postmark overlay */}
+            <svg width="150" height="150" style={{ position: "absolute", top: -34, left: -58, opacity: 0.55 }}>
+              <g fill="none" stroke={s.accent} strokeWidth="2">
+                <circle cx="75" cy="75" r="58" />
+                <circle cx="75" cy="75" r="42" strokeDasharray="3 5" />
+              </g>
+              <text x="75" y="52" textAnchor="middle" fontSize="10" letterSpacing="2" fill={s.accent} fontFamily={s.body}>
+                {p.city.slice(0, 14).toUpperCase()}
+              </text>
+              <text x="75" y="104" textAnchor="middle" fontSize="10" letterSpacing="2" fill={s.accent} fontFamily={s.body}>
+                {p.dateLabel}
+              </text>
+            </svg>
+          </div>
+        </div>
+
+        {/* Address ruled lines */}
+        <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 46 }}>
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} style={{ height: 0, borderBottom: `1.5px solid ${s.line}`, opacity: 0.8, width: i === 0 ? "62%" : "100%" }} />
+          ))}
+        </div>
+
+        <div style={{ flex: 1 }} />
+      </div>
+
+      {/* Printer credit */}
+      <p style={{ position: "absolute", bottom: 30, left: 76, margin: 0, fontSize: 12, letterSpacing: 3, textTransform: "uppercase", color: s.sub, opacity: 0.75 }}>
+        Sky We Share · astronomy-engine verified
+      </p>
     </div>
   );
 });

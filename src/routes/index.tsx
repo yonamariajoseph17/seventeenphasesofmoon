@@ -12,11 +12,22 @@ import { MoonSvg } from "@/components/MoonSvg";
 import { StarField } from "@/components/StarField";
 import { SoundscapeControl } from "@/components/SoundscapeControl";
 import { useSoundscape } from "@/lib/useAmbient";
-import { Postcard, POSTCARD_STYLES, POSTCARD_FORMATS, type PostcardStyle, type PostcardFormat } from "@/components/Postcard";
+import { PostcardFront, PostcardBack, POSTCARD_STYLES, POSTCARD_W, POSTCARD_H, type PostcardStyle } from "@/components/Postcard";
 import { LETTER_STYLES, LETTER_OCCASIONS, OCCASION_LABELS, type LetterStyle, type LetterOccasion, type LetterPayload } from "@/lib/letter";
 import { createLetter, uploadLetterSong, SONG_ACCEPT, SONG_MAX_BYTES } from "@/lib/letter-store";
 import { ALL_PRESETS, resolvePreset, searchPresets, type CityPreset } from "@/lib/india-locations";
 import { isMilestoneAge } from "@/lib/milestones";
+
+const PREVIEW_W = 520;
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
 
 export const Route = createFileRoute("/")({
   component: Index,
@@ -291,30 +302,63 @@ function Index() {
 
   // ── Postcard ────────────────────────────────────────────────────────
   const [pcStyle, setPcStyle] = useState<PostcardStyle>("romantic");
-  const [pcFormat, setPcFormat] = useState<PostcardFormat>("square");
   const [pcRecipient, setPcRecipient] = useState("");
+  const [pcSender, setPcSender] = useState("");
   const [pcOccasion, setPcOccasion] = useState("");
   const [pcMessage, setPcMessage] = useState("");
+  const [pcFlipped, setPcFlipped] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const postcardRef = useRef<HTMLDivElement>(null);
+  const frontRef = useRef<HTMLDivElement>(null);
+  const backRef = useRef<HTMLDivElement>(null);
 
   const recipientForCard = pcRecipient.trim() || personName;
   const occasionForCard = pcOccasion.trim() || "A moon for you";
   const poetic = useMemo(() => poeticLine(birthMoon, recipientForCard), [birthMoon, recipientForCard]);
 
+  const pcProps = {
+    style: pcStyle,
+    moon: birthMoon,
+    date: birth,
+    tz: applied.tz,
+    city: applied.city,
+    recipient: recipientForCard,
+    sender: pcSender.trim(),
+    occasion: occasionForCard,
+    message: pcMessage,
+    poetic,
+    illumPct: birthIllumStr,
+    dateLabel: fmtDate(birth, applied.tz),
+    timeLabel: birthTimeLabel,
+    moonriseLabel: birthRiseSet.moonrise ? fmtTime(birthRiseSet.moonrise, applied.tz) : undefined,
+    moonsetLabel: birthRiseSet.moonset ? fmtTime(birthRiseSet.moonset, applied.tz) : undefined,
+  };
+
   async function downloadPostcard() {
-    if (!postcardRef.current) return;
+    if (!frontRef.current || !backRef.current) return;
     setExporting(true);
     try {
-      const dataUrl = await toPng(postcardRef.current, {
-        pixelRatio: 1,
-        cacheBust: true,
-        backgroundColor: undefined,
-      });
-      const a = document.createElement("a");
+      const opts = { pixelRatio: 2, cacheBust: true, backgroundColor: undefined as string | undefined };
+      const [frontUrl, backUrl] = await Promise.all([
+        toPng(frontRef.current, opts),
+        toPng(backRef.current, opts),
+      ]);
+      // Stitch front (left) + back (right) into one wide print template.
+      const scale = 2;
+      const gap = 60 * scale;
+      const canvas = document.createElement("canvas");
+      canvas.width = POSTCARD_W * scale * 2 + gap;
+      canvas.height = POSTCARD_H * scale;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        const [imgF, imgB] = await Promise.all([loadImage(frontUrl), loadImage(backUrl)]);
+        ctx.drawImage(imgF, 0, 0, POSTCARD_W * scale, POSTCARD_H * scale);
+        ctx.drawImage(imgB, POSTCARD_W * scale + gap, 0, POSTCARD_W * scale, POSTCARD_H * scale);
+      }
+      const combined = canvas.toDataURL("image/png");
       const safeName = recipientForCard.replace(/[^a-z0-9-_]+/gi, "_").toLowerCase() || "moon";
+      const a = document.createElement("a");
       a.download = `moon-postcard-${safeName}-${applied.date}.png`;
-      a.href = dataUrl;
+      a.href = combined;
       a.click();
     } finally {
       setExporting(false);
@@ -777,6 +821,18 @@ function Index() {
               </Field>
             </div>
             <div className="mt-4">
+              <Field label="Your name (sender)">
+                <input
+                  type="text"
+                  value={pcSender}
+                  maxLength={40}
+                  onChange={(e) => setPcSender(e.target.value)}
+                  placeholder="From…"
+                  className="input"
+                />
+              </Field>
+            </div>
+            <div className="mt-4">
               <Field label="Personal message (optional)">
                 <textarea
                   value={pcMessage}
@@ -809,62 +865,64 @@ function Index() {
               </div>
             </div>
 
-            <div className="mt-5">
-              <span className="mb-2 block text-xs tracking-[0.2em] text-muted-foreground uppercase">Format</span>
-              <div className="inline-flex rounded-md border border-border bg-card/30 p-1">
-                {(Object.keys(POSTCARD_FORMATS) as PostcardFormat[]).map((k) => (
-                  <button
-                    key={k}
-                    type="button"
-                    onClick={() => setPcFormat(k)}
-                    className={`rounded px-3 py-1.5 text-[11px] tracking-[0.2em] uppercase transition-colors ${
-                      pcFormat === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {k}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">{POSTCARD_FORMATS[pcFormat].label}</p>
-            </div>
-
             <button
               type="button"
               onClick={downloadPostcard}
               disabled={exporting}
               className="mt-6 w-full rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
-              {exporting ? "Rendering…" : "Download postcard (PNG)"}
+              {exporting ? "Rendering both sides…" : "Download postcard (front + back PNG)"}
             </button>
             <p className="mt-2 text-[10px] tracking-[0.2em] text-muted-foreground/70 uppercase">
-              High-resolution · ready to share or print
+              High-resolution print template · front left, back right
             </p>
           </div>
 
-          {/* Preview — full-resolution node scaled into view */}
-          <PostcardPreview
-            width={POSTCARD_FORMATS[pcFormat].w}
-            height={POSTCARD_FORMATS[pcFormat].h}
-          >
-            <Postcard
-              ref={postcardRef}
-              style={pcStyle}
-              format={pcFormat}
-              moon={birthMoon}
-              date={birth}
-              tz={applied.tz}
-              city={applied.city}
-              recipient={recipientForCard}
-              occasion={occasionForCard}
-              message={pcMessage}
-              poetic={poetic}
-              illumPct={birthIllumStr}
-              dateLabel={fmtDate(birth, applied.tz)}
-              timeLabel={birthTimeLabel}
-              moonriseLabel={birthRiseSet.moonrise ? fmtTime(birthRiseSet.moonrise, applied.tz) : undefined}
-              moonsetLabel={birthRiseSet.moonset ? fmtTime(birthRiseSet.moonset, applied.tz) : undefined}
-            />
-          </PostcardPreview>
+          {/* Interactive flip preview */}
+          <div className="flex flex-col items-center justify-center gap-4">
+            <div
+              style={{ perspective: 1600, width: PREVIEW_W, height: PREVIEW_W * (POSTCARD_H / POSTCARD_W) }}
+            >
+              <button
+                type="button"
+                onClick={() => setPcFlipped((f) => !f)}
+                className="relative h-full w-full cursor-pointer rounded-2xl"
+                style={{
+                  transformStyle: "preserve-3d",
+                  transition: "transform 0.8s cubic-bezier(0.4,0,0.2,1)",
+                  transform: pcFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
+                }}
+                aria-label="Flip postcard"
+              >
+                {/* Front face */}
+                <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", borderRadius: 16, overflow: "hidden", boxShadow: "0 22px 60px -20px rgba(0,0,0,0.65)" }}>
+                  <div style={{ transform: `scale(${PREVIEW_W / POSTCARD_W})`, transformOrigin: "top left", width: POSTCARD_W, height: POSTCARD_H }}>
+                    <PostcardFront {...pcProps} />
+                  </div>
+                </div>
+                {/* Back face */}
+                <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", transform: "rotateY(180deg)", borderRadius: 16, overflow: "hidden", boxShadow: "0 22px 60px -20px rgba(0,0,0,0.65)" }}>
+                  <div style={{ transform: `scale(${PREVIEW_W / POSTCARD_W})`, transformOrigin: "top left", width: POSTCARD_W, height: POSTCARD_H }}>
+                    <PostcardBack {...pcProps} />
+                  </div>
+                </div>
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPcFlipped((f) => !f)}
+              className="rounded-full border border-border px-4 py-1.5 text-[11px] tracking-[0.2em] text-muted-foreground uppercase transition-colors hover:text-foreground"
+            >
+              {pcFlipped ? "Show front" : "Flip to back"}
+            </button>
+          </div>
+
+          {/* Hidden full-resolution nodes for export */}
+          <div style={{ position: "fixed", left: -99999, top: 0, pointerEvents: "none", opacity: 0 }} aria-hidden>
+            <PostcardFront ref={frontRef} {...pcProps} />
+            <PostcardBack ref={backRef} {...pcProps} />
+          </div>
+
 
         </div>
       </section>
@@ -1189,31 +1247,5 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
         )}
       </div>
     </article>
-  );
-}
-
-function PostcardPreview({ width, height, children }: { width: number; height: number; children: import("react").ReactNode }) {
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [scale, setScale] = useState(0.001);
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-    const update = () => setScale(el.clientWidth / width);
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [width]);
-  return (
-    <div className="overflow-hidden rounded-2xl border border-border bg-black/30 p-4 backdrop-blur-sm">
-      <div ref={wrapRef} className="relative w-full" style={{ aspectRatio: `${width} / ${height}` }}>
-        <div
-          className="absolute top-0 left-0 origin-top-left"
-          style={{ width, height, transform: `scale(${scale})` }}
-        >
-          {children}
-        </div>
-      </div>
-    </div>
   );
 }
