@@ -105,15 +105,12 @@ export function MoonSvg({ phaseAngle, illumination, waxing, size = 120 }: Props)
         {/* Sub-solar highlight — subtle brightness swell toward the sun */}
         <radialGradient
           id={`sun-${uid}`}
-          cx="50%"
-          cy="50%"
-          r="55%"
           gradientUnits="userSpaceOnUse"
-          fx={sunX}
-          fy={-8}
-          cy2="0"
+          cx={sunX}
+          cy={-8}
+          r={52}
         >
-          <stop offset="0%" stopColor="oklch(1 0.02 95 / 0.28)" />
+          <stop offset="0%" stopColor="oklch(1 0.02 95 / 0.26)" />
           <stop offset="55%" stopColor="oklch(1 0.02 95 / 0.06)" />
           <stop offset="100%" stopColor="oklch(1 0.02 95 / 0)" />
         </radialGradient>
