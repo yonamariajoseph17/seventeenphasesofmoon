@@ -18,6 +18,17 @@ import { createLetter, uploadLetterSong, SONG_ACCEPT, SONG_MAX_BYTES } from "@/l
 import { ALL_PRESETS, resolvePreset, searchPresets, type CityPreset } from "@/lib/india-locations";
 import { isMilestoneAge } from "@/lib/milestones";
 
+const PREVIEW_W = 520;
+
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
+}
+
 export const Route = createFileRoute("/")({
   component: Index,
   head: () => ({
