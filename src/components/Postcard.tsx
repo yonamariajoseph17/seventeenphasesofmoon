@@ -201,7 +201,7 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
                 <circle cx="75" cy="75" r="58" />
                 <circle cx="75" cy="75" r="42" strokeDasharray="3 5" />
               </g>
-              <text x="75" y="52" textAnchor="middle" fontSize="10" letterSpacing="2" fill={s.accent} fontFamily={s.body} textTransform="uppercase">
+              <text x="75" y="52" textAnchor="middle" fontSize="10" letterSpacing="2" fill={s.accent} fontFamily={s.body}>
                 {p.city.slice(0, 14).toUpperCase()}
               </text>
               <text x="75" y="104" textAnchor="middle" fontSize="10" letterSpacing="2" fill={s.accent} fontFamily={s.body}>
