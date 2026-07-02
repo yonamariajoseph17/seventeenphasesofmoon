@@ -1,5 +1,6 @@
 import { useId } from "react";
 import { validateMoonVisualInputs, visualTierForIllumination } from "@/lib/moon-visual";
+import moonTexture from "@/assets/moon-texture.jpg.asset.json";
 
 interface Props {
   phaseAngle: number;
@@ -7,6 +8,8 @@ interface Props {
   waxing: boolean;
   size?: number;
 }
+
+const TEXTURE_URL = moonTexture.url;
 
 /**
  * Build the lit-region polygon. The terminator is the projected ellipse of the
@@ -31,27 +34,14 @@ function illuminatedPath(phaseAngle: number, waxing: boolean, r: number) {
   return `M ${rightEdge.join(" L ")} L ${leftEdge.reverse().join(" L ")} Z`;
 }
 
-// Near-side lunar maria (approximate positions on a disc of radius 50).
-const MARIA: Array<{ cx: number; cy: number; rx: number; ry: number; rot: number; o: number }> = [
-  { cx: -16, cy: -20, rx: 14, ry: 11, rot: -20, o: 0.5 },  // Imbrium
-  { cx: 6, cy: -16, rx: 9, ry: 9, rot: 0, o: 0.46 },        // Serenitatis
-  { cx: 18, cy: -6, rx: 8, ry: 9, rot: 10, o: 0.46 },       // Tranquillitatis
-  { cx: 32, cy: -9, rx: 5, ry: 5, rot: 0, o: 0.5 },         // Crisium
-  { cx: -27, cy: 4, rx: 11, ry: 18, rot: 8, o: 0.4 },       // Oceanus Procellarum
-  { cx: 24, cy: 14, rx: 8, ry: 7, rot: 0, o: 0.42 },        // Fecunditatis
-  { cx: -8, cy: 24, rx: 11, ry: 7, rot: -8, o: 0.4 },       // Nubium / Humorum
-];
-
-const CRATERS: Array<{ cx: number; cy: number; r: number }> = [
-  { cx: -2, cy: 34, r: 4.5 },   // Tycho region
-  { cx: 4, cy: 8, r: 2.4 },
-  { cx: -22, cy: -8, r: 2.2 },
-  { cx: 14, cy: 28, r: 2 },
-  { cx: 30, cy: 4, r: 1.8 },
-  { cx: -34, cy: 18, r: 1.6 },
-  { cx: 8, cy: -30, r: 1.7 },
-];
-
+/**
+ * A single, photorealistic moon renderer used EVERYWHERE (homepage, birthday
+ * scroll, postcards, letters). It layers a real high-resolution lunar texture:
+ *   1. atmospheric halo bloom + always-on silver limb ring
+ *   2. earthshine — the whole disc faintly perceptible (ghostly blue-grey)
+ *   3. the lit portion revealed through a soft-feathered terminator mask
+ *   4. limb darkening + a single directional sub-solar highlight (sun)
+ */
 export function MoonSvg({ phaseAngle, illumination, waxing, size = 120 }: Props) {
   const r = 50;
   const uid = useId().replace(/:/g, "");
@@ -69,37 +59,66 @@ export function MoonSvg({ phaseAngle, illumination, waxing, size = 120 }: Props)
   }
 
   const litPath = illuminatedPath(phaseAngle, waxing, r);
-  const glowOpacity = tier === "near-invisible" ? 0.05 : tier === "thin-crescent" ? 0.16 : tier === "crescent" ? 0.3 : 0.55;
-  // Soft terminator: wider blur near quarter phases, tight near new/full.
-  const softness = tier === "near-invisible" || tier === "thin-crescent" ? 0.6 : tier === "full" ? 0.8 : 2.2;
-  // Earthshine: the "old moon in the new moon's arms" — visible only at thin phases.
-  const earthshine = tier === "near-invisible" ? 0.5 : tier === "thin-crescent" ? 0.42 : tier === "crescent" ? 0.22 : 0;
 
+  // Halo & earthshine strength scale with phase — never zero, so the full disc
+  // is always perceptible against a dark card.
+  const haloOpacity =
+    tier === "near-invisible" ? 0.22 : tier === "thin-crescent" ? 0.28 : tier === "crescent" ? 0.4 : tier === "full" ? 0.7 : 0.55;
+  const earthshine =
+    tier === "near-invisible" ? 0.4 : tier === "thin-crescent" ? 0.34 : tier === "crescent" ? 0.22 : tier === "quarter" ? 0.14 : 0.1;
+  // Soft terminator feather: wider near quarter phases, tight near new/full.
+  const softness =
+    tier === "near-invisible" || tier === "thin-crescent" ? 0.7 : tier === "full" ? 0.5 : tier === "quarter" ? 1.6 : 1.2;
 
+  // Single directional light source — the Sun. Highlight sits on the lit limb.
+  const sunX = waxing ? 26 : -26;
 
   return (
-    <svg viewBox="-60 -60 120 120" width={size} height={size} role="img" aria-label={`Moon, ${(illumination * 100).toFixed(0)}% illuminated`}>
+    <svg
+      viewBox="-62 -62 124 124"
+      width={size}
+      height={size}
+      role="img"
+      aria-label={`Moon, ${(illumination * 100).toFixed(0)}% illuminated`}
+    >
       <defs>
-        <radialGradient id={`glow-${uid}`} cx="50%" cy="50%">
-          <stop offset="55%" stopColor="oklch(0.9 0.05 250 / 0.5)" />
-          <stop offset="100%" stopColor="oklch(0.9 0.05 250 / 0)" />
+        {/* Atmospheric bloom around the disc */}
+        <radialGradient id={`halo-${uid}`} cx="50%" cy="50%">
+          <stop offset="60%" stopColor="oklch(0.92 0.03 250 / 0.55)" />
+          <stop offset="82%" stopColor="oklch(0.9 0.04 250 / 0.18)" />
+          <stop offset="100%" stopColor="oklch(0.9 0.04 250 / 0)" />
         </radialGradient>
-        {/* Surface with limb darkening (brighter centre, dimmer edge). */}
-        <radialGradient id={`surface-${uid}`} cx="42%" cy="40%" r="65%">
-          <stop offset="0%" stopColor="oklch(0.97 0.012 95)" />
-          <stop offset="65%" stopColor="oklch(0.88 0.018 90)" />
-          <stop offset="100%" stopColor="oklch(0.72 0.02 85)" />
+
+        {/* Earthshine tint — cool ash-grey/blue over the dim disc */}
+        <radialGradient id={`earth-${uid}`} cx="50%" cy="50%">
+          <stop offset="0%" stopColor="oklch(0.4 0.03 250)" />
+          <stop offset="100%" stopColor="oklch(0.3 0.035 260)" />
         </radialGradient>
-        <radialGradient id={`dark-${uid}`} cx="50%" cy="50%">
-          <stop offset="0%" stopColor="oklch(0.16 0.03 270)" />
-          <stop offset="100%" stopColor="oklch(0.1 0.025 270)" />
+
+        {/* Limb darkening — brighter centre, dimmer edge */}
+        <radialGradient id={`limb-${uid}`} cx="46%" cy="44%" r="62%">
+          <stop offset="0%" stopColor="oklch(0 0 0 / 0)" />
+          <stop offset="72%" stopColor="oklch(0 0 0 / 0)" />
+          <stop offset="100%" stopColor="oklch(0.18 0.02 260 / 0.55)" />
         </radialGradient>
-        {/* Fine regolith texture. */}
-        <filter id={`tex-${uid}`} x="-20%" y="-20%" width="140%" height="140%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" seed="7" result="n" />
-          <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.06 0" />
-        </filter>
-        {/* Soft terminator mask: white = lit, blurred edge. */}
+
+        {/* Sub-solar highlight — subtle brightness swell toward the sun */}
+        <radialGradient
+          id={`sun-${uid}`}
+          cx="50%"
+          cy="50%"
+          r="55%"
+          gradientUnits="userSpaceOnUse"
+          fx={sunX}
+          fy={-8}
+          cy2="0"
+        >
+          <stop offset="0%" stopColor="oklch(1 0.02 95 / 0.28)" />
+          <stop offset="55%" stopColor="oklch(1 0.02 95 / 0.06)" />
+          <stop offset="100%" stopColor="oklch(1 0.02 95 / 0)" />
+        </radialGradient>
+
+        {/* Soft terminator mask: white = lit, blurred edge for atmospheric feather */}
         <filter id={`soft-${uid}`} x="-30%" y="-30%" width="160%" height="160%">
           <feGaussianBlur stdDeviation={softness} />
         </filter>
@@ -111,62 +130,43 @@ export function MoonSvg({ phaseAngle, illumination, waxing, size = 120 }: Props)
         </clipPath>
       </defs>
 
-      {/* Outer atmospheric glow / halo — soft silver bloom against the dark sky */}
-      <circle cx="0" cy="0" r="59" fill={`url(#glow-${uid})`} opacity={glowOpacity} />
-      <circle cx="0" cy="0" r={r + 3} fill="none" stroke="oklch(0.92 0.04 250)" strokeWidth="1.5" opacity={glowOpacity * 0.5} />
+      {/* 1 · Atmospheric halo bloom */}
+      <circle cx="0" cy="0" r={60} fill={`url(#halo-${uid})`} opacity={haloOpacity} />
 
-      {/* Night side (dark disc) */}
-      <circle cx="0" cy="0" r={r} fill={`url(#dark-${uid})`} />
+      <g clipPath={`url(#disc-${uid})`}>
+        {/* 2 · Earthshine — the whole disc faintly perceptible */}
+        <circle cx="0" cy="0" r={r} fill="oklch(0.08 0.02 260)" />
+        <image
+          href={TEXTURE_URL}
+          x={-r}
+          y={-r}
+          width={2 * r}
+          height={2 * r}
+          preserveAspectRatio="xMidYMid slice"
+          opacity={earthshine}
+        />
+        <circle cx="0" cy="0" r={r} fill={`url(#earth-${uid})`} opacity={earthshine * 0.7} style={{ mixBlendMode: "soft-light" }} />
 
-      {/* Earthshine — faint ash-grey glow on the unlit side during crescent phases */}
-      {earthshine > 0 && (
-        <g clipPath={`url(#disc-${uid})`} opacity={earthshine}>
-          <circle cx="0" cy="0" r={r} fill="oklch(0.34 0.02 255)" />
-          {MARIA.map((m, i) => (
-            <ellipse
-              key={`e${i}`}
-              cx={m.cx}
-              cy={m.cy}
-              rx={m.rx}
-              ry={m.ry}
-              transform={`rotate(${m.rot} ${m.cx} ${m.cy})`}
-              fill="oklch(0.26 0.02 255)"
-              opacity={m.o}
-            />
-          ))}
+        {/* 3 · Lit surface — real texture revealed through soft terminator */}
+        <g mask={`url(#lit-${uid})`}>
+          <image
+            href={TEXTURE_URL}
+            x={-r}
+            y={-r}
+            width={2 * r}
+            height={2 * r}
+            preserveAspectRatio="xMidYMid slice"
+          />
+          {/* single directional sun highlight */}
+          <rect x={-r} y={-r} width={2 * r} height={2 * r} fill={`url(#sun-${uid})`} />
         </g>
-      )}
 
-      {/* Illuminated surface, revealed only on the lit side */}
-      <g mask={`url(#lit-${uid})`}>
-        <g clipPath={`url(#disc-${uid})`}>
-          <circle cx="0" cy="0" r={r} fill={`url(#surface-${uid})`} />
-          {/* Maria */}
-          {MARIA.map((m, i) => (
-            <ellipse
-              key={`m${i}`}
-              cx={m.cx}
-              cy={m.cy}
-              rx={m.rx}
-              ry={m.ry}
-              transform={`rotate(${m.rot} ${m.cx} ${m.cy})`}
-              fill="oklch(0.6 0.022 250)"
-              opacity={m.o}
-            />
-          ))}
-          {/* Craters with rim highlight + floor shadow */}
-          {CRATERS.map((c, i) => (
-            <g key={`c${i}`}>
-              <circle cx={c.cx} cy={c.cy} r={c.r} fill="oklch(0.62 0.02 90)" opacity="0.55" />
-              <circle cx={c.cx - c.r * 0.18} cy={c.cy - c.r * 0.18} r={c.r * 0.7} fill="oklch(0.95 0.01 95)" opacity="0.35" />
-            </g>
-          ))}
-          {/* Regolith texture overlay */}
-          <rect x="-50" y="-50" width="100" height="100" filter={`url(#tex-${uid})`} />
-          {/* Limb darkening ring */}
-          <circle cx="0" cy="0" r={r} fill="none" stroke="oklch(0.55 0.02 80)" strokeWidth="5" opacity="0.35" />
-        </g>
+        {/* 4 · Limb darkening across the whole disc */}
+        <circle cx="0" cy="0" r={r} fill={`url(#limb-${uid})`} />
       </g>
+
+      {/* Always-on thin silver limb ring so the disc reads at any illumination */}
+      <circle cx="0" cy="0" r={r - 0.4} fill="none" stroke="oklch(0.85 0.02 250)" strokeWidth="0.7" opacity="0.5" />
     </svg>
   );
 }
