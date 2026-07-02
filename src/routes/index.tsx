@@ -836,62 +836,64 @@ function Index() {
               </div>
             </div>
 
-            <div className="mt-5">
-              <span className="mb-2 block text-xs tracking-[0.2em] text-muted-foreground uppercase">Format</span>
-              <div className="inline-flex rounded-md border border-border bg-card/30 p-1">
-                {(Object.keys(POSTCARD_FORMATS) as PostcardFormat[]).map((k) => (
-                  <button
-                    key={k}
-                    type="button"
-                    onClick={() => setPcFormat(k)}
-                    className={`rounded px-3 py-1.5 text-[11px] tracking-[0.2em] uppercase transition-colors ${
-                      pcFormat === k ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {k}
-                  </button>
-                ))}
-              </div>
-              <p className="mt-2 text-xs text-muted-foreground">{POSTCARD_FORMATS[pcFormat].label}</p>
-            </div>
-
             <button
               type="button"
               onClick={downloadPostcard}
               disabled={exporting}
               className="mt-6 w-full rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
             >
-              {exporting ? "Rendering…" : "Download postcard (PNG)"}
+              {exporting ? "Rendering both sides…" : "Download postcard (front + back PNG)"}
             </button>
             <p className="mt-2 text-[10px] tracking-[0.2em] text-muted-foreground/70 uppercase">
-              High-resolution · ready to share or print
+              High-resolution print template · front left, back right
             </p>
           </div>
 
-          {/* Preview — full-resolution node scaled into view */}
-          <PostcardPreview
-            width={POSTCARD_FORMATS[pcFormat].w}
-            height={POSTCARD_FORMATS[pcFormat].h}
-          >
-            <Postcard
-              ref={postcardRef}
-              style={pcStyle}
-              format={pcFormat}
-              moon={birthMoon}
-              date={birth}
-              tz={applied.tz}
-              city={applied.city}
-              recipient={recipientForCard}
-              occasion={occasionForCard}
-              message={pcMessage}
-              poetic={poetic}
-              illumPct={birthIllumStr}
-              dateLabel={fmtDate(birth, applied.tz)}
-              timeLabel={birthTimeLabel}
-              moonriseLabel={birthRiseSet.moonrise ? fmtTime(birthRiseSet.moonrise, applied.tz) : undefined}
-              moonsetLabel={birthRiseSet.moonset ? fmtTime(birthRiseSet.moonset, applied.tz) : undefined}
-            />
-          </PostcardPreview>
+          {/* Interactive flip preview */}
+          <div className="flex flex-col items-center justify-center gap-4">
+            <div
+              style={{ perspective: 1600, width: PREVIEW_W, height: PREVIEW_W * (POSTCARD_H / POSTCARD_W) }}
+            >
+              <button
+                type="button"
+                onClick={() => setPcFlipped((f) => !f)}
+                className="relative h-full w-full cursor-pointer rounded-2xl"
+                style={{
+                  transformStyle: "preserve-3d",
+                  transition: "transform 0.8s cubic-bezier(0.4,0,0.2,1)",
+                  transform: pcFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
+                }}
+                aria-label="Flip postcard"
+              >
+                {/* Front face */}
+                <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", borderRadius: 16, overflow: "hidden", boxShadow: "0 22px 60px -20px rgba(0,0,0,0.65)" }}>
+                  <div style={{ transform: `scale(${PREVIEW_W / POSTCARD_W})`, transformOrigin: "top left", width: POSTCARD_W, height: POSTCARD_H }}>
+                    <PostcardFront {...pcProps} />
+                  </div>
+                </div>
+                {/* Back face */}
+                <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", transform: "rotateY(180deg)", borderRadius: 16, overflow: "hidden", boxShadow: "0 22px 60px -20px rgba(0,0,0,0.65)" }}>
+                  <div style={{ transform: `scale(${PREVIEW_W / POSTCARD_W})`, transformOrigin: "top left", width: POSTCARD_W, height: POSTCARD_H }}>
+                    <PostcardBack {...pcProps} />
+                  </div>
+                </div>
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={() => setPcFlipped((f) => !f)}
+              className="rounded-full border border-border px-4 py-1.5 text-[11px] tracking-[0.2em] text-muted-foreground uppercase transition-colors hover:text-foreground"
+            >
+              {pcFlipped ? "Show front" : "Flip to back"}
+            </button>
+          </div>
+
+          {/* Hidden full-resolution nodes for export */}
+          <div style={{ position: "fixed", left: -99999, top: 0, pointerEvents: "none", opacity: 0 }} aria-hidden>
+            <PostcardFront ref={frontRef} {...pcProps} />
+            <PostcardBack ref={backRef} {...pcProps} />
+          </div>
+
 
         </div>
       </section>
