@@ -304,6 +304,24 @@ function Index() {
   const occasionForCard = pcOccasion.trim() || "A moon for you";
   const poetic = useMemo(() => poeticLine(birthMoon, recipientForCard), [birthMoon, recipientForCard]);
 
+  const pcProps = {
+    style: pcStyle,
+    moon: birthMoon,
+    date: birth,
+    tz: applied.tz,
+    city: applied.city,
+    recipient: recipientForCard,
+    sender: pcSender.trim(),
+    occasion: occasionForCard,
+    message: pcMessage,
+    poetic,
+    illumPct: birthIllumStr,
+    dateLabel: fmtDate(birth, applied.tz),
+    timeLabel: birthTimeLabel,
+    moonriseLabel: birthRiseSet.moonrise ? fmtTime(birthRiseSet.moonrise, applied.tz) : undefined,
+    moonsetLabel: birthRiseSet.moonset ? fmtTime(birthRiseSet.moonset, applied.tz) : undefined,
+  };
+
   async function downloadPostcard() {
     if (!frontRef.current || !backRef.current) return;
     setExporting(true);
