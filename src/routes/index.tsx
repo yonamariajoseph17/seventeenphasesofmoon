@@ -291,30 +291,45 @@ function Index() {
 
   // ── Postcard ────────────────────────────────────────────────────────
   const [pcStyle, setPcStyle] = useState<PostcardStyle>("romantic");
-  const [pcFormat, setPcFormat] = useState<PostcardFormat>("square");
   const [pcRecipient, setPcRecipient] = useState("");
+  const [pcSender, setPcSender] = useState("");
   const [pcOccasion, setPcOccasion] = useState("");
   const [pcMessage, setPcMessage] = useState("");
+  const [pcFlipped, setPcFlipped] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const postcardRef = useRef<HTMLDivElement>(null);
+  const frontRef = useRef<HTMLDivElement>(null);
+  const backRef = useRef<HTMLDivElement>(null);
 
   const recipientForCard = pcRecipient.trim() || personName;
   const occasionForCard = pcOccasion.trim() || "A moon for you";
   const poetic = useMemo(() => poeticLine(birthMoon, recipientForCard), [birthMoon, recipientForCard]);
 
   async function downloadPostcard() {
-    if (!postcardRef.current) return;
+    if (!frontRef.current || !backRef.current) return;
     setExporting(true);
     try {
-      const dataUrl = await toPng(postcardRef.current, {
-        pixelRatio: 1,
-        cacheBust: true,
-        backgroundColor: undefined,
-      });
-      const a = document.createElement("a");
+      const opts = { pixelRatio: 2, cacheBust: true, backgroundColor: undefined as string | undefined };
+      const [frontUrl, backUrl] = await Promise.all([
+        toPng(frontRef.current, opts),
+        toPng(backRef.current, opts),
+      ]);
+      // Stitch front (left) + back (right) into one wide print template.
+      const scale = 2;
+      const gap = 60 * scale;
+      const canvas = document.createElement("canvas");
+      canvas.width = POSTCARD_W * scale * 2 + gap;
+      canvas.height = POSTCARD_H * scale;
+      const ctx = canvas.getContext("2d");
+      if (ctx) {
+        const [imgF, imgB] = await Promise.all([loadImage(frontUrl), loadImage(backUrl)]);
+        ctx.drawImage(imgF, 0, 0, POSTCARD_W * scale, POSTCARD_H * scale);
+        ctx.drawImage(imgB, POSTCARD_W * scale + gap, 0, POSTCARD_W * scale, POSTCARD_H * scale);
+      }
+      const combined = canvas.toDataURL("image/png");
       const safeName = recipientForCard.replace(/[^a-z0-9-_]+/gi, "_").toLowerCase() || "moon";
+      const a = document.createElement("a");
       a.download = `moon-postcard-${safeName}-${applied.date}.png`;
-      a.href = dataUrl;
+      a.href = combined;
       a.click();
     } finally {
       setExporting(false);
