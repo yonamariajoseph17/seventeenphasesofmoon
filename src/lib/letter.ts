@@ -32,6 +32,23 @@ export const OCCASION_LABELS: Record<LetterOccasion, string> = {
   general: "General",
 };
 
+// ── Bouquet ─────────────────────────────────────────────────────────
+export const FLOWERS = [
+  "rose", "peony", "daisy", "lily", "orchid", "marigold",
+  "carnation", "sunflower", "hydrangea", "jasmine", "tulip", "lavender",
+] as const;
+export type FlowerId = (typeof FLOWERS)[number];
+
+export const WRAPS = [
+  "kraft", "blush", "sage", "ivory", "dustyblue", "plum", "terracotta", "charcoal",
+] as const;
+export type WrapId = (typeof WRAPS)[number];
+
+export interface Bouquet {
+  flowers: FlowerId[];   // chosen blooms (may mix types/colors), up to 8
+  wrap: WrapId;
+}
+
 export interface LetterPayload {
   v: 1;                 // schema version
   name: string;         // person the moon was calculated for
@@ -46,9 +63,11 @@ export interface LetterPayload {
   to?: string;          // recipient display name
   msg?: string;         // personal message
   from?: string;        // sender name
+  closing?: string;     // closing line (default "Forever yours,")
   style: LetterStyle;
   occasion?: LetterOccasion;  // sets the emotional opening line
   song?: string;        // signed URL of an uploaded personal song
+  bouquet?: Bouquet;    // chosen flowers + wrap
 }
 
 function utf8ToB64Url(str: string): string {
