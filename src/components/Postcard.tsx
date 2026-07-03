@@ -122,49 +122,61 @@ const CARD_STYLE = (bg: string): React.CSSProperties => ({
 /* ─────────────────────────────  FRONT  ───────────────────────────── */
 export const PostcardFront = forwardRef<HTMLDivElement, Props>(function PostcardFront(p, ref) {
   const s = STOCKS[p.style];
-  const moonSize = 420;
+  const moonSize = 300;
+  const milestones = p.milestones ?? [];
+  const captionLoc = [p.city, p.stateLabel].filter(Boolean).join(", ").toUpperCase();
+  const sunLine = [
+    p.sunriseLabel ? `SUNRISE ${p.sunriseLabel.toUpperCase()}` : "SUNRISE —",
+    p.sunsetLabel ? `SUNSET ${p.sunsetLabel.toUpperCase()}` : "SUNSET —",
+  ].join("   ·   ");
 
   return (
-    <div ref={ref} style={{ ...CARD_STYLE(s.card), fontFamily: s.body, color: s.ink, padding: 84, display: "flex", flexDirection: "column", alignItems: "center" }}>
+    <div ref={ref} style={{ ...CARD_STYLE(s.card), fontFamily: s.body, color: s.ink, padding: 0, display: "flex", flexDirection: "column" }}>
       <PaperGrain opacity={s.grainOpacity} light={s.light} />
 
-      {/* subtle printed frame */}
-      <div style={{ position: "absolute", inset: 30, border: `1.5px solid ${s.line}`, borderRadius: 18, opacity: 0.6, pointerEvents: "none" }} />
+      {/* double ruled border */}
+      <div style={{ position: "absolute", inset: 22, border: `2px solid ${s.line}`, borderRadius: 16, opacity: 0.7, pointerEvents: "none" }} />
+      <div style={{ position: "absolute", inset: 30, border: `1px solid ${s.line}`, borderRadius: 12, opacity: 0.45, pointerEvents: "none" }} />
 
-      {/* Header */}
-      <div style={{ position: "relative", textAlign: "center" }}>
-        <p style={{ margin: 0, fontFamily: s.body, fontSize: 17, letterSpacing: 7, textTransform: "uppercase", color: s.accent }}>
-          {p.occasion || "A moon for you"}
-        </p>
-        {p.recipient && (
-          <h1 style={{ margin: "10px 0 0", fontFamily: s.heading, fontSize: 74, fontWeight: 400, lineHeight: 1.02, fontStyle: p.style === "vintage" || p.style === "romantic" ? "italic" : "normal" }}>
-            For {p.recipient}
-          </h1>
-        )}
+      {/* Hero: birth-night moon on deep navy night sky — upper ~72% */}
+      <div style={{ position: "relative", height: "70%", margin: "44px 44px 0", borderRadius: 12, overflow: "hidden", background: "radial-gradient(ellipse at 50% 30%, #1b2647 0%, #0d1430 55%, #070b1c 100%)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+        {/* faint stars */}
+        <svg width="100%" height="100%" style={{ position: "absolute", inset: 0 }} aria-hidden>
+          {Array.from({ length: 46 }).map((_, i) => {
+            const x = (i * 137.5) % 100;
+            const y = (i * 61.8) % 100;
+            return <circle key={i} cx={`${x}%`} cy={`${y}%`} r={i % 5 === 0 ? 1.6 : 0.9} fill="#dfe6ff" opacity={0.15 + (i % 4) * 0.12} />;
+          })}
+        </svg>
+        <MoonSvg phaseAngle={p.moon.phaseAngle} illumination={p.moon.illumination} waxing={p.moon.waxing} size={moonSize} />
+        <p style={{ position: "relative", margin: "18px 0 0", fontFamily: s.heading, fontSize: 30, color: "#eef1fb", fontStyle: "italic" }}>{p.moon.name}</p>
       </div>
 
-      {/* Moon — hero, seated in a soft printed sky medallion so it reads on any stock */}
-      <div style={{ position: "relative", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", margin: "18px 0" }}>
-        <div style={{ position: "absolute", width: moonSize + 150, height: moonSize + 150, borderRadius: "50%", background: "radial-gradient(circle, rgba(8,10,20,0.92) 40%, rgba(8,10,20,0) 72%)" }} />
-        <div style={{ position: "relative" }}>
-          <MoonSvg phaseAngle={p.moon.phaseAngle} illumination={p.moon.illumination} waxing={p.moon.waxing} size={moonSize} />
+      {/* caption line */}
+      <div style={{ position: "relative", textAlign: "center", marginTop: 18 }}>
+        <p style={{ margin: 0, fontSize: 16, letterSpacing: 5, textTransform: "uppercase", color: s.ink }}>
+          {captionLoc || p.city.toUpperCase()} · {p.dateLabel.toUpperCase()}
+        </p>
+        <p style={{ margin: "8px 0 0", fontSize: 13, letterSpacing: 4, textTransform: "uppercase", color: s.sub }}>
+          {sunLine}
+        </p>
+      </div>
+
+      {/* milestone moon strip */}
+      {milestones.length > 0 && (
+        <div style={{ position: "relative", marginTop: "auto", marginBottom: 34, padding: "0 54px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+          {milestones.map((m) => (
+            <div key={m.age} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <div style={{ borderRadius: "50%", background: "radial-gradient(circle, rgba(10,14,28,0.9) 45%, rgba(10,14,28,0) 74%)", padding: 4 }}>
+                <MoonSvg phaseAngle={m.phaseAngle} illumination={m.illumination} waxing={m.waxing} size={74} />
+              </div>
+              <span style={{ fontSize: 11, letterSpacing: 2.5, textTransform: "uppercase", color: s.sub }}>
+                {m.age === 0 ? "Birth" : `Age ${m.age}`}
+              </span>
+            </div>
+          ))}
         </div>
-      </div>
-
-      {/* Phase + poetic line */}
-      <div style={{ position: "relative", textAlign: "center", maxWidth: 1200 }}>
-        <p style={{ margin: 0, fontFamily: s.heading, fontSize: 40, fontWeight: 400, letterSpacing: 1, fontStyle: p.style === "romantic" ? "italic" : "normal" }}>
-          {p.moon.name}
-        </p>
-        <p style={{ margin: "20px auto 0", maxWidth: 1000, fontFamily: s.heading, fontSize: 30, lineHeight: 1.35, fontStyle: "italic", color: s.ink, opacity: 0.9 }}>
-          “{p.poetic}”
-        </p>
-      </div>
-
-      {/* Bottom edge — location · date · time */}
-      <div style={{ position: "relative", marginTop: 26, display: "flex", gap: 26, justifyContent: "center", fontSize: 15, letterSpacing: 3, textTransform: "uppercase", color: s.sub }}>
-        <span>{p.city}</span><span>·</span><span>{p.dateLabel}</span><span>·</span><span>{p.timeLabel}</span>
-      </div>
+      )}
     </div>
   );
 });
