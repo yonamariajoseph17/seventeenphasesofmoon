@@ -11,12 +11,20 @@ export type PostcardStyle = (typeof POSTCARD_STYLES)[number];
 export const POSTCARD_W = 1650;
 export const POSTCARD_H = 1100;
 
+export interface PostcardMilestone {
+  age: number;              // 0 = birth
+  phaseAngle: number;
+  illumination: number;
+  waxing: boolean;
+}
+
 interface Props {
   style: PostcardStyle;
   moon: AccurateMoonInfo;
   date: Date;
   tz: number;
   city: string;
+  stateLabel?: string;      // e.g. "Tamil Nadu"
   recipient: string;
   sender?: string;
   occasion: string;
@@ -27,6 +35,9 @@ interface Props {
   timeLabel: string;
   moonriseLabel?: string;
   moonsetLabel?: string;
+  sunriseLabel?: string;
+  sunsetLabel?: string;
+  milestones?: PostcardMilestone[];
 }
 
 interface Stock {
@@ -111,49 +122,61 @@ const CARD_STYLE = (bg: string): React.CSSProperties => ({
 /* ─────────────────────────────  FRONT  ───────────────────────────── */
 export const PostcardFront = forwardRef<HTMLDivElement, Props>(function PostcardFront(p, ref) {
   const s = STOCKS[p.style];
-  const moonSize = 420;
+  const moonSize = 300;
+  const milestones = p.milestones ?? [];
+  const captionLoc = [p.city, p.stateLabel].filter(Boolean).join(", ").toUpperCase();
+  const sunLine = [
+    p.sunriseLabel ? `SUNRISE ${p.sunriseLabel.toUpperCase()}` : "SUNRISE —",
+    p.sunsetLabel ? `SUNSET ${p.sunsetLabel.toUpperCase()}` : "SUNSET —",
+  ].join("   ·   ");
 
   return (
-    <div ref={ref} style={{ ...CARD_STYLE(s.card), fontFamily: s.body, color: s.ink, padding: 84, display: "flex", flexDirection: "column", alignItems: "center" }}>
+    <div ref={ref} style={{ ...CARD_STYLE(s.card), fontFamily: s.body, color: s.ink, padding: 0, display: "flex", flexDirection: "column" }}>
       <PaperGrain opacity={s.grainOpacity} light={s.light} />
 
-      {/* subtle printed frame */}
-      <div style={{ position: "absolute", inset: 30, border: `1.5px solid ${s.line}`, borderRadius: 18, opacity: 0.6, pointerEvents: "none" }} />
+      {/* double ruled border */}
+      <div style={{ position: "absolute", inset: 22, border: `2px solid ${s.line}`, borderRadius: 16, opacity: 0.7, pointerEvents: "none" }} />
+      <div style={{ position: "absolute", inset: 30, border: `1px solid ${s.line}`, borderRadius: 12, opacity: 0.45, pointerEvents: "none" }} />
 
-      {/* Header */}
-      <div style={{ position: "relative", textAlign: "center" }}>
-        <p style={{ margin: 0, fontFamily: s.body, fontSize: 17, letterSpacing: 7, textTransform: "uppercase", color: s.accent }}>
-          {p.occasion || "A moon for you"}
-        </p>
-        {p.recipient && (
-          <h1 style={{ margin: "10px 0 0", fontFamily: s.heading, fontSize: 74, fontWeight: 400, lineHeight: 1.02, fontStyle: p.style === "vintage" || p.style === "romantic" ? "italic" : "normal" }}>
-            For {p.recipient}
-          </h1>
-        )}
+      {/* Hero: birth-night moon on deep navy night sky — upper ~72% */}
+      <div style={{ position: "relative", height: "70%", margin: "44px 44px 0", borderRadius: 12, overflow: "hidden", background: "radial-gradient(ellipse at 50% 30%, #1b2647 0%, #0d1430 55%, #070b1c 100%)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+        {/* faint stars */}
+        <svg width="100%" height="100%" style={{ position: "absolute", inset: 0 }} aria-hidden>
+          {Array.from({ length: 46 }).map((_, i) => {
+            const x = (i * 137.5) % 100;
+            const y = (i * 61.8) % 100;
+            return <circle key={i} cx={`${x}%`} cy={`${y}%`} r={i % 5 === 0 ? 1.6 : 0.9} fill="#dfe6ff" opacity={0.15 + (i % 4) * 0.12} />;
+          })}
+        </svg>
+        <MoonSvg phaseAngle={p.moon.phaseAngle} illumination={p.moon.illumination} waxing={p.moon.waxing} size={moonSize} />
+        <p style={{ position: "relative", margin: "18px 0 0", fontFamily: s.heading, fontSize: 30, color: "#eef1fb", fontStyle: "italic" }}>{p.moon.name}</p>
       </div>
 
-      {/* Moon — hero, seated in a soft printed sky medallion so it reads on any stock */}
-      <div style={{ position: "relative", flex: 1, display: "flex", alignItems: "center", justifyContent: "center", margin: "18px 0" }}>
-        <div style={{ position: "absolute", width: moonSize + 150, height: moonSize + 150, borderRadius: "50%", background: "radial-gradient(circle, rgba(8,10,20,0.92) 40%, rgba(8,10,20,0) 72%)" }} />
-        <div style={{ position: "relative" }}>
-          <MoonSvg phaseAngle={p.moon.phaseAngle} illumination={p.moon.illumination} waxing={p.moon.waxing} size={moonSize} />
+      {/* caption line */}
+      <div style={{ position: "relative", textAlign: "center", marginTop: 18 }}>
+        <p style={{ margin: 0, fontSize: 16, letterSpacing: 5, textTransform: "uppercase", color: s.ink }}>
+          {captionLoc || p.city.toUpperCase()} · {p.dateLabel.toUpperCase()}
+        </p>
+        <p style={{ margin: "8px 0 0", fontSize: 13, letterSpacing: 4, textTransform: "uppercase", color: s.sub }}>
+          {sunLine}
+        </p>
+      </div>
+
+      {/* milestone moon strip */}
+      {milestones.length > 0 && (
+        <div style={{ position: "relative", marginTop: "auto", marginBottom: 34, padding: "0 54px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+          {milestones.map((m) => (
+            <div key={m.age} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+              <div style={{ borderRadius: "50%", background: "radial-gradient(circle, rgba(10,14,28,0.9) 45%, rgba(10,14,28,0) 74%)", padding: 4 }}>
+                <MoonSvg phaseAngle={m.phaseAngle} illumination={m.illumination} waxing={m.waxing} size={74} />
+              </div>
+              <span style={{ fontSize: 11, letterSpacing: 2.5, textTransform: "uppercase", color: s.sub }}>
+                {m.age === 0 ? "Birth" : `Age ${m.age}`}
+              </span>
+            </div>
+          ))}
         </div>
-      </div>
-
-      {/* Phase + poetic line */}
-      <div style={{ position: "relative", textAlign: "center", maxWidth: 1200 }}>
-        <p style={{ margin: 0, fontFamily: s.heading, fontSize: 40, fontWeight: 400, letterSpacing: 1, fontStyle: p.style === "romantic" ? "italic" : "normal" }}>
-          {p.moon.name}
-        </p>
-        <p style={{ margin: "20px auto 0", maxWidth: 1000, fontFamily: s.heading, fontSize: 30, lineHeight: 1.35, fontStyle: "italic", color: s.ink, opacity: 0.9 }}>
-          “{p.poetic}”
-        </p>
-      </div>
-
-      {/* Bottom edge — location · date · time */}
-      <div style={{ position: "relative", marginTop: 26, display: "flex", gap: 26, justifyContent: "center", fontSize: 15, letterSpacing: 3, textTransform: "uppercase", color: s.sub }}>
-        <span>{p.city}</span><span>·</span><span>{p.dateLabel}</span><span>·</span><span>{p.timeLabel}</span>
-      </div>
+      )}
     </div>
   );
 });
@@ -168,13 +191,15 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
     <div ref={ref} style={{ ...CARD_STYLE(s.card), fontFamily: s.body, color: s.ink, padding: 76, display: "flex" }}>
       <PaperGrain opacity={s.grainOpacity} light={s.light} />
 
-      {/* Left half — handwritten message */}
+      {/* Left half — Post Card header + handwritten message */}
       <div style={{ position: "relative", flex: 1.15, paddingRight: 60, display: "flex", flexDirection: "column" }}>
-        <p style={{ margin: 0, fontFamily: "'Caveat', cursive", fontSize: 44, color: s.ink }}>{dear}</p>
-        <p style={{ margin: "22px 0 0", fontFamily: "'Caveat', cursive", fontSize: 34, lineHeight: 1.5, color: s.ink, opacity: 0.92, flex: 1, whiteSpace: "pre-wrap" }}>
+        <p style={{ margin: 0, fontFamily: s.heading, fontSize: 34, letterSpacing: 1, color: s.ink }}>Post Card</p>
+        <p style={{ margin: "4px 0 20px", fontSize: 11, letterSpacing: 3, textTransform: "uppercase", color: s.sub }}>This space for writing messages</p>
+        <p style={{ margin: 0, fontFamily: "'Caveat', cursive", fontSize: 40, color: s.ink }}>{dear}</p>
+        <p style={{ margin: "16px 0 0", fontFamily: "'Caveat', cursive", fontSize: 32, lineHeight: 1.5, color: s.ink, opacity: 0.92, flex: 1, whiteSpace: "pre-wrap" }}>
           {p.message || "Wherever you are tonight, the same moon is watching over you."}
         </p>
-        <p style={{ margin: "20px 0 0", fontFamily: "'Caveat', cursive", fontSize: 40, color: s.accent }}>{signoff}</p>
+        <p style={{ margin: "14px 0 0", fontFamily: "'Caveat', cursive", fontSize: 34, color: s.accent }}>{signoff}</p>
       </div>
 
       {/* Vertical dividing line */}
@@ -212,8 +237,8 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
         </div>
 
         {/* Address ruled lines */}
-        <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 46 }}>
-          {[0, 1, 2, 3].map((i) => (
+        <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 52 }}>
+          {[0, 1, 2].map((i) => (
             <div key={i} style={{ height: 0, borderBottom: `1.5px solid ${s.line}`, opacity: 0.8, width: i === 0 ? "62%" : "100%" }} />
           ))}
         </div>
@@ -222,8 +247,8 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
       </div>
 
       {/* Printer credit */}
-      <p style={{ position: "absolute", bottom: 30, left: 76, margin: 0, fontSize: 12, letterSpacing: 3, textTransform: "uppercase", color: s.sub, opacity: 0.75 }}>
-        Sky We Share · astronomy-engine verified
+      <p style={{ position: "absolute", bottom: 24, left: "50%", transform: "translateX(-50%)", margin: 0, fontSize: 11, letterSpacing: 2.5, textTransform: "uppercase", color: s.sub, opacity: 0.75, whiteSpace: "nowrap" }}>
+        Sky We Share · astronomy-engine (VSOP87/ELP2000)
       </p>
     </div>
   );

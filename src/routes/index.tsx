@@ -12,11 +12,12 @@ import { MoonSvg } from "@/components/MoonSvg";
 import { StarField } from "@/components/StarField";
 import { SoundscapeControl } from "@/components/SoundscapeControl";
 import { useSoundscape } from "@/lib/useAmbient";
-import { PostcardFront, PostcardBack, POSTCARD_STYLES, POSTCARD_W, POSTCARD_H, type PostcardStyle } from "@/components/Postcard";
+import { PostcardFront, PostcardBack, POSTCARD_STYLES, POSTCARD_W, POSTCARD_H, type PostcardStyle, type PostcardMilestone } from "@/components/Postcard";
 import { LETTER_STYLES, LETTER_OCCASIONS, OCCASION_LABELS, type LetterStyle, type LetterOccasion, type LetterPayload } from "@/lib/letter";
 import { createLetter, uploadLetterSong, SONG_ACCEPT, SONG_MAX_BYTES } from "@/lib/letter-store";
 import { ALL_PRESETS, resolvePreset, searchPresets, type CityPreset } from "@/lib/india-locations";
-import { isMilestoneAge } from "@/lib/milestones";
+import { isMilestoneAge, postcardMilestones } from "@/lib/milestones";
+import { GiftWizard } from "@/components/GiftWizard";
 
 const PREVIEW_W = 520;
 
@@ -248,6 +249,15 @@ function Index() {
     : (birthMoon.illumination * 100).toFixed(2);
   const birthTimeLabel = timeWithVerifiedEvent(birth, applied.tz, birthRiseSet);
   const birthVisualLabel = moonVisualDescription(birthMoon);
+  const dateLabelShort = new Date(birth.getTime() + applied.tz * 3_600_000).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
+  const pcMilestones = useMemo<PostcardMilestone[]>(() => {
+    const maxAge = currentYear - birthYear;
+    return postcardMilestones(maxAge).map((age) => {
+      const d = years[age];
+      const mm = accurateMoon(d);
+      return { age, phaseAngle: mm.phaseAngle, illumination: mm.illumination, waxing: mm.waxing };
+    });
+  }, [years, currentYear, birthYear]);
 
   const pronouns = PRONOUN_MAP[applied.pronoun];
   const hasName = applied.name.trim().length > 0;
@@ -780,316 +790,44 @@ function Index() {
         </div>
       </section>
 
-      {/* Postcard / Gift */}
-      <section className="relative mx-auto max-w-6xl px-6 pb-24">
-        <div className="mb-8 text-center">
-          <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">A keepsake of that night</p>
-          <h2 className="mt-3 font-display text-3xl md:text-5xl">Create a moon postcard</h2>
-          <p className="mt-3 text-sm text-muted-foreground">
-            A shareable card built entirely from verified astronomy — no invented constellations, no false claims.
-          </p>
-        </div>
-
-        <div className="grid gap-8 lg:grid-cols-[1fr_1.1fr]">
-          {/* Controls */}
-          <div className="rounded-2xl border border-border bg-card/40 p-6 backdrop-blur-sm">
-            <Field label="Recipient name">
-              <input
-                type="text"
-                value={pcRecipient}
-                maxLength={40}
-                onChange={(e) => setPcRecipient(e.target.value)}
-                placeholder={personName}
-                className="input"
-              />
-            </Field>
-            <div className="mt-4">
-              <Field label="Occasion">
-                <select
-                  value={pcOccasion}
-                  onChange={(e) => setPcOccasion(e.target.value)}
-                  className="input"
-                >
-                  <option value="">A moon for you</option>
-                  <option>Birthday</option>
-                  <option>Anniversary</option>
-                  <option>First met</option>
-                  <option>Proposal</option>
-                  <option>A memory</option>
-                  <option>Friendship</option>
-                </select>
-              </Field>
-            </div>
-            <div className="mt-4">
-              <Field label="Your name (sender)">
-                <input
-                  type="text"
-                  value={pcSender}
-                  maxLength={40}
-                  onChange={(e) => setPcSender(e.target.value)}
-                  placeholder="From…"
-                  className="input"
-                />
-              </Field>
-            </div>
-            <div className="mt-4">
-              <Field label="Personal message (optional)">
-                <textarea
-                  value={pcMessage}
-                  maxLength={220}
-                  rows={3}
-                  onChange={(e) => setPcMessage(e.target.value)}
-                  placeholder="A few words from you…"
-                  className="input resize-none"
-                />
-              </Field>
-            </div>
-
-            <div className="mt-5">
-              <span className="mb-2 block text-xs tracking-[0.2em] text-muted-foreground uppercase">Style</span>
-              <div className="flex flex-wrap gap-2">
-                {POSTCARD_STYLES.map((s) => (
-                  <button
-                    key={s}
-                    type="button"
-                    onClick={() => setPcStyle(s)}
-                    className={`rounded-full border px-3 py-1.5 text-xs tracking-[0.15em] capitalize transition-colors ${
-                      pcStyle === s
-                        ? "border-accent bg-accent/15 text-accent"
-                        : "border-border text-muted-foreground hover:text-foreground"
-                    }`}
-                  >
-                    {s}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <button
-              type="button"
-              onClick={downloadPostcard}
-              disabled={exporting}
-              className="mt-6 w-full rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-50"
-            >
-              {exporting ? "Rendering both sides…" : "Download postcard (front + back PNG)"}
-            </button>
-            <p className="mt-2 text-[10px] tracking-[0.2em] text-muted-foreground/70 uppercase">
-              High-resolution print template · front left, back right
-            </p>
-          </div>
-
-          {/* Interactive flip preview */}
-          <div className="flex flex-col items-center justify-center gap-4">
-            <div
-              style={{ perspective: 1600, width: PREVIEW_W, height: PREVIEW_W * (POSTCARD_H / POSTCARD_W) }}
-            >
-              <button
-                type="button"
-                onClick={() => setPcFlipped((f) => !f)}
-                className="relative h-full w-full cursor-pointer rounded-2xl"
-                style={{
-                  transformStyle: "preserve-3d",
-                  transition: "transform 0.8s cubic-bezier(0.4,0,0.2,1)",
-                  transform: pcFlipped ? "rotateY(180deg)" : "rotateY(0deg)",
-                }}
-                aria-label="Flip postcard"
-              >
-                {/* Front face */}
-                <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", borderRadius: 16, overflow: "hidden", boxShadow: "0 22px 60px -20px rgba(0,0,0,0.65)" }}>
-                  <div style={{ transform: `scale(${PREVIEW_W / POSTCARD_W})`, transformOrigin: "top left", width: POSTCARD_W, height: POSTCARD_H }}>
-                    <PostcardFront {...pcProps} />
-                  </div>
-                </div>
-                {/* Back face */}
-                <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", transform: "rotateY(180deg)", borderRadius: 16, overflow: "hidden", boxShadow: "0 22px 60px -20px rgba(0,0,0,0.65)" }}>
-                  <div style={{ transform: `scale(${PREVIEW_W / POSTCARD_W})`, transformOrigin: "top left", width: POSTCARD_W, height: POSTCARD_H }}>
-                    <PostcardBack {...pcProps} />
-                  </div>
-                </div>
-              </button>
-            </div>
-            <button
-              type="button"
-              onClick={() => setPcFlipped((f) => !f)}
-              className="rounded-full border border-border px-4 py-1.5 text-[11px] tracking-[0.2em] text-muted-foreground uppercase transition-colors hover:text-foreground"
-            >
-              {pcFlipped ? "Show front" : "Flip to back"}
-            </button>
-          </div>
-
-          {/* Hidden full-resolution nodes for export */}
-          <div style={{ position: "fixed", left: -99999, top: 0, pointerEvents: "none", opacity: 0 }} aria-hidden>
-            <PostcardFront ref={frontRef} {...pcProps} />
-            <PostcardBack ref={backRef} {...pcProps} />
-          </div>
-
-
-        </div>
-      </section>
-
-      {/* Moon Letter — shareable gift link */}
+      {/* Unified gift experience — Letter · Postcard · Bouquet */}
       <section className="relative mx-auto max-w-4xl px-6 pb-24">
-        <div className="mb-8 text-center">
-          <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">A gift across the night</p>
-          <h2 className="mt-3 font-display text-3xl md:text-5xl">Send as a Moon Letter</h2>
+        <div className="mb-10 text-center">
+          <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">Made under the same sky</p>
+          <h2 className="mt-3 font-display text-3xl md:text-5xl">Create a gift</h2>
           <p className="mt-3 text-sm text-muted-foreground">
-            A cinematic, shareable link — the recipient opens a sealed envelope, reads your note, then sees the verified sky from {applied.city}.
+            One link, three chapters — a handwritten letter, a vintage moon postcard, and a bouquet — that unfold together when {personName} opens it.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card/40 p-6 backdrop-blur-sm">
-          <div className="grid gap-4 md:grid-cols-2">
-            <Field label="To (recipient name)">
-              <input type="text" value={ltTo} onChange={(e) => setLtTo(e.target.value)} maxLength={40} placeholder={personName} className="input" />
-            </Field>
-            <Field label="From (your name, optional)">
-              <input type="text" value={ltFrom} onChange={(e) => setLtFrom(e.target.value)} maxLength={40} placeholder="—" className="input" />
-            </Field>
-          </div>
-
-          <div className="mt-4">
-            <Field label="Personal message (optional)">
-              <textarea
-                value={ltMessage}
-                onChange={(e) => setLtMessage(e.target.value)}
-                maxLength={280}
-                rows={3}
-                placeholder="You came into the world beneath this quiet moon…"
-                className="input resize-none"
-              />
-            </Field>
-          </div>
-
-          <div className="mt-5">
-            <span className="mb-2 block text-xs tracking-[0.2em] text-muted-foreground uppercase">Letter style</span>
-            <div className="flex flex-wrap gap-2">
-              {LETTER_STYLES.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => setLtStyle(s)}
-                  className={`rounded-full border px-3 py-1.5 text-xs tracking-[0.15em] capitalize transition-colors ${
-                    ltStyle === s ? "border-accent bg-accent/15 text-accent" : "border-border text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {s === "midnight" ? "Midnight Sky" : s === "vintage" ? "Vintage Letter" : s === "archive" ? "Memory Archive" : s === "golden" ? "Golden Moon" : s}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Occasion — sets the quiet opening line the recipient reads first */}
-          <div className="mt-5">
-            <span className="mb-2 block text-xs tracking-[0.2em] text-muted-foreground uppercase">Occasion</span>
-            <div className="flex flex-wrap gap-2">
-              {LETTER_OCCASIONS.map((o) => (
-                <button
-                  key={o}
-                  type="button"
-                  onClick={() => setLtOccasion(o)}
-                  className={`rounded-full border px-3 py-1.5 text-xs tracking-[0.15em] transition-colors ${
-                    ltOccasion === o ? "border-accent bg-accent/15 text-accent" : "border-border text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {OCCASION_LABELS[o]}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Personal song — plays gently when the recipient opens the letter */}
-          <div className="mt-5">
-            <span className="mb-2 block text-xs tracking-[0.2em] text-muted-foreground uppercase">Their song</span>
-            <input
-              ref={songInputRef}
-              type="file"
-              accept={SONG_ACCEPT}
-              onChange={pickSong}
-              className="hidden"
-            />
-            <div className="flex flex-wrap items-center gap-3">
-              <button
-                type="button"
-                onClick={() => songInputRef.current?.click()}
-                className="rounded-full border border-accent/50 px-4 py-2 text-xs tracking-[0.2em] text-accent uppercase transition-colors hover:bg-accent/10"
-              >
-                Add your song ♪
-              </button>
-              {ltSongFile && (
-                <span className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="max-w-[12rem] truncate text-foreground/85">{ltSongFile.name}</span>
-                  <button
-                    type="button"
-                    onClick={() => { setLtSongFile(null); if (songInputRef.current) songInputRef.current.value = ""; }}
-                    className="text-muted-foreground/70 hover:text-foreground"
-                    aria-label="Remove song"
-                  >
-                    ✕
-                  </button>
-                </span>
-              )}
-            </div>
-            <p className="mt-2 text-[11px] text-muted-foreground/80">
-              {ltSongFile ? "Their song will play when they open this." : "MP3, WAV, M4A or OGG · up to 20MB. Optional — falls back to a gentle soundscape."}
-            </p>
-          </div>
-
-
-          {!ltId ? (
-            <div className="mt-6 flex flex-col gap-3">
-              <button
-                type="button"
-                onClick={generateLetter}
-                disabled={ltCreating}
-                className="rounded-md bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90 disabled:opacity-60"
-              >
-                {ltCreating ? "Creating your letter…" : "Create & save Moon Letter"}
-              </button>
-              {ltError && <p className="text-xs text-amber-300">{ltError}</p>}
-              <p className="text-[10px] tracking-[0.2em] text-muted-foreground/70 uppercase">
-                Saves a permanent link the recipient can reopen anytime.
-              </p>
-            </div>
-          ) : (
-            <>
-              <div className="mt-6 rounded-lg border border-border bg-background/40 p-3">
-                <p className="text-[10px] tracking-[0.3em] text-muted-foreground uppercase">Your permanent letter link</p>
-                <p className="mt-1 truncate font-mono text-xs text-foreground/80">{letterUrl}</p>
-              </div>
-
-              <div className="mt-4 flex flex-wrap gap-3">
-                <button
-                  type="button"
-                  onClick={copyLetterLink}
-                  className="rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-                >
-                  {ltCopied ? "Link copied" : "Copy letter link"}
-                </button>
-                <a
-                  href={`/letter/${ltId}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-md border border-accent px-5 py-2.5 text-sm text-accent transition-colors hover:bg-accent/10"
-                >
-                  Open letter
-                </a>
-                <a
-                  href={`https://wa.me/?text=${encodeURIComponent(`A moon letter for ${ltTo.trim() || personName} — ${letterUrl}`)}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="rounded-md border border-border px-5 py-2.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
-                >
-                  Share via WhatsApp
-                </a>
-              </div>
-              <p className="mt-3 text-[10px] tracking-[0.2em] text-muted-foreground/70 uppercase">
-                Saved to the cloud — works on mobile, WhatsApp, and when reopened later.
-              </p>
-            </>
-          )}
+        <div className="rounded-2xl border border-border bg-card/40 p-6 backdrop-blur-sm md:p-8">
+          <GiftWizard
+            base={{
+              v: 1,
+              name: applied.name,
+              pronoun: applied.pronoun,
+              date: applied.date,
+              time: applied.time,
+              city: applied.city,
+              tz: applied.tz,
+              lat: applied.lat,
+              lon: applied.lon,
+              mode: applied.mode,
+            }}
+            moon={birthMoon}
+            city={applied.city}
+            dateLabel={dateLabelShort}
+            timeLabel={birthTimeLabel}
+            sunriseLabel={birthRiseSet.sunrise ? fmtTime(birthRiseSet.sunrise, applied.tz) : undefined}
+            sunsetLabel={birthRiseSet.sunset ? fmtTime(birthRiseSet.sunset, applied.tz) : undefined}
+            moonriseLabel={birthRiseSet.moonrise ? fmtTime(birthRiseSet.moonrise, applied.tz) : undefined}
+            moonsetLabel={birthRiseSet.moonset ? fmtTime(birthRiseSet.moonset, applied.tz) : undefined}
+            illumPct={birthIllumStr}
+            milestones={pcMilestones}
+            personName={personName}
+          />
         </div>
       </section>
-
 
       {/* Timeline */}
       <section className="relative mx-auto max-w-6xl px-6 pb-32">
