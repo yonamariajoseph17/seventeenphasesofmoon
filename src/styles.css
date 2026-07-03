@@ -168,6 +168,7 @@
   }
   .anim-envelope-arrive { animation: envelope-arrive 1.4s cubic-bezier(0.22,0.61,0.36,1) both; }
   .anim-gift-fade-up { animation: gift-fade-up 1.1s ease-out both; }
+  .letterpaper-hand { font-family: 'Caveat', cursive; color: #3a2a14; }
 
   .input {
     width: 100%;
