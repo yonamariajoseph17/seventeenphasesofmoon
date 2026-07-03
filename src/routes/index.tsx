@@ -249,6 +249,15 @@ function Index() {
     : (birthMoon.illumination * 100).toFixed(2);
   const birthTimeLabel = timeWithVerifiedEvent(birth, applied.tz, birthRiseSet);
   const birthVisualLabel = moonVisualDescription(birthMoon);
+  const dateLabelShort = new Date(birth.getTime() + applied.tz * 3_600_000).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric", timeZone: "UTC" });
+  const pcMilestones = useMemo<PostcardMilestone[]>(() => {
+    const maxAge = currentYear - birthYear;
+    return postcardMilestones(maxAge).map((age) => {
+      const d = years[age];
+      const mm = accurateMoon(d);
+      return { age, phaseAngle: mm.phaseAngle, illumination: mm.illumination, waxing: mm.waxing };
+    });
+  }, [years, currentYear, birthYear]);
 
   const pronouns = PRONOUN_MAP[applied.pronoun];
   const hasName = applied.name.trim().length > 0;
