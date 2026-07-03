@@ -237,8 +237,8 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
         </div>
 
         {/* Address ruled lines */}
-        <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 46 }}>
-          {[0, 1, 2, 3].map((i) => (
+        <div style={{ marginTop: 24, display: "flex", flexDirection: "column", gap: 52 }}>
+          {[0, 1, 2].map((i) => (
             <div key={i} style={{ height: 0, borderBottom: `1.5px solid ${s.line}`, opacity: 0.8, width: i === 0 ? "62%" : "100%" }} />
           ))}
         </div>
