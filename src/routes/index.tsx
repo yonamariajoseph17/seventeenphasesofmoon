@@ -790,8 +790,45 @@ function Index() {
         </div>
       </section>
 
-      {/* Postcard / Gift */}
-      <section className="relative mx-auto max-w-6xl px-6 pb-24">
+      {/* Unified gift experience — Letter · Postcard · Bouquet */}
+      <section className="relative mx-auto max-w-4xl px-6 pb-24">
+        <div className="mb-10 text-center">
+          <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">Made under the same sky</p>
+          <h2 className="mt-3 font-display text-3xl md:text-5xl">Create a gift</h2>
+          <p className="mt-3 text-sm text-muted-foreground">
+            One link, three chapters — a handwritten letter, a vintage moon postcard, and a bouquet — that unfold together when {personName} opens it.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-border bg-card/40 p-6 backdrop-blur-sm md:p-8">
+          <GiftWizard
+            base={{
+              v: 1,
+              name: applied.name,
+              pronoun: applied.pronoun,
+              date: applied.date,
+              time: applied.time,
+              city: applied.city,
+              tz: applied.tz,
+              lat: applied.lat,
+              lon: applied.lon,
+              mode: applied.mode,
+            }}
+            moon={birthMoon}
+            city={applied.city}
+            dateLabel={dateLabelShort}
+            timeLabel={birthTimeLabel}
+            sunriseLabel={birthRiseSet.sunrise ? fmtTime(birthRiseSet.sunrise, applied.tz) : undefined}
+            sunsetLabel={birthRiseSet.sunset ? fmtTime(birthRiseSet.sunset, applied.tz) : undefined}
+            moonriseLabel={birthRiseSet.moonrise ? fmtTime(birthRiseSet.moonrise, applied.tz) : undefined}
+            moonsetLabel={birthRiseSet.moonset ? fmtTime(birthRiseSet.moonset, applied.tz) : undefined}
+            illumPct={birthIllumStr}
+            milestones={pcMilestones}
+            personName={personName}
+          />
+        </div>
+      </section>
+
         <div className="mb-8 text-center">
           <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">A keepsake of that night</p>
           <h2 className="mt-3 font-display text-3xl md:text-5xl">Create a moon postcard</h2>
