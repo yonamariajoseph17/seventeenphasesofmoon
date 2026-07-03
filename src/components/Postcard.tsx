@@ -191,13 +191,15 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
     <div ref={ref} style={{ ...CARD_STYLE(s.card), fontFamily: s.body, color: s.ink, padding: 76, display: "flex" }}>
       <PaperGrain opacity={s.grainOpacity} light={s.light} />
 
-      {/* Left half — handwritten message */}
+      {/* Left half — Post Card header + handwritten message */}
       <div style={{ position: "relative", flex: 1.15, paddingRight: 60, display: "flex", flexDirection: "column" }}>
-        <p style={{ margin: 0, fontFamily: "'Caveat', cursive", fontSize: 44, color: s.ink }}>{dear}</p>
-        <p style={{ margin: "22px 0 0", fontFamily: "'Caveat', cursive", fontSize: 34, lineHeight: 1.5, color: s.ink, opacity: 0.92, flex: 1, whiteSpace: "pre-wrap" }}>
+        <p style={{ margin: 0, fontFamily: s.heading, fontSize: 34, letterSpacing: 1, color: s.ink }}>Post Card</p>
+        <p style={{ margin: "4px 0 20px", fontSize: 11, letterSpacing: 3, textTransform: "uppercase", color: s.sub }}>This space for writing messages</p>
+        <p style={{ margin: 0, fontFamily: "'Caveat', cursive", fontSize: 40, color: s.ink }}>{dear}</p>
+        <p style={{ margin: "16px 0 0", fontFamily: "'Caveat', cursive", fontSize: 32, lineHeight: 1.5, color: s.ink, opacity: 0.92, flex: 1, whiteSpace: "pre-wrap" }}>
           {p.message || "Wherever you are tonight, the same moon is watching over you."}
         </p>
-        <p style={{ margin: "20px 0 0", fontFamily: "'Caveat', cursive", fontSize: 40, color: s.accent }}>{signoff}</p>
+        <p style={{ margin: "14px 0 0", fontFamily: "'Caveat', cursive", fontSize: 34, color: s.accent }}>{signoff}</p>
       </div>
 
       {/* Vertical dividing line */}
