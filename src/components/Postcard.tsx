@@ -11,12 +11,20 @@ export type PostcardStyle = (typeof POSTCARD_STYLES)[number];
 export const POSTCARD_W = 1650;
 export const POSTCARD_H = 1100;
 
+export interface PostcardMilestone {
+  age: number;              // 0 = birth
+  phaseAngle: number;
+  illumination: number;
+  waxing: boolean;
+}
+
 interface Props {
   style: PostcardStyle;
   moon: AccurateMoonInfo;
   date: Date;
   tz: number;
   city: string;
+  stateLabel?: string;      // e.g. "Tamil Nadu"
   recipient: string;
   sender?: string;
   occasion: string;
@@ -27,6 +35,9 @@ interface Props {
   timeLabel: string;
   moonriseLabel?: string;
   moonsetLabel?: string;
+  sunriseLabel?: string;
+  sunsetLabel?: string;
+  milestones?: PostcardMilestone[];
 }
 
 interface Stock {
