@@ -247,8 +247,8 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
       </div>
 
       {/* Printer credit */}
-      <p style={{ position: "absolute", bottom: 30, left: 76, margin: 0, fontSize: 12, letterSpacing: 3, textTransform: "uppercase", color: s.sub, opacity: 0.75 }}>
-        Sky We Share · astronomy-engine verified
+      <p style={{ position: "absolute", bottom: 24, left: "50%", transform: "translateX(-50%)", margin: 0, fontSize: 11, letterSpacing: 2.5, textTransform: "uppercase", color: s.sub, opacity: 0.75, whiteSpace: "nowrap" }}>
+        Sky We Share · astronomy-engine (VSOP87/ELP2000)
       </p>
     </div>
   );
