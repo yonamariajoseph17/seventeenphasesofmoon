@@ -92,7 +92,7 @@ export function GiftWizard(props: Props) {
     recipient,
     sender: from.trim(),
     occasion: OCCASION_LABELS[occasion],
-    message: buildPostcardMessage(recipient, message, closing, from.trim()),
+    message: buildPostcardMessage(recipient, message),
     poetic,
     illumPct,
     dateLabel,
