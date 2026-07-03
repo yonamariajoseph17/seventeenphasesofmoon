@@ -38,3 +38,16 @@ const MILESTONE_AGES = new Set([1, 10, 13, 16, 18, 21, 25, 30, 40, 50, 60, 70, 7
 export function isMilestoneAge(age: number): boolean {
   return MILESTONE_AGES.has(age);
 }
+
+// Ages featured on the postcard's milestone-moon strip.
+export const POSTCARD_MILESTONE_AGES = [0, 1, 5, 10, 18, 21, 25, 30] as const;
+
+/** Milestone ages that have already occurred for someone of the given current age. */
+export function postcardMilestones(currentAge: number): number[] {
+  return POSTCARD_MILESTONE_AGES.filter((a) => a <= currentAge);
+}
+
+/** Label for a postcard milestone tile — "BIRTH" for age 0, else "AGE N". */
+export function milestoneLabel(age: number): string {
+  return age === 0 ? "BIRTH" : `AGE ${age}`;
+}
