@@ -412,9 +412,8 @@ export function GiftWizard(props: Props) {
   );
 }
 
-function buildPostcardMessage(recipient: string, message: string, closing: string, from: string): string {
-  const parts: string[] = [];
-  parts.push(`Dear ${recipient},`);
+function buildPostcardMessage(recipient: string, message: string): string {
+  const parts: string[] = [`Dear ${recipient},`];
   if (message.trim()) parts.push(message.trim());
   return parts.join(" ");
 }
