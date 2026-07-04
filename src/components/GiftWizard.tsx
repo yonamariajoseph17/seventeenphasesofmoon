@@ -368,7 +368,7 @@ export function GiftWizard(props: Props) {
             <>
               <p className="font-display text-xl">Your bouquet for {recipient}</p>
               <div className="mt-4">
-                <BouquetArrangement flowers={flowers} wrap={wrap} size={320} showTag />
+                <BouquetArrangement flowers={flowers} wrap={wrap} size={320} showTag monogram={recipient} />
               </div>
 
               {/* Song upload */}
