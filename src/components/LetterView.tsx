@@ -98,14 +98,14 @@ export function LetterView({ record }: { record: LetterRecord }) {
             {occasionLine}
           </p>
           <p
-            className="ink-line mt-7 text-balance text-2xl leading-relaxed sm:text-3xl"
-            style={{ animationDelay: "1.3s", fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic" }}
+            className="ink-line mt-7 text-balance leading-relaxed break-words hyphens-auto"
+            style={{ animationDelay: "1.3s", fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: "clamp(1.25rem, 5vw, 1.875rem)", overflowWrap: "anywhere" }}
           >
             “{payload.msg || "I wanted to show you the moon that existed the night you were here."}”
           </p>
           {payload.from && (
-            <p className="ink-line mt-8 text-xs tracking-[0.3em] uppercase" style={{ animationDelay: "2.1s", color: "#6e5a38" }}>
-              — {payload.from}
+            <p className="ink-line mt-8 text-lg break-words" style={{ animationDelay: "2.1s", color: "#6e5a38", fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", overflowWrap: "anywhere" }}>
+              {payload.closing || "Yours,"} {payload.from}
             </p>
           )}
           <button
