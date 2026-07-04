@@ -171,19 +171,38 @@ export const PostcardFront = forwardRef<HTMLDivElement, Props>(function Postcard
         </p>
       </div>
 
-      {/* milestone moon strip */}
+      {/* letter excerpt — ties the postcard to the written letter */}
+      {excerpt && (
+        <div style={{ position: "relative", textAlign: "center", margin: "16px 70px 0" }}>
+          <p style={{ margin: 0, fontFamily: s.heading, fontStyle: "italic", fontSize: 23, lineHeight: 1.35, color: s.ink, opacity: 0.9 }}>
+            “{excerpt}”
+          </p>
+        </div>
+      )}
+
+      {/* milestone moons — as a vintage filmstrip */}
       {milestones.length > 0 && (
-        <div style={{ position: "relative", marginTop: "auto", marginBottom: 34, padding: "0 54px", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-          {milestones.map((m) => (
-            <div key={m.age} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
-              <div style={{ borderRadius: "50%", background: "radial-gradient(circle, rgba(10,14,28,0.9) 45%, rgba(10,14,28,0) 74%)", padding: 4 }}>
-                <MoonSvg phaseAngle={m.phaseAngle} illumination={m.illumination} waxing={m.waxing} size={74} />
+        <div style={{ position: "relative", marginTop: "auto", marginBottom: 30, marginLeft: 44, marginRight: 44 }}>
+          <div style={{ position: "relative", background: filmBg, borderRadius: 6, padding: "16px 12px 14px", boxShadow: "inset 0 0 0 1px rgba(0,0,0,0.4)" }}>
+            {/* sprocket holes top & bottom */}
+            {(["top", "bottom"] as const).map((edge) => (
+              <div key={edge} style={{ position: "absolute", left: 10, right: 10, [edge]: 4, height: 6, display: "flex", justifyContent: "space-between" }}>
+                {Array.from({ length: 22 }).map((_, i) => (
+                  <span key={i} style={{ width: 8, height: 6, borderRadius: 1.5, background: s.card.includes("linear") ? "#e9e1cf" : "#d8cdb4", opacity: 0.85 }} />
+                ))}
               </div>
-              <span style={{ fontSize: 11, letterSpacing: 2.5, textTransform: "uppercase", color: s.sub }}>
-                {m.age === 0 ? "Birth" : `Age ${m.age}`}
-              </span>
+            ))}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", padding: "0 8px" }}>
+              {milestones.map((m) => (
+                <div key={m.age} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 7, borderLeft: m.age === milestones[0].age ? "none" : "1px solid rgba(255,255,255,0.08)", padding: "0 10px", flex: 1 }}>
+                  <MoonSvg phaseAngle={m.phaseAngle} illumination={m.illumination} waxing={m.waxing} size={68} />
+                  <span style={{ fontSize: 10.5, letterSpacing: 2.5, textTransform: "uppercase", color: "#cdd4e6" }}>
+                    {m.age === 0 ? "Birth" : `Age ${m.age}`}
+                  </span>
+                </div>
+              ))}
             </div>
-          ))}
+          </div>
         </div>
       )}
     </div>
