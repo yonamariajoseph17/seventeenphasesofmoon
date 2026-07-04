@@ -241,23 +241,15 @@ export function GiftWizard(props: Props) {
                 className="letterpaper-hand w-full resize-none bg-transparent text-xl leading-[2.1rem] outline-none placeholder:text-[#7a5a2e]/40"
                 style={{ backgroundImage: "repeating-linear-gradient(transparent, transparent 33px, rgba(90,120,160,0.22) 34px)" }}
               />
-              <div className="mt-4">
+              <div className="mt-6 flex items-baseline gap-2">
+                <span className="letterpaper-hand text-2xl">Yours,</span>
                 <input
-                  value={closing}
-                  onChange={(e) => setClosing(e.target.value)}
+                  value={from}
+                  onChange={(e) => setFrom(e.target.value)}
+                  placeholder=""
                   maxLength={40}
-                  className="letterpaper-hand w-56 border-b border-[#b98a86]/40 bg-transparent text-2xl outline-none"
+                  className="letterpaper-hand min-w-0 flex-1 border-b border-[#b98a86]/40 bg-transparent text-2xl outline-none"
                 />
-                <div className="mt-1">
-                  <span className="letterpaper-hand text-2xl">From: </span>
-                  <input
-                    value={from}
-                    onChange={(e) => setFrom(e.target.value)}
-                    placeholder="your name"
-                    maxLength={40}
-                    className="letterpaper-hand w-48 border-b border-[#b98a86]/40 bg-transparent text-2xl outline-none placeholder:text-[#7a5a2e]/40"
-                  />
-                </div>
               </div>
             </div>
           </LetterPaper>
