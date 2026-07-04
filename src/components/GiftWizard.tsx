@@ -238,8 +238,8 @@ export function GiftWizard(props: Props) {
                 onChange={(e) => setMessage(e.target.value.slice(0, 500))}
                 rows={7}
                 placeholder="Write it as if the pen never lifts — everything you'd want them to read again years from now…"
-                className="letterpaper-hand w-full resize-none bg-transparent text-xl leading-[2.1rem] outline-none placeholder:text-[#7a5a2e]/40"
-                style={{ backgroundImage: "repeating-linear-gradient(transparent, transparent 33px, rgba(90,120,160,0.22) 34px)" }}
+                className="letterpaper-hand block w-full max-w-full resize-none bg-transparent text-xl leading-[2.1rem] outline-none placeholder:text-[#7a5a2e]/40"
+                style={{ backgroundImage: "repeating-linear-gradient(transparent, transparent 33px, rgba(90,120,160,0.22) 34px)", overflowWrap: "anywhere", wordBreak: "break-word" }}
               />
               <div className="mt-6 flex items-baseline gap-2">
                 <span className="letterpaper-hand text-2xl">Yours,</span>
