@@ -30,6 +30,7 @@ interface Props {
   occasion: string;
   message: string;
   poetic: string;
+  letterExcerpt?: string;   // short preview of the personal letter
   illumPct: string;
   dateLabel: string;
   timeLabel: string;
