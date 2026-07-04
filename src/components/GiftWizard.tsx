@@ -156,7 +156,7 @@ export function GiftWizard(props: Props) {
         to: to.trim() || greetName.trim() || undefined,
         from: from.trim() || undefined,
         msg: message.trim() || undefined,
-        closing: closing.trim() || undefined,
+        closing: "Yours,",
         occasion,
         bouquet: { flowers, wrap },
       };
