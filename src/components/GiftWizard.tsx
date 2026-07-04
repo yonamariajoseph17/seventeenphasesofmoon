@@ -50,7 +50,6 @@ export function GiftWizard(props: Props) {
   const [to, setTo] = useState("");
   const [greetName, setGreetName] = useState("");
   const [message, setMessage] = useState("");
-  const [closing, setClosing] = useState("Forever yours,");
   const [from, setFrom] = useState("");
   const [occasion, setOccasion] = useState<LetterOccasion>("birthday");
 
@@ -94,6 +93,7 @@ export function GiftWizard(props: Props) {
     occasion: OCCASION_LABELS[occasion],
     message: buildPostcardMessage(recipient, message),
     poetic,
+    letterExcerpt: message.trim(),
     illumPct,
     dateLabel,
     timeLabel,
@@ -156,7 +156,7 @@ export function GiftWizard(props: Props) {
         to: to.trim() || greetName.trim() || undefined,
         from: from.trim() || undefined,
         msg: message.trim() || undefined,
-        closing: closing.trim() || undefined,
+        closing: "Yours,",
         occasion,
         bouquet: { flowers, wrap },
       };
@@ -238,26 +238,18 @@ export function GiftWizard(props: Props) {
                 onChange={(e) => setMessage(e.target.value.slice(0, 500))}
                 rows={7}
                 placeholder="Write it as if the pen never lifts — everything you'd want them to read again years from now…"
-                className="letterpaper-hand w-full resize-none bg-transparent text-xl leading-[2.1rem] outline-none placeholder:text-[#7a5a2e]/40"
-                style={{ backgroundImage: "repeating-linear-gradient(transparent, transparent 33px, rgba(90,120,160,0.22) 34px)" }}
+                className="letterpaper-hand block w-full max-w-full resize-none bg-transparent text-xl leading-[2.1rem] outline-none placeholder:text-[#7a5a2e]/40"
+                style={{ backgroundImage: "repeating-linear-gradient(transparent, transparent 33px, rgba(90,120,160,0.22) 34px)", overflowWrap: "anywhere", wordBreak: "break-word" }}
               />
-              <div className="mt-4">
+              <div className="mt-6 flex items-baseline gap-2">
+                <span className="letterpaper-hand text-2xl">Yours,</span>
                 <input
-                  value={closing}
-                  onChange={(e) => setClosing(e.target.value)}
+                  value={from}
+                  onChange={(e) => setFrom(e.target.value)}
+                  placeholder=""
                   maxLength={40}
-                  className="letterpaper-hand w-56 border-b border-[#b98a86]/40 bg-transparent text-2xl outline-none"
+                  className="letterpaper-hand min-w-0 flex-1 border-b border-[#b98a86]/40 bg-transparent text-2xl outline-none"
                 />
-                <div className="mt-1">
-                  <span className="letterpaper-hand text-2xl">From: </span>
-                  <input
-                    value={from}
-                    onChange={(e) => setFrom(e.target.value)}
-                    placeholder="your name"
-                    maxLength={40}
-                    className="letterpaper-hand w-48 border-b border-[#b98a86]/40 bg-transparent text-2xl outline-none placeholder:text-[#7a5a2e]/40"
-                  />
-                </div>
               </div>
             </div>
           </LetterPaper>
@@ -376,7 +368,7 @@ export function GiftWizard(props: Props) {
             <>
               <p className="font-display text-xl">Your bouquet for {recipient}</p>
               <div className="mt-4">
-                <BouquetArrangement flowers={flowers} wrap={wrap} size={320} showTag />
+                <BouquetArrangement flowers={flowers} wrap={wrap} size={320} showTag monogram={recipient} />
               </div>
 
               {/* Song upload */}

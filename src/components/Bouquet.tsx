@@ -180,19 +180,20 @@ export function FlowerBloom({ flower, size = 100 }: { flower: FlowerId; size?: n
   );
 }
 
-/* ─────────── greenery + filler ─────────── */
+/* ─────────── greenery + filler (thin, pushed to the back/edges) ─────────── */
 
+// Slim eucalyptus sprig — small paired leaves, low opacity, sits behind blooms.
 function EucalyptusSprig({ flip, rotate }: { flip?: boolean; rotate: number }) {
-  const leaves = Array.from({ length: 7 });
+  const leaves = Array.from({ length: 6 });
   return (
-    <g transform={`translate(50 50) rotate(${rotate}) ${flip ? "scale(-1,1)" : ""}`}>
-      <path d="M0 0 C 6 -30, 4 -70, -2 -104" fill="none" stroke="#6f7d5a" strokeWidth="2" opacity="0.8" />
+    <g transform={`translate(50 50) rotate(${rotate}) ${flip ? "scale(-1,1)" : ""}`} opacity="0.7">
+      <path d="M0 0 C 4 -30, 3 -72, -1 -108" fill="none" stroke="#6f7d5a" strokeWidth="1.2" opacity="0.7" />
       {leaves.map((_, i) => {
-        const y = -18 - i * 12;
+        const y = -30 - i * 14;
         return (
           <g key={i}>
-            <ellipse cx={-8} cy={y} rx="7" ry="4.5" transform={`rotate(-30 -8 ${y})`} fill="#8a9a72" stroke="#5c6a48" strokeWidth="0.6" strokeOpacity="0.5" />
-            <ellipse cx={8} cy={y - 5} rx="7" ry="4.5" transform={`rotate(30 8 ${y - 5})`} fill="#9aa982" stroke="#5c6a48" strokeWidth="0.6" strokeOpacity="0.5" />
+            <ellipse cx={-4} cy={y} rx="3.6" ry="2.2" transform={`rotate(-32 -4 ${y})`} fill="#9aa982" stroke="#6c7a54" strokeWidth="0.4" strokeOpacity="0.4" />
+            <ellipse cx={4} cy={y - 6} rx="3.6" ry="2.2" transform={`rotate(32 4 ${y - 6})`} fill="#8a9a72" stroke="#6c7a54" strokeWidth="0.4" strokeOpacity="0.4" />
           </g>
         );
       })}
@@ -200,40 +201,57 @@ function EucalyptusSprig({ flip, rotate }: { flip?: boolean; rotate: number }) {
   );
 }
 
+// Baby's-breath style filler — airy tiny dots.
 function FillerSprig({ rotate }: { rotate: number }) {
   return (
-    <g transform={`translate(50 50) rotate(${rotate})`}>
-      <path d="M0 0 C 2 -28, 0 -56, -1 -86" fill="none" stroke="#b7c19f" strokeWidth="1.2" opacity="0.7" />
-      {Array.from({ length: 9 }).map((_, i) => {
-        const y = -22 - i * 8;
-        const x = i % 2 ? 6 : -6;
-        return <circle key={i} cx={x} cy={y} r="2.2" fill="#f3efe2" stroke="#cdc7b2" strokeWidth="0.5" />;
+    <g transform={`translate(50 50) rotate(${rotate})`} opacity="0.75">
+      <path d="M0 0 C 2 -30, 0 -62, -1 -94" fill="none" stroke="#b7c19f" strokeWidth="0.9" opacity="0.6" />
+      {Array.from({ length: 10 }).map((_, i) => {
+        const y = -24 - i * 8;
+        const x = i % 2 ? 5 : -5;
+        return <circle key={i} cx={x} cy={y} r="1.8" fill="#f3efe2" stroke="#cdc7b2" strokeWidth="0.4" />;
       })}
     </g>
   );
 }
 
-/* ─────────── wrap silhouette (rounded kite tied with bow) ─────────── */
+/* ─────────── kraft-paper cone wrap ─────────── */
 
-export function WrapShape({ wrap, width = 120 }: { wrap: WrapId; width?: number }) {
+function KraftCone({ wrap, width, uid }: { wrap: WrapId; width: number; uid: string }) {
   const w = WRAP_META[wrap];
-  const uid = useId().replace(/:/g, "");
   return (
-    <svg viewBox="0 0 120 150" width={width} height={width * 1.25} aria-hidden>
+    <svg viewBox="0 0 120 160" width={width} height={width * (160 / 120)} aria-hidden style={{ display: "block", overflow: "visible" }}>
       <defs>
-        <radialGradient id={`wr-${uid}`} cx="50%" cy="35%" r="75%">
+        <linearGradient id={`kc-${uid}`} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor={w.fill} />
+          <stop offset="55%" stopColor={w.fill} />
           <stop offset="100%" stopColor={w.fillDeep} />
-        </radialGradient>
+        </linearGradient>
       </defs>
-      <path d="M60 8 C 104 44, 100 96, 60 142 C 20 96, 16 44, 60 8 Z" fill={`url(#wr-${uid})`} stroke={w.ink} strokeWidth="2" strokeOpacity="0.6" />
-      <path d="M60 8 C 78 50, 78 96, 60 142" fill="none" stroke={w.ink} strokeWidth="1" strokeOpacity="0.3" />
-      <path d="M60 8 C 42 50, 42 96, 60 142" fill="none" stroke={w.ink} strokeWidth="1" strokeOpacity="0.3" />
-      {/* string bow at base */}
-      <path d="M60 118 C 48 110, 44 126, 56 122 M60 118 C 72 110, 76 126, 64 122" fill="none" stroke={w.ink} strokeWidth="2" strokeOpacity="0.7" />
-      <circle cx="60" cy="119" r="2.5" fill={w.ink} opacity="0.7" />
+      {/* the paper cone */}
+      <path d="M14 52 L106 52 L61 157 Q60 159 59 157 Z" fill={`url(#kc-${uid})`} stroke={w.ink} strokeWidth="1.6" strokeOpacity="0.55" />
+      {/* crinkle fold lines converging to the point */}
+      {[34, 50, 70, 86].map((x, i) => (
+        <path key={i} d={`M${x} 52 L${60 + (i - 1.5) * 0.8} 150`} fill="none" stroke={w.ink} strokeWidth="0.8" strokeOpacity="0.22" />
+      ))}
+      {/* top rim highlight */}
+      <path d="M14 52 L106 52" fill="none" stroke="#ffffff" strokeWidth="1.4" strokeOpacity="0.18" />
+      {/* ribbon band around the neck */}
+      <path d="M30 88 L90 88 L86 100 L34 100 Z" fill={w.fillDeep} stroke={w.ink} strokeWidth="1" strokeOpacity="0.5" />
+      <path d="M30 88 L90 88" stroke="#ffffff" strokeWidth="0.8" strokeOpacity="0.2" />
+      {/* bow knot + loops */}
+      <circle cx="60" cy="94" r="4.5" fill={w.ink} opacity="0.85" />
+      <path d="M60 94 C 44 82, 40 104, 56 98 M60 94 C 76 82, 80 104, 64 98" fill={w.fill} stroke={w.ink} strokeWidth="1" strokeOpacity="0.6" />
+      {/* trailing ribbon tails */}
+      <path d="M58 97 C 52 116, 50 132, 46 146 M62 97 C 68 116, 70 132, 74 146" fill="none" stroke={w.ink} strokeWidth="1.4" strokeOpacity="0.55" />
     </svg>
   );
+}
+
+/** Compact cone for the picker thumbnails. */
+export function WrapShape({ wrap, width = 120 }: { wrap: WrapId; width?: number }) {
+  const uid = useId().replace(/:/g, "");
+  return <KraftCone wrap={wrap} width={width} uid={uid} />;
 }
 
 /* ─────────── assembled bouquet preview ─────────── */
@@ -244,16 +262,22 @@ export function BouquetArrangement({
   size = 340,
   bloom = false,
   showTag = false,
+  monogram = "",
 }: {
   flowers: FlowerId[];
   wrap: WrapId;
   size?: number;
   bloom?: boolean;     // animate blooms in one at a time
   showTag?: boolean;
+  monogram?: string;   // recipient initial for the ribbon tag
 }) {
   const w = WRAP_META[wrap];
   const uid = useId().replace(/:/g, "");
-  const list = flowers.length ? flowers : (["rose", "peony", "daisy"] as FlowerId[]);
+  const chosen = flowers.length ? flowers : (["rose", "peony", "daisy"] as FlowerId[]);
+  // Fill every arrangement slot by cycling through the chosen flower types so
+  // the bouquet always looks full and every selected type appears together.
+  const list = Array.from({ length: 8 }, (_, i) => chosen[i % chosen.length]);
+  const initial = monogram.trim().charAt(0).toUpperCase();
 
   // Natural, slightly asymmetric placement (not a grid).
   const spots = [
@@ -274,22 +298,22 @@ export function BouquetArrangement({
       {/* soft ground shadow */}
       <div style={{ position: "absolute", left: "50%", bottom: size * 0.06, width: size * 0.5, height: size * 0.06, transform: "translateX(-50%)", background: "radial-gradient(ellipse, rgba(60,45,35,0.28), transparent 70%)", filter: "blur(4px)" }} />
 
-      {/* wrap behind the blooms */}
-      <div style={{ position: "absolute", left: "50%", bottom: 0, transform: "translateX(-50%)", width: size * 0.86 }}>
-        <WrapShapeFilled wrap={wrap} width={size * 0.86} uid={uid} />
-      </div>
-
-      {/* greenery + filler threading through */}
-      <svg viewBox="0 0 100 100" width={size} height={size} style={{ position: "absolute", left: 0, top: 0, overflow: "visible" }} aria-hidden>
-        <EucalyptusSprig rotate={-26} />
-        <EucalyptusSprig rotate={22} flip />
-        <EucalyptusSprig rotate={-4} />
-        <FillerSprig rotate={-14} />
-        <FillerSprig rotate={12} />
+      {/* greenery + filler pushed to the back and edges (behind blooms) */}
+      <svg viewBox="0 0 100 100" width={size} height={size} style={{ position: "absolute", left: 0, top: 0, overflow: "visible", zIndex: 1 }} aria-hidden>
+        <EucalyptusSprig rotate={-40} />
+        <EucalyptusSprig rotate={40} flip />
+        <FillerSprig rotate={-22} />
+        <FillerSprig rotate={20} />
+        <FillerSprig rotate={-2} />
       </svg>
 
+      {/* kraft cone wrap behind the blooms */}
+      <div style={{ position: "absolute", left: "50%", bottom: 0, transform: "translateX(-50%)", width: size * 0.7, zIndex: 2 }}>
+        <KraftCone wrap={wrap} width={size * 0.7} uid={uid} />
+      </div>
+
       {/* blooms */}
-      {list.slice(0, 8).map((f, i) => {
+      {list.map((f, i) => {
         const p = spots[i] ?? spots[i % spots.length];
         return (
           <div
@@ -301,7 +325,7 @@ export function BouquetArrangement({
               width: bloomSize * p.s,
               height: bloomSize * p.s,
               transform: "translate(-50%,-50%)",
-              zIndex: p.z,
+              zIndex: 4 + p.z,
               filter: "drop-shadow(0 3px 4px rgba(50,35,25,0.18))",
               animation: bloom ? `bloom-in 0.7s cubic-bezier(0.34,1.4,0.6,1) both` : undefined,
               animationDelay: bloom ? `${0.25 + i * 0.35}s` : undefined,
@@ -311,6 +335,29 @@ export function BouquetArrangement({
           </div>
         );
       })}
+
+      {/* monogram ribbon tag — hangs from the bow */}
+      {initial && (
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            bottom: size * 0.34,
+            transform: "translateX(-140%)",
+            zIndex: 30,
+            animation: bloom ? "bloom-in 0.6s ease-out both" : undefined,
+            animationDelay: bloom ? "3s" : undefined,
+          }}
+        >
+          <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <div style={{ width: 1.5, height: 18, background: w.ink, opacity: 0.6 }} />
+            <div style={{ width: 40, height: 48, background: "#f3ecdc", border: `1px solid ${w.ink}`, borderRadius: "4px 4px 6px 6px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 3px 8px rgba(0,0,0,0.22)", transform: "rotate(-5deg)", position: "relative" }}>
+              <span style={{ position: "absolute", top: 4, width: 5, height: 5, borderRadius: "50%", border: `1px solid ${w.ink}` }} />
+              <span style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: 24, color: "#4a3b33", marginTop: 6 }}>{initial}</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* gift tag */}
       {showTag && (
@@ -340,24 +387,5 @@ export function BouquetArrangement({
   );
 }
 
-function WrapShapeFilled({ wrap, width, uid }: { wrap: WrapId; width: number; uid: string }) {
-  const w = WRAP_META[wrap];
-  return (
-    <svg viewBox="0 0 120 150" width={width} height={width * 1.25} aria-hidden style={{ display: "block" }}>
-      <defs>
-        <radialGradient id={`wf-${uid}`} cx="50%" cy="30%" r="80%">
-          <stop offset="0%" stopColor={w.fill} />
-          <stop offset="100%" stopColor={w.fillDeep} />
-        </radialGradient>
-      </defs>
-      {/* cone/kite wrap holding the blooms */}
-      <path d="M60 30 C 100 70, 96 120, 60 148 C 24 120, 20 70, 60 30 Z" fill={`url(#wf-${uid})`} stroke={w.ink} strokeWidth="2" strokeOpacity="0.55" />
-      <path d="M60 30 C 76 74, 76 118, 60 148" fill="none" stroke={w.ink} strokeWidth="1" strokeOpacity="0.28" />
-      <path d="M60 30 C 44 74, 44 118, 60 148" fill="none" stroke={w.ink} strokeWidth="1" strokeOpacity="0.28" />
-      <path d="M60 122 C 46 112, 42 132, 56 127 M60 122 C 74 112, 78 132, 64 127" fill="none" stroke={w.ink} strokeWidth="2.2" strokeOpacity="0.7" />
-      <circle cx="60" cy="123" r="3" fill={w.ink} opacity="0.7" />
-    </svg>
-  );
-}
 
 export { FLOWERS, WRAPS };
