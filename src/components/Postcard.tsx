@@ -144,6 +144,8 @@ export const PostcardFront = forwardRef<HTMLDivElement, Props>(function Postcard
       {/* double ruled border */}
       <div style={{ position: "absolute", inset: 22, border: `2px solid ${s.line}`, borderRadius: 16, opacity: 0.7, pointerEvents: "none" }} />
       <div style={{ position: "absolute", inset: 30, border: `1px solid ${s.line}`, borderRadius: 12, opacity: 0.45, pointerEvents: "none" }} />
+      {/* stamp-style perforated edge */}
+      <div style={{ position: "absolute", inset: 14, borderRadius: 20, pointerEvents: "none", border: `2px dotted ${s.line}`, opacity: 0.5 }} />
 
       {/* Hero: birth-night moon on deep navy night sky — upper ~72% */}
       <div style={{ position: "relative", height: "70%", margin: "44px 44px 0", borderRadius: 12, overflow: "hidden", background: "radial-gradient(ellipse at 50% 30%, #1b2647 0%, #0d1430 55%, #070b1c 100%)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
