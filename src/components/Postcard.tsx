@@ -130,6 +130,12 @@ export const PostcardFront = forwardRef<HTMLDivElement, Props>(function Postcard
     p.sunriseLabel ? `SUNRISE ${p.sunriseLabel.toUpperCase()}` : "SUNRISE —",
     p.sunsetLabel ? `SUNSET ${p.sunsetLabel.toUpperCase()}` : "SUNSET —",
   ].join("   ·   ");
+  const excerpt = (() => {
+    const raw = (p.letterExcerpt ?? "").trim();
+    if (!raw) return "";
+    return raw.length > 116 ? `${raw.slice(0, 116).trimEnd()}…` : raw;
+  })();
+  const filmBg = s.light ? "#20242e" : "#05070f";
 
   return (
     <div ref={ref} style={{ ...CARD_STYLE(s.card), fontFamily: s.body, color: s.ink, padding: 0, display: "flex", flexDirection: "column" }}>
