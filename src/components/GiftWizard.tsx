@@ -50,7 +50,6 @@ export function GiftWizard(props: Props) {
   const [to, setTo] = useState("");
   const [greetName, setGreetName] = useState("");
   const [message, setMessage] = useState("");
-  const [closing, setClosing] = useState("Forever yours,");
   const [from, setFrom] = useState("");
   const [occasion, setOccasion] = useState<LetterOccasion>("birthday");
 
