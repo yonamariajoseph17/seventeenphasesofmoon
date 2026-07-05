@@ -104,11 +104,17 @@ export function GiftWizard(props: Props) {
     milestones,
   };
 
-  function toggleFlower(f: FlowerId) {
+  const countOf = (f: FlowerId) => flowers.filter((x) => x === f).length;
+  function incFlower(f: FlowerId) {
+    setFlowers((prev) => (prev.length >= MAX_FLOWERS ? prev : [...prev, f]));
+  }
+  function decFlower(f: FlowerId) {
     setFlowers((prev) => {
-      if (prev.includes(f)) return prev.filter((x) => x !== f);
-      if (prev.length >= MAX_FLOWERS) return prev;
-      return [...prev, f];
+      const i = prev.lastIndexOf(f);
+      if (i < 0) return prev;
+      const next = [...prev];
+      next.splice(i, 1);
+      return next;
     });
   }
 
