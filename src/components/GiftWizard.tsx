@@ -75,6 +75,8 @@ export function GiftWizard(props: Props) {
 
   const recipient = to.trim() || greetName.trim() || personName;
   const poetic = poeticLine(moon, recipient);
+  // Scale handwriting down as the letter grows so it never spills past the paper.
+  const composerFontPx = fitFontPx(message.length, 22, 15);
 
   useEffect(() => {
     if (step !== 2) { setFlipHint(false); return; }
