@@ -41,6 +41,16 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
+/** Linearly scale a font size from `max` down to `min` as text length grows. */
+function fitFontPx(len: number, max: number, min: number): number {
+  const start = 120; // full size up to this many chars
+  const end = 500;   // clamped to min beyond this
+  if (len <= start) return max;
+  if (len >= end) return min;
+  const t = (len - start) / (end - start);
+  return Math.round((max - (max - min) * t) * 10) / 10;
+}
+
 export function GiftWizard(props: Props) {
   const { base, moon, city, dateLabel, timeLabel, sunriseLabel, sunsetLabel, illumPct, milestones, personName } = props;
 
