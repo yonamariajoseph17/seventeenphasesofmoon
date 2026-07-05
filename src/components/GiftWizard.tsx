@@ -30,7 +30,7 @@ interface Props {
 }
 
 const PREVIEW_W = 470;
-const MAX_FLOWERS = 8;
+const MAX_FLOWERS = 15;
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -39,6 +39,16 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     img.onerror = reject;
     img.src = src;
   });
+}
+
+/** Linearly scale a font size from `max` down to `min` as text length grows. */
+function fitFontPx(len: number, max: number, min: number): number {
+  const start = 120; // full size up to this many chars
+  const end = 500;   // clamped to min beyond this
+  if (len <= start) return max;
+  if (len >= end) return min;
+  const t = (len - start) / (end - start);
+  return Math.round((max - (max - min) * t) * 10) / 10;
 }
 
 export function GiftWizard(props: Props) {
@@ -75,6 +85,8 @@ export function GiftWizard(props: Props) {
 
   const recipient = to.trim() || greetName.trim() || personName;
   const poetic = poeticLine(moon, recipient);
+  // Scale handwriting down as the letter grows so it never spills past the paper.
+  const composerFontPx = fitFontPx(message.length, 22, 15);
 
   useEffect(() => {
     if (step !== 2) { setFlipHint(false); return; }
@@ -104,11 +116,17 @@ export function GiftWizard(props: Props) {
     milestones,
   };
 
-  function toggleFlower(f: FlowerId) {
+  const countOf = (f: FlowerId) => flowers.filter((x) => x === f).length;
+  function incFlower(f: FlowerId) {
+    setFlowers((prev) => (prev.length >= MAX_FLOWERS ? prev : [...prev, f]));
+  }
+  function decFlower(f: FlowerId) {
     setFlowers((prev) => {
-      if (prev.includes(f)) return prev.filter((x) => x !== f);
-      if (prev.length >= MAX_FLOWERS) return prev;
-      return [...prev, f];
+      const i = prev.lastIndexOf(f);
+      if (i < 0) return prev;
+      const next = [...prev];
+      next.splice(i, 1);
+      return next;
     });
   }
 
@@ -238,8 +256,8 @@ export function GiftWizard(props: Props) {
                 onChange={(e) => setMessage(e.target.value.slice(0, 500))}
                 rows={7}
                 placeholder="Write it as if the pen never lifts — everything you'd want them to read again years from now…"
-                className="letterpaper-hand block w-full max-w-full resize-none bg-transparent text-xl leading-[2.1rem] outline-none placeholder:text-[#7a5a2e]/40"
-                style={{ backgroundImage: "repeating-linear-gradient(transparent, transparent 33px, rgba(90,120,160,0.22) 34px)", overflowWrap: "anywhere", wordBreak: "break-word" }}
+                className="letterpaper-hand block w-full max-w-full resize-none bg-transparent outline-none placeholder:text-[#7a5a2e]/40"
+                style={{ fontSize: composerFontPx, lineHeight: "34px", backgroundImage: "repeating-linear-gradient(transparent, transparent 33px, rgba(90,120,160,0.22) 34px)", overflowWrap: "anywhere", wordBreak: "break-word" }}
               />
               <div className="mt-6 flex items-baseline gap-2">
                 <span className="letterpaper-hand text-2xl">Yours,</span>
@@ -320,26 +338,50 @@ export function GiftWizard(props: Props) {
           {subStep === "flowers" && (
             <>
               <p className="font-display text-xl">Choose Your Flowers <span className="text-accent">({flowers.length}/{MAX_FLOWERS})</span></p>
-              <p className="mt-1 text-xs text-muted-foreground">Mix as many types and colors as you like.</p>
-              <div className="mt-6 grid w-full max-w-2xl grid-cols-3 gap-4 sm:grid-cols-4">
+              <p className="mt-1 text-xs text-muted-foreground">Add as many of each bloom as you like — up to {MAX_FLOWERS} stems.</p>
+              <div className="mt-6 grid w-full max-w-2xl grid-cols-2 gap-3 sm:grid-cols-3">
                 {FLOWERS.map((f) => {
-                  const selected = flowers.includes(f);
+                  const count = countOf(f);
+                  const atCap = flowers.length >= MAX_FLOWERS;
                   return (
-                    <button
+                    <div
                       key={f}
-                      type="button"
-                      onClick={() => toggleFlower(f)}
-                      className={`flex flex-col items-center gap-2 rounded-xl border p-3 transition-all ${selected ? "border-accent bg-accent/10" : "border-border/60 hover:border-accent/40"}`}
+                      className={`flex flex-col items-center gap-2 rounded-xl border p-3 transition-all ${count > 0 ? "border-accent bg-accent/10" : "border-border/60"}`}
                     >
-                      <FlowerBloom flower={f} size={64} />
-                      <span className={`text-[11px] tracking-wide ${selected ? "text-accent" : "text-muted-foreground"}`}>{FLOWER_META[f].label}</span>
-                    </button>
+                      <FlowerBloom flower={f} size={56} />
+                      <span className={`text-[11px] tracking-wide ${count > 0 ? "text-accent" : "text-muted-foreground"}`}>{FLOWER_META[f].label}</span>
+                      <div className="flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => decFlower(f)}
+                          disabled={count === 0}
+                          aria-label={`Remove one ${FLOWER_META[f].label}`}
+                          className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-base leading-none text-foreground disabled:opacity-30 hover:border-accent/60"
+                        >
+                          −
+                        </button>
+                        <span className="w-5 text-center text-sm tabular-nums text-foreground">{count}</span>
+                        <button
+                          type="button"
+                          onClick={() => incFlower(f)}
+                          disabled={atCap}
+                          aria-label={`Add one ${FLOWER_META[f].label}`}
+                          className="flex h-7 w-7 items-center justify-center rounded-full border border-border text-base leading-none text-foreground disabled:opacity-30 hover:border-accent/60"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
                   );
                 })}
               </div>
+              {flowers.length >= MAX_FLOWERS && (
+                <p className="mt-3 text-[11px] text-accent">That's a full bunch — {MAX_FLOWERS} stems is the most one wrap can hold.</p>
+              )}
               <WizardNav onBack={() => setStep(2)} onNext={() => setSubStep("wrap")} nextLabel="Choose the wrap" nextDisabled={flowers.length === 0} />
             </>
           )}
+
 
           {subStep === "wrap" && (
             <>

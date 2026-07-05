@@ -58,6 +58,12 @@ export function LetterView({ record }: { record: LetterRecord }) {
   const cardBg = theme.isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)";
   const years = snapshot.years ?? [];
   const mostRecentYear = years.length ? years[years.length - 1].year : null;
+  // Longer letters shrink to stay within the parchment margins.
+  const msgLen = (payload.msg ?? "").length;
+  const recipientMsgSize =
+    msgLen > 320 ? "clamp(1rem, 3.6vw, 1.35rem)"
+    : msgLen > 180 ? "clamp(1.1rem, 4.3vw, 1.55rem)"
+    : "clamp(1.25rem, 5vw, 1.875rem)";
 
   return (
     <main style={{ color: theme.fg, fontFamily: "'Inter', sans-serif" }} className="relative min-h-screen overflow-hidden">
@@ -98,8 +104,8 @@ export function LetterView({ record }: { record: LetterRecord }) {
             {occasionLine}
           </p>
           <p
-            className="ink-line mt-7 text-balance leading-relaxed break-words hyphens-auto"
-            style={{ animationDelay: "1.3s", fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: "clamp(1.25rem, 5vw, 1.875rem)", overflowWrap: "anywhere" }}
+            className="ink-line mx-auto mt-7 max-w-prose text-balance px-1 leading-relaxed break-words hyphens-auto"
+            style={{ animationDelay: "1.3s", fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: recipientMsgSize, overflowWrap: "anywhere", wordBreak: "break-word" }}
           >
             “{payload.msg || "I wanted to show you the moon that existed the night you were here."}”
           </p>
