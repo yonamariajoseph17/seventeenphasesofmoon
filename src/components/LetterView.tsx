@@ -58,6 +58,12 @@ export function LetterView({ record }: { record: LetterRecord }) {
   const cardBg = theme.isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)";
   const years = snapshot.years ?? [];
   const mostRecentYear = years.length ? years[years.length - 1].year : null;
+  // Longer letters shrink to stay within the parchment margins.
+  const msgLen = (payload.msg ?? "").length;
+  const recipientMsgSize =
+    msgLen > 320 ? "clamp(1rem, 3.6vw, 1.35rem)"
+    : msgLen > 180 ? "clamp(1.1rem, 4.3vw, 1.55rem)"
+    : "clamp(1.25rem, 5vw, 1.875rem)";
 
   return (
     <main style={{ color: theme.fg, fontFamily: "'Inter', sans-serif" }} className="relative min-h-screen overflow-hidden">
