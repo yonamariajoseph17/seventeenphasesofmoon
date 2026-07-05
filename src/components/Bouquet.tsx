@@ -2,10 +2,10 @@ import { useId } from "react";
 import { FLOWERS, WRAPS, type FlowerId, type WrapId } from "@/lib/letter";
 
 /**
- * Hand-illustrated, watercolor-style bouquet system.
- * Ink outlines + soft watercolor fills that bleed slightly past the linework.
- * All flowers, greenery, wraps and the gift tag share one cohesive look so the
- * builder and the recipient's bouquet render identically.
+ * Hand-illustrated, watercolor-style bouquet.
+ * Only flower heads (no leaves, greenery or stems) gathered tightly into a
+ * folded kraft-paper cone tied with a ribbon bow. The builder and the
+ * recipient's bouquet render identically.
  */
 
 const INK = "#4a3b33";
@@ -180,47 +180,12 @@ export function FlowerBloom({ flower, size = 100 }: { flower: FlowerId; size?: n
   );
 }
 
-/* ─────────── greenery + filler (thin, pushed to the back/edges) ─────────── */
-
-// Slim eucalyptus sprig — small paired leaves, low opacity, sits behind blooms.
-function EucalyptusSprig({ flip, rotate }: { flip?: boolean; rotate: number }) {
-  const leaves = Array.from({ length: 6 });
-  return (
-    <g transform={`translate(50 50) rotate(${rotate}) ${flip ? "scale(-1,1)" : ""}`} opacity="0.7">
-      <path d="M0 0 C 4 -30, 3 -72, -1 -108" fill="none" stroke="#6f7d5a" strokeWidth="1.2" opacity="0.7" />
-      {leaves.map((_, i) => {
-        const y = -30 - i * 14;
-        return (
-          <g key={i}>
-            <ellipse cx={-4} cy={y} rx="3.6" ry="2.2" transform={`rotate(-32 -4 ${y})`} fill="#9aa982" stroke="#6c7a54" strokeWidth="0.4" strokeOpacity="0.4" />
-            <ellipse cx={4} cy={y - 6} rx="3.6" ry="2.2" transform={`rotate(32 4 ${y - 6})`} fill="#8a9a72" stroke="#6c7a54" strokeWidth="0.4" strokeOpacity="0.4" />
-          </g>
-        );
-      })}
-    </g>
-  );
-}
-
-// Baby's-breath style filler — airy tiny dots.
-function FillerSprig({ rotate }: { rotate: number }) {
-  return (
-    <g transform={`translate(50 50) rotate(${rotate})`} opacity="0.75">
-      <path d="M0 0 C 2 -30, 0 -62, -1 -94" fill="none" stroke="#b7c19f" strokeWidth="0.9" opacity="0.6" />
-      {Array.from({ length: 10 }).map((_, i) => {
-        const y = -24 - i * 8;
-        const x = i % 2 ? 5 : -5;
-        return <circle key={i} cx={x} cy={y} r="1.8" fill="#f3efe2" stroke="#cdc7b2" strokeWidth="0.4" />;
-      })}
-    </g>
-  );
-}
-
-/* ─────────── kraft-paper cone wrap ─────────── */
+/* ─────────── folded, gathered kraft-paper cone with ribbon bow ─────────── */
 
 function KraftCone({ wrap, width, uid }: { wrap: WrapId; width: number; uid: string }) {
   const w = WRAP_META[wrap];
   return (
-    <svg viewBox="0 0 120 160" width={width} height={width * (160 / 120)} aria-hidden style={{ display: "block", overflow: "visible" }}>
+    <svg viewBox="0 0 120 170" width={width} height={width * (170 / 120)} aria-hidden style={{ display: "block", overflow: "visible" }}>
       <defs>
         <linearGradient id={`kc-${uid}`} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor={w.fill} />
@@ -228,22 +193,33 @@ function KraftCone({ wrap, width, uid }: { wrap: WrapId; width: number; uid: str
           <stop offset="100%" stopColor={w.fillDeep} />
         </linearGradient>
       </defs>
-      {/* the paper cone */}
-      <path d="M14 52 L106 52 L61 157 Q60 159 59 157 Z" fill={`url(#kc-${uid})`} stroke={w.ink} strokeWidth="1.6" strokeOpacity="0.55" />
-      {/* crinkle fold lines converging to the point */}
-      {[34, 50, 70, 86].map((x, i) => (
-        <path key={i} d={`M${x} 52 L${60 + (i - 1.5) * 0.8} 150`} fill="none" stroke={w.ink} strokeWidth="0.8" strokeOpacity="0.22" />
+
+      {/* back paper flare — the outer sheet spreading wide at the top */}
+      <path d="M6 40 Q 60 20 114 40 L74 108 Q60 120 46 108 Z" fill={w.fillDeep} opacity="0.85" stroke={w.ink} strokeWidth="1.4" strokeOpacity="0.5" />
+
+      {/* front folded cone, gathered to a point */}
+      <path d="M16 46 Q 60 30 104 46 L64 150 Q60 156 56 150 Z" fill={`url(#kc-${uid})`} stroke={w.ink} strokeWidth="1.6" strokeOpacity="0.6" />
+
+      {/* crisp paper folds converging to the gathered point */}
+      {[30, 44, 60, 76, 90].map((x, i) => (
+        <path key={i} d={`M${x} 44 L${60 + (i - 2) * 0.6} 148`} fill="none" stroke={w.ink} strokeWidth="0.9" strokeOpacity="0.28" />
       ))}
+      {/* pinched creases near the gather */}
+      <path d="M40 96 Q60 104 80 96" fill="none" stroke={w.ink} strokeWidth="1" strokeOpacity="0.3" />
+      <path d="M44 118 Q60 126 76 118" fill="none" stroke={w.ink} strokeWidth="1" strokeOpacity="0.28" />
+
       {/* top rim highlight */}
-      <path d="M14 52 L106 52" fill="none" stroke="#ffffff" strokeWidth="1.4" strokeOpacity="0.18" />
-      {/* ribbon band around the neck */}
-      <path d="M30 88 L90 88 L86 100 L34 100 Z" fill={w.fillDeep} stroke={w.ink} strokeWidth="1" strokeOpacity="0.5" />
-      <path d="M30 88 L90 88" stroke="#ffffff" strokeWidth="0.8" strokeOpacity="0.2" />
-      {/* bow knot + loops */}
-      <circle cx="60" cy="94" r="4.5" fill={w.ink} opacity="0.85" />
-      <path d="M60 94 C 44 82, 40 104, 56 98 M60 94 C 76 82, 80 104, 64 98" fill={w.fill} stroke={w.ink} strokeWidth="1" strokeOpacity="0.6" />
-      {/* trailing ribbon tails */}
-      <path d="M58 97 C 52 116, 50 132, 46 146 M62 97 C 68 116, 70 132, 74 146" fill="none" stroke={w.ink} strokeWidth="1.4" strokeOpacity="0.55" />
+      <path d="M16 46 Q 60 30 104 46" fill="none" stroke="#ffffff" strokeWidth="1.4" strokeOpacity="0.2" />
+
+      {/* ribbon band around the gathered neck */}
+      <path d="M40 90 Q60 98 80 90 L76 104 Q60 112 44 104 Z" fill={w.fillDeep} stroke={w.ink} strokeWidth="1" strokeOpacity="0.55" />
+      <path d="M40 90 Q60 98 80 90" fill="none" stroke="#ffffff" strokeWidth="0.8" strokeOpacity="0.25" />
+
+      {/* ribbon bow — knot + two loops + tails */}
+      <path d="M60 98 C 40 84, 34 110, 55 102 Z" fill={w.fill} stroke={w.ink} strokeWidth="1.1" strokeOpacity="0.6" />
+      <path d="M60 98 C 80 84, 86 110, 65 102 Z" fill={w.fill} stroke={w.ink} strokeWidth="1.1" strokeOpacity="0.6" />
+      <circle cx="60" cy="99" r="4.6" fill={w.fillDeep} stroke={w.ink} strokeWidth="1" strokeOpacity="0.7" />
+      <path d="M57 102 C 51 122, 49 138, 45 152 M63 102 C 69 122, 71 138, 75 152" fill="none" stroke={w.ink} strokeWidth="1.4" strokeOpacity="0.6" />
     </svg>
   );
 }
@@ -256,133 +232,86 @@ export function WrapShape({ wrap, width = 120 }: { wrap: WrapId; width?: number 
 
 /* ─────────── assembled bouquet preview ─────────── */
 
+// Tight, dense phyllotaxis packing so every head sits at a similar height and
+// the cluster reads as a hand-tied dome with no gaps or staggered stems.
+function clusterSpots(n: number) {
+  const golden = Math.PI * (3 - Math.sqrt(5)); // ~137.5°
+  const spots: { x: number; y: number; r: number }[] = [];
+  for (let i = 0; i < n; i++) {
+    const t = (i + 0.5) / n;
+    const radius = Math.sqrt(t);          // 0 (center) → 1 (edge)
+    const angle = i * golden;
+    spots.push({
+      x: 0.5 + Math.cos(angle) * radius * 0.46,
+      y: 0.5 + Math.sin(angle) * radius * 0.40, // slightly flatter dome
+      r: radius,
+    });
+  }
+  // draw outer heads first, center heads last (on top) for a full domed look
+  return spots.map((s, i) => ({ ...s, i })).sort((a, b) => b.r - a.r);
+}
+
 export function BouquetArrangement({
   flowers,
   wrap,
   size = 340,
   bloom = false,
-  showTag = false,
-  monogram = "",
 }: {
   flowers: FlowerId[];
   wrap: WrapId;
   size?: number;
   bloom?: boolean;     // animate blooms in one at a time
+  /** @deprecated tag/monogram removed from the wrap */
   showTag?: boolean;
-  monogram?: string;   // recipient initial for the ribbon tag
+  monogram?: string;
 }) {
-  const w = WRAP_META[wrap];
   const uid = useId().replace(/:/g, "");
-  const chosen = flowers.length ? flowers : (["rose", "peony", "daisy"] as FlowerId[]);
-  // Fill every arrangement slot by cycling through the chosen flower types so
-  // the bouquet always looks full and every selected type appears together.
-  const list = Array.from({ length: 8 }, (_, i) => chosen[i % chosen.length]);
-  const initial = monogram.trim().charAt(0).toUpperCase();
+  // Use the exact chosen flowers (with duplicates for quantities). Fall back to
+  // a small default so the picker preview never looks empty.
+  const list = flowers.length ? flowers.slice(0, 15) : (["rose", "peony", "daisy"] as FlowerId[]);
+  const spots = clusterSpots(list.length);
 
-  // Natural, slightly asymmetric placement (not a grid).
-  const spots = [
-    { x: 0.5, y: 0.16, s: 1.05, z: 6 },
-    { x: 0.3, y: 0.26, s: 0.92, z: 4 },
-    { x: 0.7, y: 0.26, s: 0.95, z: 4 },
-    { x: 0.18, y: 0.42, s: 0.82, z: 3 },
-    { x: 0.5, y: 0.4, s: 1.0, z: 5 },
-    { x: 0.82, y: 0.42, s: 0.85, z: 3 },
-    { x: 0.36, y: 0.55, s: 0.8, z: 2 },
-    { x: 0.64, y: 0.55, s: 0.82, z: 2 },
-  ];
+  // Head size shrinks as the bunch grows so heads stay tightly packed, never sparse.
+  const headSize = size * (list.length <= 5 ? 0.34 : list.length <= 9 ? 0.28 : 0.23);
 
-  const bloomSize = size * 0.34;
+  // The flower dome sits over the top of the cone, gathered from one point.
+  const clusterBox = size * 0.78;
+  const clusterLeft = (size - clusterBox) / 2;
+  const clusterTop = size * 0.04;
 
   return (
-    <div style={{ position: "relative", width: size, height: size * 1.25 }}>
+    <div style={{ position: "relative", width: size, height: size * 1.32 }}>
       {/* soft ground shadow */}
-      <div style={{ position: "absolute", left: "50%", bottom: size * 0.06, width: size * 0.5, height: size * 0.06, transform: "translateX(-50%)", background: "radial-gradient(ellipse, rgba(60,45,35,0.28), transparent 70%)", filter: "blur(4px)" }} />
-
-      {/* greenery + filler pushed to the back and edges (behind blooms) */}
-      <svg viewBox="0 0 100 100" width={size} height={size} style={{ position: "absolute", left: 0, top: 0, overflow: "visible", zIndex: 1 }} aria-hidden>
-        <EucalyptusSprig rotate={-40} />
-        <EucalyptusSprig rotate={40} flip />
-        <FillerSprig rotate={-22} />
-        <FillerSprig rotate={20} />
-        <FillerSprig rotate={-2} />
-      </svg>
+      <div style={{ position: "absolute", left: "50%", bottom: size * 0.04, width: size * 0.5, height: size * 0.06, transform: "translateX(-50%)", background: "radial-gradient(ellipse, rgba(60,45,35,0.28), transparent 70%)", filter: "blur(4px)" }} />
 
       {/* kraft cone wrap behind the blooms */}
-      <div style={{ position: "absolute", left: "50%", bottom: 0, transform: "translateX(-50%)", width: size * 0.7, zIndex: 2 }}>
-        <KraftCone wrap={wrap} width={size * 0.7} uid={uid} />
+      <div style={{ position: "absolute", left: "50%", bottom: 0, transform: "translateX(-50%)", width: size * 0.66, zIndex: 2 }}>
+        <KraftCone wrap={wrap} width={size * 0.66} uid={uid} />
       </div>
 
-      {/* blooms */}
-      {list.map((f, i) => {
-        const p = spots[i] ?? spots[i % spots.length];
+      {/* flower heads — tightly clustered dome, all from one point at the top */}
+      {spots.map((s) => {
+        const f = list[s.i];
         return (
           <div
-            key={i}
+            key={s.i}
             style={{
               position: "absolute",
-              left: `${p.x * 100}%`,
-              top: `${p.y * 100}%`,
-              width: bloomSize * p.s,
-              height: bloomSize * p.s,
+              left: clusterLeft + s.x * clusterBox,
+              top: clusterTop + s.y * clusterBox,
+              width: headSize,
+              height: headSize,
               transform: "translate(-50%,-50%)",
-              zIndex: 4 + p.z,
-              filter: "drop-shadow(0 3px 4px rgba(50,35,25,0.18))",
-              animation: bloom ? `bloom-in 0.7s cubic-bezier(0.34,1.4,0.6,1) both` : undefined,
-              animationDelay: bloom ? `${0.25 + i * 0.35}s` : undefined,
+              zIndex: 10 + Math.round((1 - s.r) * 20),
+              filter: "drop-shadow(0 2px 4px rgba(50,35,25,0.22))",
+              animation: bloom ? `bloom-in 0.6s cubic-bezier(0.34,1.4,0.6,1) both` : undefined,
+              animationDelay: bloom ? `${0.15 + s.i * 0.12}s` : undefined,
             }}
           >
-            <FlowerBloom flower={f} size={bloomSize * p.s} />
+            <FlowerBloom flower={f} size={headSize} />
           </div>
         );
       })}
-
-      {/* monogram ribbon tag — hangs from the bow */}
-      {initial && (
-        <div
-          style={{
-            position: "absolute",
-            left: "50%",
-            bottom: size * 0.34,
-            transform: "translateX(-140%)",
-            zIndex: 30,
-            animation: bloom ? "bloom-in 0.6s ease-out both" : undefined,
-            animationDelay: bloom ? "3s" : undefined,
-          }}
-        >
-          <div style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center" }}>
-            <div style={{ width: 1.5, height: 18, background: w.ink, opacity: 0.6 }} />
-            <div style={{ width: 40, height: 48, background: "#f3ecdc", border: `1px solid ${w.ink}`, borderRadius: "4px 4px 6px 6px", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 3px 8px rgba(0,0,0,0.22)", transform: "rotate(-5deg)", position: "relative" }}>
-              <span style={{ position: "absolute", top: 4, width: 5, height: 5, borderRadius: "50%", border: `1px solid ${w.ink}` }} />
-              <span style={{ fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: 24, color: "#4a3b33", marginTop: 6 }}>{initial}</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* gift tag */}
-      {showTag && (
-        <div
-          style={{
-            position: "absolute",
-            left: "50%",
-            bottom: size * 0.14,
-            transform: "translateX(6%)",
-            zIndex: 20,
-            animation: bloom ? "bloom-in 0.6s ease-out both" : undefined,
-            animationDelay: bloom ? "3.2s" : undefined,
-          }}
-        >
-          <div style={{ position: "relative" }}>
-            <div style={{ width: 1, height: 26, background: w.ink, opacity: 0.6, position: "absolute", left: 8, top: -22 }} />
-            <div style={{ background: "#f3ecdc", border: `1px solid ${w.ink}`, borderRadius: 4, padding: "8px 12px", boxShadow: "0 4px 10px rgba(0,0,0,0.2)", transform: "rotate(-4deg)" }}>
-              <span style={{ position: "absolute", left: 6, top: 4, width: 5, height: 5, borderRadius: "50%", border: `1px solid ${w.ink}` }} />
-              <p style={{ margin: 0, fontFamily: "'Caveat', cursive", fontSize: 17, color: "#4a3b33", whiteSpace: "nowrap" }}>
-                These made me think of you.
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
