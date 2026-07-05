@@ -98,8 +98,8 @@ export function LetterView({ record }: { record: LetterRecord }) {
             {occasionLine}
           </p>
           <p
-            className="ink-line mt-7 text-balance leading-relaxed break-words hyphens-auto"
-            style={{ animationDelay: "1.3s", fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: "clamp(1.25rem, 5vw, 1.875rem)", overflowWrap: "anywhere" }}
+            className="ink-line mx-auto mt-7 max-w-prose text-balance px-1 leading-relaxed break-words hyphens-auto"
+            style={{ animationDelay: "1.3s", fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: recipientMsgSize, overflowWrap: "anywhere", wordBreak: "break-word" }}
           >
             “{payload.msg || "I wanted to show you the moon that existed the night you were here."}”
           </p>
