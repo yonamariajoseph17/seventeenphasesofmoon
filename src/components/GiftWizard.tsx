@@ -246,35 +246,59 @@ export function GiftWizard(props: Props) {
       {/* ── STEP 1 — THE LETTER ───────────────────────────────────── */}
       {step === 1 && (
         <div>
-          <LetterPaper city={city} dateLabel={dateLabel}>
+          {/* Place & date the letter is written — chosen by the sender, shown verbatim in the header */}
+          <div className="mb-4 grid gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1.5 text-[11px] tracking-[0.2em] text-muted-foreground uppercase">
+              Writing from
+              <input
+                value={place}
+                onChange={(e) => setPlace(e.target.value)}
+                placeholder="e.g. Mumbai"
+                maxLength={60}
+                className="input"
+              />
+            </label>
+            <label className="flex flex-col gap-1.5 text-[11px] tracking-[0.2em] text-muted-foreground uppercase">
+              Date on the letter
+              <input
+                type="date"
+                value={writtenDate}
+                onChange={(e) => setWrittenDate(e.target.value)}
+                className="input"
+              />
+            </label>
+          </div>
+
+          <LetterPaper place={headerPlace} dateLabel={writtenDateLabel}>
             <div className="text-left">
-              <label className="mb-3 block">
-                <span className="letterpaper-hand text-2xl">Dear{" "}
-                  <input
-                    value={greetName}
-                    onChange={(e) => setGreetName(e.target.value)}
-                    placeholder={personName}
-                    maxLength={40}
-                    className="letterpaper-hand w-48 border-b border-[#b98a86]/60 bg-transparent text-2xl outline-none placeholder:text-[#7a5a2e]/40"
-                  />,
-                </span>
-              </label>
+              <div className="mb-3 flex flex-wrap items-baseline gap-x-1">
+                <span className="letterpaper-hand text-2xl">Dear</span>
+                <input
+                  value={greetName}
+                  onChange={(e) => setGreetName(e.target.value)}
+                  placeholder={personName}
+                  maxLength={40}
+                  size={Math.max(4, (greetName || personName).length)}
+                  className="letterpaper-hand bg-transparent text-2xl outline-none placeholder:text-[#7a5a2e]/40"
+                />
+                <span className="letterpaper-hand text-2xl">,</span>
+              </div>
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value.slice(0, 500))}
                 rows={7}
                 placeholder="Write it as if the pen never lifts — everything you'd want them to read again years from now…"
                 className="letterpaper-hand block w-full max-w-full resize-none bg-transparent outline-none placeholder:text-[#7a5a2e]/40"
-                style={{ fontSize: composerFontPx, lineHeight: "34px", backgroundImage: "repeating-linear-gradient(transparent, transparent 33px, rgba(90,120,160,0.22) 34px)", overflowWrap: "anywhere", wordBreak: "break-word" }}
+                style={{ fontSize: composerFontPx, lineHeight: "34px", overflowWrap: "anywhere", wordBreak: "break-word" }}
               />
-              <div className="mt-6 flex items-baseline gap-2">
-                <span className="letterpaper-hand text-2xl">Yours,</span>
+              <div className="mt-6">
+                <span className="letterpaper-hand block text-2xl">Yours,</span>
                 <input
                   value={from}
                   onChange={(e) => setFrom(e.target.value)}
-                  placeholder=""
+                  placeholder="your name"
                   maxLength={40}
-                  className="letterpaper-hand min-w-0 flex-1 border-b border-[#b98a86]/40 bg-transparent text-2xl outline-none"
+                  className="letterpaper-hand mt-1 block w-full max-w-xs bg-transparent text-2xl outline-none placeholder:text-[#7a5a2e]/40"
                 />
               </div>
             </div>
@@ -287,12 +311,13 @@ export function GiftWizard(props: Props) {
                 {LETTER_OCCASIONS.map((o) => <option key={o} value={o}>{OCCASION_LABELS[o]}</option>)}
               </select>
             </label>
-            <p className="max-w-xs text-[11px] text-muted-foreground/80">The occasion only sets the quiet opening line they read first — the letter itself stays the same.</p>
+            <p className="max-w-xs text-[11px] text-muted-foreground/80">The occasion sets the quiet opening line they read first and the closing on the bouquet tag — the letter itself stays the same.</p>
           </div>
 
           <WizardNav onNext={() => { setTo(greetName); setStep(2); }} nextLabel="Continue to the postcard" />
         </div>
       )}
+
 
       {/* ── STEP 2 — THE POSTCARD ─────────────────────────────────── */}
       {step === 2 && (
