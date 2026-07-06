@@ -75,6 +75,8 @@ export interface LetterPayload {
   msg?: string;         // personal message
   from?: string;        // sender name
   closing?: string;     // closing line (default "Forever yours,")
+  place?: string;       // where the sender wrote from (letter header)
+  writtenDate?: string; // the date the sender chose (letter header), display string
   style: LetterStyle;
   occasion?: LetterOccasion;  // sets the emotional opening line
   song?: string;        // signed URL of an uploaded personal song
