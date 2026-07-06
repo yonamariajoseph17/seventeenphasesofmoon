@@ -32,6 +32,17 @@ export const OCCASION_LABELS: Record<LetterOccasion, string> = {
   general: "General",
 };
 
+/** Short closing phrase shown on the bouquet tag, by occasion. */
+export const OCCASION_CLOSINGS: Record<LetterOccasion, string> = {
+  birthday: "With Love,",
+  anniversary: "Forever Yours,",
+  "first-met": "Fondly,",
+  proposal: "All My Heart,",
+  friendship: "Warmly,",
+  memory: "In Loving Memory,",
+  general: "Warm Regards,",
+};
+
 // ── Bouquet ─────────────────────────────────────────────────────────
 export const FLOWERS = [
   "rose", "peony", "daisy", "lily", "orchid", "marigold",
@@ -64,6 +75,8 @@ export interface LetterPayload {
   msg?: string;         // personal message
   from?: string;        // sender name
   closing?: string;     // closing line (default "Forever yours,")
+  place?: string;       // where the sender wrote from (letter header)
+  writtenDate?: string; // the date the sender chose (letter header), display string
   style: LetterStyle;
   occasion?: LetterOccasion;  // sets the emotional opening line
   song?: string;        // signed URL of an uploaded personal song

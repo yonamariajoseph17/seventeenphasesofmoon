@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { toPng } from "html-to-image";
+import { format, parseISO } from "date-fns";
 import type { AccurateMoonInfo } from "@/lib/astro-accurate";
 import { poeticLine } from "@/lib/poetic";
 import {
@@ -12,7 +13,7 @@ import {
 } from "@/components/Postcard";
 import { FlowerBloom, WrapShape, BouquetArrangement, FLOWER_META, WRAP_META } from "@/components/Bouquet";
 
-type BasePayload = Omit<LetterPayload, "style" | "to" | "from" | "msg" | "closing" | "occasion" | "song" | "bouquet">;
+type BasePayload = Omit<LetterPayload, "style" | "to" | "from" | "msg" | "closing" | "occasion" | "song" | "bouquet" | "place" | "writtenDate">;
 
 interface Props {
   base: BasePayload;
@@ -61,6 +62,8 @@ export function GiftWizard(props: Props) {
   const [greetName, setGreetName] = useState("");
   const [message, setMessage] = useState("");
   const [from, setFrom] = useState("");
+  const [place, setPlace] = useState(city);
+  const [writtenDate, setWrittenDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [occasion, setOccasion] = useState<LetterOccasion>("birthday");
 
   // Step 2 — the postcard
@@ -85,6 +88,9 @@ export function GiftWizard(props: Props) {
 
   const recipient = to.trim() || greetName.trim() || personName;
   const poetic = poeticLine(moon, recipient);
+  // Exact letter-header values chosen by the sender — never auto-derived from astronomy.
+  const writtenDateLabel = writtenDate ? format(parseISO(writtenDate), "MMMM d, yyyy") : "";
+  const headerPlace = place.trim();
   // Scale handwriting down as the letter grows so it never spills past the paper.
   const composerFontPx = fitFontPx(message.length, 22, 15);
 
@@ -175,6 +181,8 @@ export function GiftWizard(props: Props) {
         from: from.trim() || undefined,
         msg: message.trim() || undefined,
         closing: "Yours,",
+        place: headerPlace || undefined,
+        writtenDate: writtenDateLabel || undefined,
         occasion,
         bouquet: { flowers, wrap },
       };
@@ -238,35 +246,59 @@ export function GiftWizard(props: Props) {
       {/* ── STEP 1 — THE LETTER ───────────────────────────────────── */}
       {step === 1 && (
         <div>
-          <LetterPaper city={city} dateLabel={dateLabel}>
+          {/* Place & date the letter is written — chosen by the sender, shown verbatim in the header */}
+          <div className="mb-4 grid gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1.5 text-[11px] tracking-[0.2em] text-muted-foreground uppercase">
+              Writing from
+              <input
+                value={place}
+                onChange={(e) => setPlace(e.target.value)}
+                placeholder="e.g. Mumbai"
+                maxLength={60}
+                className="input"
+              />
+            </label>
+            <label className="flex flex-col gap-1.5 text-[11px] tracking-[0.2em] text-muted-foreground uppercase">
+              Date on the letter
+              <input
+                type="date"
+                value={writtenDate}
+                onChange={(e) => setWrittenDate(e.target.value)}
+                className="input"
+              />
+            </label>
+          </div>
+
+          <LetterPaper place={headerPlace} dateLabel={writtenDateLabel}>
             <div className="text-left">
-              <label className="mb-3 block">
-                <span className="letterpaper-hand text-2xl">Dear{" "}
-                  <input
-                    value={greetName}
-                    onChange={(e) => setGreetName(e.target.value)}
-                    placeholder={personName}
-                    maxLength={40}
-                    className="letterpaper-hand w-48 border-b border-[#b98a86]/60 bg-transparent text-2xl outline-none placeholder:text-[#7a5a2e]/40"
-                  />,
-                </span>
-              </label>
+              <div className="mb-3 flex flex-wrap items-baseline gap-x-1">
+                <span className="letterpaper-hand text-2xl">Dear</span>
+                <input
+                  value={greetName}
+                  onChange={(e) => setGreetName(e.target.value)}
+                  placeholder={personName}
+                  maxLength={40}
+                  size={Math.max(4, (greetName || personName).length)}
+                  className="letterpaper-hand bg-transparent text-2xl outline-none placeholder:text-[#7a5a2e]/40"
+                />
+                <span className="letterpaper-hand text-2xl">,</span>
+              </div>
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value.slice(0, 500))}
                 rows={7}
                 placeholder="Write it as if the pen never lifts — everything you'd want them to read again years from now…"
                 className="letterpaper-hand block w-full max-w-full resize-none bg-transparent outline-none placeholder:text-[#7a5a2e]/40"
-                style={{ fontSize: composerFontPx, lineHeight: "34px", backgroundImage: "repeating-linear-gradient(transparent, transparent 33px, rgba(90,120,160,0.22) 34px)", overflowWrap: "anywhere", wordBreak: "break-word" }}
+                style={{ fontSize: composerFontPx, lineHeight: "34px", overflowWrap: "anywhere", wordBreak: "break-word" }}
               />
-              <div className="mt-6 flex items-baseline gap-2">
-                <span className="letterpaper-hand text-2xl">Yours,</span>
+              <div className="mt-6">
+                <span className="letterpaper-hand block text-2xl">Yours,</span>
                 <input
                   value={from}
                   onChange={(e) => setFrom(e.target.value)}
-                  placeholder=""
+                  placeholder="your name"
                   maxLength={40}
-                  className="letterpaper-hand min-w-0 flex-1 border-b border-[#b98a86]/40 bg-transparent text-2xl outline-none"
+                  className="letterpaper-hand mt-1 block w-full max-w-xs bg-transparent text-2xl outline-none placeholder:text-[#7a5a2e]/40"
                 />
               </div>
             </div>
@@ -279,12 +311,13 @@ export function GiftWizard(props: Props) {
                 {LETTER_OCCASIONS.map((o) => <option key={o} value={o}>{OCCASION_LABELS[o]}</option>)}
               </select>
             </label>
-            <p className="max-w-xs text-[11px] text-muted-foreground/80">The occasion only sets the quiet opening line they read first — the letter itself stays the same.</p>
+            <p className="max-w-xs text-[11px] text-muted-foreground/80">The occasion sets the quiet opening line they read first and the closing on the bouquet tag — the letter itself stays the same.</p>
           </div>
 
           <WizardNav onNext={() => { setTo(greetName); setStep(2); }} nextLabel="Continue to the postcard" />
         </div>
       )}
+
 
       {/* ── STEP 2 — THE POSTCARD ─────────────────────────────────── */}
       {step === 2 && (
@@ -410,7 +443,7 @@ export function GiftWizard(props: Props) {
             <>
               <p className="font-display text-xl">Your bouquet for {recipient}</p>
               <div className="mt-4">
-                <BouquetArrangement flowers={flowers} wrap={wrap} size={320} showTag monogram={recipient} />
+                <BouquetArrangement flowers={flowers} wrap={wrap} size={320} occasion={occasion} sender={from.trim()} />
               </div>
 
               {/* Song upload */}
@@ -467,8 +500,9 @@ function WizardNav({ onBack, onNext, nextLabel, nextDisabled }: { onBack?: () =>
   );
 }
 
-/* Aged wartime letter paper wrapper */
-function LetterPaper({ city, dateLabel, children }: { city: string; dateLabel: string; children: React.ReactNode }) {
+/* Aged, unlined letter paper wrapper */
+function LetterPaper({ place, dateLabel, children }: { place: string; dateLabel: string; children: React.ReactNode }) {
+  const header = [place, dateLabel].filter(Boolean).join(", ");
   return (
     <div
       className="relative overflow-hidden rounded-lg p-8 sm:p-12"
@@ -481,16 +515,15 @@ function LetterPaper({ city, dateLabel, children }: { city: string; dateLabel: s
       {/* foxing spots */}
       <div className="pointer-events-none absolute -left-6 -top-6 h-28 w-28 rounded-full" style={{ background: "radial-gradient(circle, rgba(120,80,35,0.2), transparent 65%)", filter: "blur(6px)" }} />
       <div className="pointer-events-none absolute -bottom-8 right-2 h-32 w-32 rounded-full" style={{ background: "radial-gradient(circle, rgba(120,80,35,0.16), transparent 68%)", filter: "blur(8px)" }} />
-      {/* faint blue rule lines + red left margin */}
-      <div className="pointer-events-none absolute inset-0" style={{ backgroundImage: "repeating-linear-gradient(transparent, transparent 33px, rgba(90,120,160,0.14) 34px)" }} />
-      <div className="pointer-events-none absolute inset-y-0 left-10 w-px" style={{ background: "rgba(190,90,90,0.4)" }} />
-      {/* grain */}
+      {/* plain aged-paper grain (no ruled lines, no margin) */}
       <svg className="pointer-events-none absolute inset-0 h-full w-full" style={{ opacity: 0.12, mixBlendMode: "multiply" }} aria-hidden>
         <filter id="lp-grain"><feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" stitchTiles="stitch" /><feColorMatrix type="saturate" values="0" /></filter>
         <rect width="100%" height="100%" filter="url(#lp-grain)" />
       </svg>
 
-      <p className="relative mb-6 text-right text-sm italic" style={{ fontFamily: "'Caveat', cursive", fontSize: 20 }}>{city}, {dateLabel}</p>
+      {header && (
+        <p className="relative mb-6 text-right text-sm italic" style={{ fontFamily: "'Caveat', cursive", fontSize: 20 }}>{header}</p>
+      )}
       <div className="relative">{children}</div>
     </div>
   );

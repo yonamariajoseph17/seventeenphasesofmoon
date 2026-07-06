@@ -97,7 +97,7 @@ export function LetterView({ record }: { record: LetterRecord }) {
         <ScrollLetter
           accent={theme.accent}
           forName={forName}
-          dateLine={`${fmtDateISO(snapshot.momentISO, payload.tz)} · ${payload.city}`}
+          dateLine={payload.writtenDate ? `${payload.writtenDate}${payload.place ? ` · ${payload.place}` : ""}` : `${fmtDateISO(snapshot.momentISO, payload.tz)} · ${payload.city}`}
           onOpen={() => setSongStarted(true)}
         >
           <p className="ink-line text-sm italic leading-relaxed sm:text-base" style={{ animationDelay: "0.5s", color: "#5a4324" }}>
@@ -110,9 +110,10 @@ export function LetterView({ record }: { record: LetterRecord }) {
             “{payload.msg || "I wanted to show you the moon that existed the night you were here."}”
           </p>
           {payload.from && (
-            <p className="ink-line mt-8 text-lg break-words" style={{ animationDelay: "2.1s", color: "#6e5a38", fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", overflowWrap: "anywhere" }}>
-              {payload.closing || "Yours,"} {payload.from}
-            </p>
+            <div className="ink-line mt-8" style={{ animationDelay: "2.1s", color: "#6e5a38", fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic" }}>
+              <p className="text-lg">{payload.closing || "Yours,"}</p>
+              <p className="mt-1 text-lg break-words" style={{ overflowWrap: "anywhere" }}>{payload.from}</p>
+            </div>
           )}
           <button
             type="button"
