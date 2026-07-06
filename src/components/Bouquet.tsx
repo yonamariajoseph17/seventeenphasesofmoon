@@ -1,5 +1,5 @@
 import { useId } from "react";
-import { FLOWERS, WRAPS, type FlowerId, type WrapId } from "@/lib/letter";
+import { FLOWERS, WRAPS, OCCASION_CLOSINGS, type FlowerId, type WrapId, type LetterOccasion } from "@/lib/letter";
 
 /**
  * Hand-illustrated, watercolor-style bouquet.
