@@ -1,0 +1,132 @@
+{
+  "version": 1,
+  "sdk_version": "0.20.0",
+  "path": "/mcp",
+  "auth": {
+    "type": "none"
+  },
+  "mcp": {
+    "server": {
+      "name": "sky-we-share-mcp",
+      "version": "0.1.0",
+      "title": "Sky We Share"
+    },
+    "tools": [
+      {
+        "name": "find_location",
+        "title": "Find a birthplace location",
+        "description": "Look up coordinates and UTC offset for a city, town, or district — covering every Indian state and union territory (all IST, UTC+05:30) plus major world cities. Accepts alternate/colonial spellings (e.g. Bombay → Mumbai). Returns the best matches for use with the moon and rise/set tools.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Place name to search, e.g. 'Madurai', 'Bombay', or 'Guwahati'."
+            }
+          },
+          "required": [
+            "query"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "moon_phase",
+        "title": "Moon phase for a date",
+        "description": "Compute the real, astronomy-grade Moon phase for a given date and time (UTC). Returns phase name, illumination fraction, Moon age in days, waxing/waning, and the constellation the Moon is in. Uses VSOP87/ELP2000 ephemerides — never estimated.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "datetime": {
+              "type": "string",
+              "description": "ISO 8601 date-time in UTC, e.g. '1998-07-17T14:30:00Z'. A date-only value like '1998-07-17' is treated as UTC midnight."
+            }
+          },
+          "required": [
+            "datetime"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "moon_sun_rise_set",
+        "title": "Moon & Sun rise/set times",
+        "description": "Compute accurate moonrise, moonset, sunrise, and sunset times for a specific calendar date at a given location. Times are returned as ISO 8601 UTC instants; provide the location's UTC offset so the correct civil day is used.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "date": {
+              "type": "string",
+              "description": "Calendar date 'YYYY-MM-DD' in the location's local civil time."
+            },
+            "lat": {
+              "type": "number",
+              "description": "Latitude in decimal degrees (north positive), e.g. 13.08 for Chennai."
+            },
+            "lon": {
+              "type": "number",
+              "description": "Longitude in decimal degrees (east positive), e.g. 80.27 for Chennai."
+            },
+            "tzOffsetHours": {
+              "type": "number",
+              "description": "UTC offset in hours for the location, e.g. 5.5 for India Standard Time. Defaults to 0 if omitted."
+            }
+          },
+          "required": [
+            "date",
+            "lat",
+            "lon",
+            "tzOffsetHours"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      },
+      {
+        "name": "next_moon_phase",
+        "title": "Next principal moon phase",
+        "description": "Find the next principal Moon phase (New Moon, First Quarter, Full Moon, or Last Quarter) after a given date-time. Returns the phase name and its exact UTC instant.",
+        "annotations": {
+          "readOnlyHint": true,
+          "idempotentHint": true,
+          "openWorldHint": false
+        },
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "datetime": {
+              "type": "string",
+              "description": "ISO 8601 date-time in UTC to search after, e.g. '2026-07-06T00:00:00Z'."
+            }
+          },
+          "required": [
+            "datetime"
+          ],
+          "additionalProperties": false,
+          "$schema": "http://json-schema.org/draft-07/schema#"
+        },
+        "outputSchema": null
+      }
+    ]
+  }
+}
