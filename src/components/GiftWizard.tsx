@@ -62,6 +62,8 @@ export function GiftWizard(props: Props) {
   const [greetName, setGreetName] = useState("");
   const [message, setMessage] = useState("");
   const [from, setFrom] = useState("");
+  const [place, setPlace] = useState(city);
+  const [writtenDate, setWrittenDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [occasion, setOccasion] = useState<LetterOccasion>("birthday");
 
   // Step 2 — the postcard
