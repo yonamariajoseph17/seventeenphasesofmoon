@@ -500,8 +500,9 @@ function WizardNav({ onBack, onNext, nextLabel, nextDisabled }: { onBack?: () =>
   );
 }
 
-/* Aged wartime letter paper wrapper */
-function LetterPaper({ city, dateLabel, children }: { city: string; dateLabel: string; children: React.ReactNode }) {
+/* Aged, unlined letter paper wrapper */
+function LetterPaper({ place, dateLabel, children }: { place: string; dateLabel: string; children: React.ReactNode }) {
+  const header = [place, dateLabel].filter(Boolean).join(", ");
   return (
     <div
       className="relative overflow-hidden rounded-lg p-8 sm:p-12"
@@ -514,16 +515,15 @@ function LetterPaper({ city, dateLabel, children }: { city: string; dateLabel: s
       {/* foxing spots */}
       <div className="pointer-events-none absolute -left-6 -top-6 h-28 w-28 rounded-full" style={{ background: "radial-gradient(circle, rgba(120,80,35,0.2), transparent 65%)", filter: "blur(6px)" }} />
       <div className="pointer-events-none absolute -bottom-8 right-2 h-32 w-32 rounded-full" style={{ background: "radial-gradient(circle, rgba(120,80,35,0.16), transparent 68%)", filter: "blur(8px)" }} />
-      {/* faint blue rule lines + red left margin */}
-      <div className="pointer-events-none absolute inset-0" style={{ backgroundImage: "repeating-linear-gradient(transparent, transparent 33px, rgba(90,120,160,0.14) 34px)" }} />
-      <div className="pointer-events-none absolute inset-y-0 left-10 w-px" style={{ background: "rgba(190,90,90,0.4)" }} />
-      {/* grain */}
+      {/* plain aged-paper grain (no ruled lines, no margin) */}
       <svg className="pointer-events-none absolute inset-0 h-full w-full" style={{ opacity: 0.12, mixBlendMode: "multiply" }} aria-hidden>
         <filter id="lp-grain"><feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" stitchTiles="stitch" /><feColorMatrix type="saturate" values="0" /></filter>
         <rect width="100%" height="100%" filter="url(#lp-grain)" />
       </svg>
 
-      <p className="relative mb-6 text-right text-sm italic" style={{ fontFamily: "'Caveat', cursive", fontSize: 20 }}>{city}, {dateLabel}</p>
+      {header && (
+        <p className="relative mb-6 text-right text-sm italic" style={{ fontFamily: "'Caveat', cursive", fontSize: 20 }}>{header}</p>
+      )}
       <div className="relative">{children}</div>
     </div>
   );
