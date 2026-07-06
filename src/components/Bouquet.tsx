@@ -276,12 +276,16 @@ export function BouquetArrangement({
   wrap,
   size = 340,
   bloom = false,
+  occasion,
+  sender,
 }: {
   flowers: FlowerId[];
   wrap: WrapId;
   size?: number;
   bloom?: boolean;     // animate blooms in one at a time
-  /** @deprecated tag/monogram removed from the wrap */
+  occasion?: LetterOccasion;  // sets the closing phrase on the tag
+  sender?: string;            // sender name shown under the phrase
+  /** @deprecated legacy props */
   showTag?: boolean;
   monogram?: string;
 }) {
@@ -299,6 +303,9 @@ export function BouquetArrangement({
   const clusterLeft = (size - clusterBox) / 2;
   const clusterTop = size * 0.04;
 
+  const tagPhrase = occasion ? OCCASION_CLOSINGS[occasion] : "";
+  const tagName = (sender ?? "").trim();
+
   return (
     <div style={{ position: "relative", width: size, height: size * 1.32 }}>
       {/* soft ground shadow */}
@@ -308,6 +315,47 @@ export function BouquetArrangement({
       <div style={{ position: "absolute", left: "50%", bottom: 0, transform: "translateX(-50%)", width: size * 0.66, zIndex: 2 }}>
         <KraftCone wrap={wrap} width={size * 0.66} uid={uid} />
       </div>
+
+      {/* gift tag hanging from the twine bow */}
+      {tagPhrase && (
+        <div
+          style={{
+            position: "absolute",
+            left: "50%",
+            bottom: size * 0.16,
+            transform: "translateX(-50%) rotate(-5deg)",
+            transformOrigin: "top center",
+            zIndex: 20,
+          }}
+        >
+          {/* short twine linking the bow to the tag */}
+          <div style={{ position: "absolute", left: "50%", top: -size * 0.05, width: 2, height: size * 0.05, transform: "translateX(-50%)", background: TWINE }} />
+          <div
+            style={{
+              position: "relative",
+              minWidth: size * 0.34,
+              padding: `${size * 0.028}px ${size * 0.05}px`,
+              background: "linear-gradient(160deg, #e7d3a6 0%, #dcc48f 100%)",
+              border: "1px solid rgba(110,83,52,0.5)",
+              borderRadius: 6,
+              boxShadow: "0 4px 10px rgba(50,35,20,0.28), inset 0 0 18px rgba(150,115,55,0.25)",
+              textAlign: "center",
+              color: "#4a3417",
+            }}
+          >
+            {/* punched hole */}
+            <span style={{ position: "absolute", left: "50%", top: 4, width: 6, height: 6, transform: "translateX(-50%)", borderRadius: "50%", background: "#c9b184", boxShadow: "inset 0 0 2px rgba(70,52,23,0.7)" }} />
+            <span style={{ display: "block", marginTop: 6, fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: Math.max(12, size * 0.052), lineHeight: 1.1 }}>
+              {tagPhrase}
+            </span>
+            {tagName && (
+              <span style={{ display: "block", marginTop: 2, fontFamily: "'Caveat', cursive", fontSize: Math.max(15, size * 0.07), lineHeight: 1.1, color: "#5a3e1c" }}>
+                {tagName}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* flower heads — tightly clustered dome, all from one point at the top */}
       {spots.map((s) => {
