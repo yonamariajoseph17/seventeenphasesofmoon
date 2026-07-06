@@ -32,6 +32,17 @@ export const OCCASION_LABELS: Record<LetterOccasion, string> = {
   general: "General",
 };
 
+/** Short closing phrase shown on the bouquet tag, by occasion. */
+export const OCCASION_CLOSINGS: Record<LetterOccasion, string> = {
+  birthday: "With Love,",
+  anniversary: "Forever Yours,",
+  "first-met": "Fondly,",
+  proposal: "All My Heart,",
+  friendship: "Warmly,",
+  memory: "In Loving Memory,",
+  general: "Warm Regards,",
+};
+
 // ── Bouquet ─────────────────────────────────────────────────────────
 export const FLOWERS = [
   "rose", "peony", "daisy", "lily", "orchid", "marigold",
