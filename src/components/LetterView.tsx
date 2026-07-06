@@ -97,7 +97,7 @@ export function LetterView({ record }: { record: LetterRecord }) {
         <ScrollLetter
           accent={theme.accent}
           forName={forName}
-          dateLine={`${fmtDateISO(snapshot.momentISO, payload.tz)} · ${payload.city}`}
+          dateLine={payload.writtenDate ? `${payload.writtenDate}${payload.place ? ` · ${payload.place}` : ""}` : `${fmtDateISO(snapshot.momentISO, payload.tz)} · ${payload.city}`}
           onOpen={() => setSongStarted(true)}
         >
           <p className="ink-line text-sm italic leading-relaxed sm:text-base" style={{ animationDelay: "0.5s", color: "#5a4324" }}>
