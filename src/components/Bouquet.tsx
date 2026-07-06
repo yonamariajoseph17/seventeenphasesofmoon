@@ -180,46 +180,66 @@ export function FlowerBloom({ flower, size = 100 }: { flower: FlowerId; size?: n
   );
 }
 
-/* ─────────── folded, gathered kraft-paper cone with ribbon bow ─────────── */
+/* ─────────── solid, folded kraft-paper cone tied with brown twine ─────────── */
+
+// Warm brown twine/rope — always the same regardless of wrap tint.
+const TWINE = "#8a6a3f";
+const TWINE_DK = "#5f4526";
 
 function KraftCone({ wrap, width, uid }: { wrap: WrapId; width: number; uid: string }) {
   const w = WRAP_META[wrap];
   return (
     <svg viewBox="0 0 120 170" width={width} height={width * (170 / 120)} aria-hidden style={{ display: "block", overflow: "visible" }}>
       <defs>
+        {/* solid paper body with a soft cross-fold sheen */}
         <linearGradient id={`kc-${uid}`} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0%" stopColor={w.fill} />
-          <stop offset="55%" stopColor={w.fill} />
+          <stop offset="48%" stopColor={w.fill} />
           <stop offset="100%" stopColor={w.fillDeep} />
+        </linearGradient>
+        <linearGradient id={`kcb-${uid}`} x1="0" y1="0" x2="1" y2="0.3">
+          <stop offset="0%" stopColor={w.fillDeep} />
+          <stop offset="100%" stopColor={w.fill} />
+        </linearGradient>
+        {/* twine rope gradient for a round, corded look */}
+        <linearGradient id={`tw-${uid}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={TWINE} />
+          <stop offset="100%" stopColor={TWINE_DK} />
         </linearGradient>
       </defs>
 
-      {/* back paper flare — the outer sheet spreading wide at the top */}
-      <path d="M6 40 Q 60 20 114 40 L74 108 Q60 120 46 108 Z" fill={w.fillDeep} opacity="0.85" stroke={w.ink} strokeWidth="1.4" strokeOpacity="0.5" />
+      {/* back paper flare — outer sheet spreading wide at the top, fully solid */}
+      <path d="M6 40 Q 60 20 114 40 L74 108 Q60 120 46 108 Z" fill={`url(#kcb-${uid})`} stroke={w.ink} strokeWidth="1.4" strokeOpacity="0.55" />
 
-      {/* front folded cone, gathered to a point */}
+      {/* front folded cone, gathered to a point, fully solid */}
       <path d="M16 46 Q 60 30 104 46 L64 150 Q60 156 56 150 Z" fill={`url(#kc-${uid})`} stroke={w.ink} strokeWidth="1.6" strokeOpacity="0.6" />
 
-      {/* crisp paper folds converging to the gathered point */}
-      {[30, 44, 60, 76, 90].map((x, i) => (
-        <path key={i} d={`M${x} 44 L${60 + (i - 2) * 0.6} 148`} fill="none" stroke={w.ink} strokeWidth="0.9" strokeOpacity="0.28" />
+      {/* shaded folds — filled wedges (not wireframe) for real paper depth */}
+      <path d="M16 46 Q 38 36 44 44 L58 149 Q57 152 55 150 Z" fill={w.fillDeep} opacity="0.28" />
+      <path d="M78 44 Q 92 38 104 46 L64 150 Q63 152 62 150 Z" fill={w.fillDeep} opacity="0.22" />
+      <path d="M52 44 Q 60 40 68 44 L61 149 Q60 151 59 149 Z" fill="#ffffff" opacity="0.12" />
+
+      {/* crease lines converging to the gathered point */}
+      {[34, 48, 72, 86].map((x, i) => (
+        <path key={i} d={`M${x} 45 L${60 + (i - 1.5) * 0.7} 148`} fill="none" stroke={w.ink} strokeWidth="0.7" strokeOpacity="0.22" />
       ))}
       {/* pinched creases near the gather */}
       <path d="M40 96 Q60 104 80 96" fill="none" stroke={w.ink} strokeWidth="1" strokeOpacity="0.3" />
-      <path d="M44 118 Q60 126 76 118" fill="none" stroke={w.ink} strokeWidth="1" strokeOpacity="0.28" />
+      <path d="M44 118 Q60 126 76 118" fill="none" stroke={w.ink} strokeWidth="1" strokeOpacity="0.26" />
 
       {/* top rim highlight */}
-      <path d="M16 46 Q 60 30 104 46" fill="none" stroke="#ffffff" strokeWidth="1.4" strokeOpacity="0.2" />
+      <path d="M16 46 Q 60 30 104 46" fill="none" stroke="#ffffff" strokeWidth="1.4" strokeOpacity="0.22" />
 
-      {/* ribbon band around the gathered neck */}
-      <path d="M40 90 Q60 98 80 90 L76 104 Q60 112 44 104 Z" fill={w.fillDeep} stroke={w.ink} strokeWidth="1" strokeOpacity="0.55" />
-      <path d="M40 90 Q60 98 80 90" fill="none" stroke="#ffffff" strokeWidth="0.8" strokeOpacity="0.25" />
-
-      {/* ribbon bow — knot + two loops + tails */}
-      <path d="M60 98 C 40 84, 34 110, 55 102 Z" fill={w.fill} stroke={w.ink} strokeWidth="1.1" strokeOpacity="0.6" />
-      <path d="M60 98 C 80 84, 86 110, 65 102 Z" fill={w.fill} stroke={w.ink} strokeWidth="1.1" strokeOpacity="0.6" />
-      <circle cx="60" cy="99" r="4.6" fill={w.fillDeep} stroke={w.ink} strokeWidth="1" strokeOpacity="0.7" />
-      <path d="M57 102 C 51 122, 49 138, 45 152 M63 102 C 69 122, 71 138, 75 152" fill="none" stroke={w.ink} strokeWidth="1.4" strokeOpacity="0.6" />
+      {/* twine wrapped around the gathered neck — a few corded turns */}
+      {[92, 98, 104].map((y, i) => (
+        <path key={i} d={`M${41 + i} ${y} Q60 ${y + 7} ${79 - i} ${y}`} fill="none" stroke={`url(#tw-${uid})`} strokeWidth="3.4" strokeLinecap="round" />
+      ))}
+      {/* twine bow — two rope loops + knot + tails */}
+      <path d="M60 98 C 38 82, 31 112, 55 103" fill="none" stroke={`url(#tw-${uid})`} strokeWidth="4" strokeLinecap="round" />
+      <path d="M60 98 C 82 82, 89 112, 65 103" fill="none" stroke={`url(#tw-${uid})`} strokeWidth="4" strokeLinecap="round" />
+      <circle cx="60" cy="99.5" r="4.4" fill={TWINE_DK} stroke={TWINE} strokeWidth="1.2" />
+      <path d="M57 103 C 51 122, 49 138, 45 152" fill="none" stroke={`url(#tw-${uid})`} strokeWidth="3.4" strokeLinecap="round" />
+      <path d="M63 103 C 69 122, 71 138, 75 152" fill="none" stroke={`url(#tw-${uid})`} strokeWidth="3.4" strokeLinecap="round" />
     </svg>
   );
 }
