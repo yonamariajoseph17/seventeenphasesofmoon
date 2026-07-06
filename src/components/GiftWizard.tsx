@@ -181,6 +181,8 @@ export function GiftWizard(props: Props) {
         from: from.trim() || undefined,
         msg: message.trim() || undefined,
         closing: "Yours,",
+        place: headerPlace || undefined,
+        writtenDate: writtenDateLabel || undefined,
         occasion,
         bouquet: { flowers, wrap },
       };
