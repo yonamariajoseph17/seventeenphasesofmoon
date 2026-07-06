@@ -88,6 +88,9 @@ export function GiftWizard(props: Props) {
 
   const recipient = to.trim() || greetName.trim() || personName;
   const poetic = poeticLine(moon, recipient);
+  // Exact letter-header values chosen by the sender — never auto-derived from astronomy.
+  const writtenDateLabel = writtenDate ? format(parseISO(writtenDate), "MMMM d, yyyy") : "";
+  const headerPlace = place.trim();
   // Scale handwriting down as the letter grows so it never spills past the paper.
   const composerFontPx = fitFontPx(message.length, 22, 15);
 
