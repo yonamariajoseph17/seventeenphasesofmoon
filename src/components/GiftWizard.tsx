@@ -13,7 +13,7 @@ import {
 } from "@/components/Postcard";
 import { FlowerBloom, WrapShape, BouquetArrangement, FLOWER_META, WRAP_META } from "@/components/Bouquet";
 
-type BasePayload = Omit<LetterPayload, "style" | "to" | "from" | "msg" | "closing" | "occasion" | "song" | "bouquet">;
+type BasePayload = Omit<LetterPayload, "style" | "to" | "from" | "msg" | "closing" | "occasion" | "song" | "bouquet" | "place" | "writtenDate">;
 
 interface Props {
   base: BasePayload;
