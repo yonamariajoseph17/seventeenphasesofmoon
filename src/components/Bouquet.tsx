@@ -254,22 +254,82 @@ export function WrapShape({ wrap, width = 120 }: { wrap: WrapId; width?: number 
 
 // Tight, dense phyllotaxis packing so every head sits at a similar height and
 // the cluster reads as a hand-tied dome with no gaps or staggered stems.
-function clusterSpots(n: number) {
-  const golden = Math.PI * (3 - Math.sqrt(5)); // ~137.5°
-  const spots: { x: number; y: number; r: number }[] = [];
-  for (let i = 0; i < n; i++) {
-    const t = (i + 0.5) / n;
-    const radius = Math.sqrt(t);          // 0 (center) → 1 (edge)
-    const angle = i * golden;
-    spots.push({
-      x: 0.5 + Math.cos(angle) * radius * 0.46,
-      y: 0.5 + Math.sin(angle) * radius * 0.40, // slightly flatter dome
-      r: radius,
-    });
-  }
-  // draw outer heads first, center heads last (on top) for a full domed look
-  return spots.map((s, i) => ({ ...s, i })).sort((a, b) => b.r - a.r);
+// Seeded PRNG — same flower selection always renders the same "handmade"
+// jitter, but different selections look distinctly different from each other.
+function seededRandom(seed: number) {
+  let s = seed % 2147483647;
+  if (s <= 0) s += 2147483646;
+  return () => {
+    s = (s * 16807) % 2147483647;
+    return (s - 1) / 2147483646;
+  };
 }
+
+function hashFlowers(list: FlowerId[]) {
+  const str = list.join("|");
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
+  return Math.abs(h) || 1;
+}
+
+// Larger/denser bloom types read as focal flowers and sit in the
+// outer-middle ring as accents, instead of buried in the center or on the rim.
+const FOCAL_ARCH: Arch[] = ["daisy", "dense"];
+
+function distributeSpecies(list: FlowerId[]) {
+  // Group by type, then round-robin through the groups so the same flower
+  // type is spread across the bouquet instead of clumping together.
+  const groups = new Map<FlowerId, FlowerId[]>();
+  list.forEach((f) => {
+    if (!groups.has(f)) groups.set(f, []);
+    groups.get(f)!.push(f);
+  });
+  const buckets = Array.from(groups.values());
+  const out: FlowerId[] = [];
+  let remaining = list.length;
+  while (remaining > 0) {
+    for (const bucket of buckets) {
+      if (bucket.length) {
+        out.push(bucket.shift()!);
+        remaining--;
+      }
+    }
+  }
+  return out;
+}
+
+function clusterSpots(list: FlowerId[]) {
+  const golden = Math.PI * (3 - Math.sqrt(5)); // ~137.5°
+  const ordered = list.length > 2 ? distributeSpecies(list) : list;
+  const rand = seededRandom(hashFlowers(list));
+  const n = ordered.length;
+
+  const raw = ordered.map((f, i) => {
+    const t = (i + 0.5) / n;
+    let radius = Math.sqrt(t); // 0 (center) → 1 (edge)
+
+    const isFocal = FOCAL_ARCH.includes(FLOWER_META[f].arch);
+    if (isFocal) radius = 0.55 + radius * 0.32;
+
+    const angle = i * golden + (rand() - 0.5) * 0.35; // angular jitter
+    const jitterR = radius + (rand() - 0.5) * 0.06;    // gathered, not floating
+
+    return {
+      x: 0.5 + Math.cos(angle) * jitterR * 0.46,
+      y: 0.5 + Math.sin(angle) * jitterR * 0.40,
+      r: radius,
+      rotation: (rand() - 0.5) * 24, // -12° .. +12°
+      scale: 0.95 + rand() * 0.1,    // 95% .. 105%
+      flower: f,
+      i,
+    };
+  });
+
+  // Outer heads (back layer) drawn first, center heads (front layer) last —
+  // real depth without staggering the overall height.
+  return raw.sort((a, b) => b.r - a.r);
+}
+
 
 export function BouquetArrangement({
   flowers,
