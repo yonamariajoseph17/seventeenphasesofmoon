@@ -422,7 +422,7 @@ export function BouquetArrangement({
   viewBox={`0 0 ${size} ${size * 1.32}`}
   width={size}
   height={size * 1.32}
-  style={{ position: "absolute", left: 0, top: 0, zIndex: 5, overflow: "visible" }}
+  style={{ position: "absolute", left: 0, top: 0, zIndex: 1, overflow: "visible" }}
 >
   {spots.map((s) => {
     const fx = clusterLeft + s.x * clusterBox;
