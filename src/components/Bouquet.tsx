@@ -277,14 +277,14 @@ function hashFlowers(list: FlowerId[]) {
 const FOCAL_ARCH: Arch[] = ["daisy", "dense"];
 
 function distributeSpecies(list: FlowerId[]) {
-  // Group by type, then round-robin through the groups so the same flower
-  // type is spread across the bouquet instead of clumping together.
   const groups = new Map<FlowerId, FlowerId[]>();
   list.forEach((f) => {
     if (!groups.has(f)) groups.set(f, []);
     groups.get(f)!.push(f);
   });
-  const buckets = Array.from(groups.values());
+  // Sort buckets smallest-first so minority flowers (like your pinks) get
+  // placed early and often, instead of being left for the end.
+  const buckets = Array.from(groups.values()).sort((a, b) => a.length - b.length);
   const out: FlowerId[] = [];
   let remaining = list.length;
   while (remaining > 0) {
@@ -427,7 +427,7 @@ export function BouquetArrangement({
           const fx = clusterLeft + s.x * clusterBox;
           const fy = clusterTop + s.y * clusterBox + headSize * 0.32;
           const neckX = size / 2;
-          const neckY = size * 0.86;
+          const neckY = size * 0.72;
           return (
             <path
               key={`stem-${s.i}`}
