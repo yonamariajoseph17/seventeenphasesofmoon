@@ -442,15 +442,9 @@ export function BouquetArrangement({
             <FlowerBloom flower={s.flower} size={headSize} />
           </div>
         );
-      })}
-          >
-            <FlowerBloom flower={f} size={headSize} />
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+})}
+        </div>
+      );
+    }
 
-
-export { FLOWERS, WRAPS };
+    export { FLOWERS, WRAPS };
