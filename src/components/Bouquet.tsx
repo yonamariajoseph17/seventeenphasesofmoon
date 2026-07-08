@@ -353,7 +353,7 @@ export function BouquetArrangement({
   // Use the exact chosen flowers (with duplicates for quantities). Fall back to
   // a small default so the picker preview never looks empty.
   const list = flowers.length ? flowers.slice(0, 15) : (["rose", "peony", "daisy"] as FlowerId[]);
-  const spots = clusterSpots(list.length);
+  const spots = clusterSpots(list);
 
   // Head size shrinks as the bunch grows so heads stay tightly packed, never sparse.
   const headSize = size * (list.length <= 5 ? 0.34 : list.length <= 9 ? 0.28 : 0.23);
@@ -419,7 +419,9 @@ export function BouquetArrangement({
 
       {/* flower heads — tightly clustered dome, all from one point at the top */}
       {spots.map((s) => {
-        const f = list[s.i];
+        const depth = s.r; // 0 = front/center, 1 = back/outer
+        const layerScale = depth > 0.62 ? 0.92 : depth < 0.32 ? 1.06 : 1;
+        const layerOpacity = depth > 0.62 ? 0.94 : 1;
         return (
           <div
             key={s.i}
@@ -429,12 +431,18 @@ export function BouquetArrangement({
               top: clusterTop + s.y * clusterBox,
               width: headSize,
               height: headSize,
-              transform: "translate(-50%,-50%)",
+              opacity: layerOpacity,
+              transform: `translate(-50%,-50%) rotate(${s.rotation}deg) scale(${s.scale * layerScale})`,
               zIndex: 10 + Math.round((1 - s.r) * 20),
               filter: "drop-shadow(0 2px 4px rgba(50,35,25,0.22))",
               animation: bloom ? `bloom-in 0.6s cubic-bezier(0.34,1.4,0.6,1) both` : undefined,
               animationDelay: bloom ? `${0.15 + s.i * 0.12}s` : undefined,
             }}
+          >
+            <FlowerBloom flower={s.flower} size={headSize} />
+          </div>
+        );
+      })}
           >
             <FlowerBloom flower={f} size={headSize} />
           </div>
