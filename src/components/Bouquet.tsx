@@ -308,25 +308,25 @@ function clusterSpots(list: FlowerId[]) {
     const t = (i + 0.5) / n;
     let radius = Math.sqrt(t); // 0 (center) → 1 (edge)
 
+    // Gentle outward nudge for focal flowers — not a fixed band, so they
+    // don't all stack into one ring and leave the center empty.
     const isFocal = FOCAL_ARCH.includes(FLOWER_META[f].arch);
-    if (isFocal) radius = 0.55 + radius * 0.32;
+    if (isFocal) radius = Math.min(1, radius * 1.12 + 0.04);
 
-    const angle = i * golden + (rand() - 0.5) * 0.35; // angular jitter
-    const jitterR = radius + (rand() - 0.5) * 0.06;    // gathered, not floating
+    const angle = i * golden + (rand() - 0.5) * 0.18; // small angular jitter only
+    const jitterR = radius + (rand() - 0.5) * 0.03;     // tight, gathered
 
     return {
-      x: 0.5 + Math.cos(angle) * jitterR * 0.46,
-      y: 0.5 + Math.sin(angle) * jitterR * 0.40,
+      x: 0.5 + Math.cos(angle) * jitterR * 0.36,
+      y: 0.5 + Math.sin(angle) * jitterR * 0.30,
       r: radius,
-      rotation: (rand() - 0.5) * 24, // -12° .. +12°
-      scale: 0.95 + rand() * 0.1,    // 95% .. 105%
+      rotation: (rand() - 0.5) * 24,
+      scale: 0.95 + rand() * 0.1,
       flower: f,
       i,
     };
   });
 
-  // Outer heads (back layer) drawn first, center heads (front layer) last —
-  // real depth without staggering the overall height.
   return raw.sort((a, b) => b.r - a.r);
 }
 
@@ -416,7 +416,32 @@ export function BouquetArrangement({
           </div>
         </div>
       )}
-
+{/* stems — connect every flower head down to the wrap's gathered neck */}
+      <svg
+        viewBox={`0 0 ${size} ${size * 1.32}`}
+        width={size}
+        height={size * 1.32}
+        style={{ position: "absolute", left: 0, top: 0, zIndex: 5, overflow: "visible" }}
+      >
+        {spots.map((s) => {
+          const fx = clusterLeft + s.x * clusterBox;
+          const fy = clusterTop + s.y * clusterBox + headSize * 0.32;
+          const neckX = size / 2;
+          const neckY = size * 0.86;
+          return (
+            <path
+              key={`stem-${s.i}`}
+              d={`M${fx} ${fy} Q${(fx + neckX) / 2} ${(fy + neckY) / 2 + 10} ${neckX} ${neckY}`}
+              fill="none"
+              stroke="#5c7a4f"
+              strokeWidth={size * 0.006}
+              strokeOpacity="0.75"
+              strokeLinecap="round"
+            />
+          );
+        })}
+      </svg>
+    
       {/* flower heads — tightly clustered dome, all from one point at the top */}
       {spots.map((s) => {
         const depth = s.r; // 0 = front/center, 1 = back/outer
