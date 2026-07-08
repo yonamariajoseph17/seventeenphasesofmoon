@@ -416,32 +416,34 @@ export function BouquetArrangement({
           </div>
         </div>
       )}
-{/* stems — connect every flower head down to the wrap's gathered neck */}
-      <svg
-        viewBox={`0 0 ${size} ${size * 1.32}`}
-        width={size}
-        height={size * 1.32}
-        style={{ position: "absolute", left: 0, top: 0, zIndex: 5, overflow: "visible" }}
-      >
-        {spots.map((s) => {
-          const fx = clusterLeft + s.x * clusterBox;
-          const fy = clusterTop + s.y * clusterBox + headSize * 0.32;
-          const neckX = size / 2;
-          const neckY = size * 0.72;
-          return (
-            <path
-              key={`stem-${s.i}`}
-              d={`M${fx} ${fy} Q${(fx + neckX) / 2} ${(fy + neckY) / 2 + 10} ${neckX} ${neckY}`}
-              fill="none"
-              stroke="#5c7a4f"
-              strokeWidth={size * 0.006}
-              strokeOpacity="0.75"
-              strokeLinecap="round"
-            />
-          );
-        })}
-      </svg>
-    
+
+    {/* stems — trail down from each flower head into a natural gathered band */}
+<svg
+  viewBox={`0 0 ${size} ${size * 1.32}`}
+  width={size}
+  height={size * 1.32}
+  style={{ position: "absolute", left: 0, top: 0, zIndex: 5, overflow: "visible" }}
+>
+  {spots.map((s) => {
+    const fx = clusterLeft + s.x * clusterBox;
+    const fy = clusterTop + s.y * clusterBox + headSize * 0.32;
+    // Spread each stem's endpoint slightly instead of one shared pixel,
+    // so they read as a gathered bunch rather than a single clumped knot.
+    const neckX = size / 2 + (s.x - 0.5) * size * 0.12;
+    const neckY = size * 0.7 + s.i % 3 * size * 0.01;
+    return (
+      <path
+        key={`stem-${s.i}`}
+        d={`M${fx} ${fy} Q${(fx + neckX) / 2} ${(fy + neckY) / 2 + 10} ${neckX} ${neckY}`}
+        fill="none"
+        stroke="#5c7a4f"
+        strokeWidth={size * 0.004}
+        strokeOpacity="0.55"
+        strokeLinecap="round"
+      />
+    );
+  })}
+</svg>
       {/* flower heads — tightly clustered dome, all from one point at the top */}
       {spots.map((s) => {
         const depth = s.r; // 0 = front/center, 1 = back/outer
