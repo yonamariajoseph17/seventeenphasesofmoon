@@ -67,9 +67,11 @@ export function GiftWizard(props: Props) {
   const [occasion, setOccasion] = useState<LetterOccasion>("birthday");
 
   // Step 2 — the postcard
+  // Step 2 — the postcard
   const [flipped, setFlipped] = useState(false);
   const [flipHint, setFlipHint] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [previewWidth, setPreviewWidth] = useState(PREVIEW_W);
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
 
