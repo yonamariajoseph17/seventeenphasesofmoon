@@ -279,8 +279,13 @@ export function GiftWizard(props: Props) {
     placeholder={personName}
     maxLength={40}
     className="letterpaper-hand bg-transparent text-2xl outline-none placeholder:text-[#7a5a2e]/40"
-    style={{ width: `${Math.max(2, (greetName || personName).length) * 0.62}em` }}
-  />
+style={{
+  width: `${Math.max(2, (greetName || personName).length) * 0.58}em`,
+  padding: 0,
+  margin: 0,
+  border: "none",
+  boxSizing: "content-box",
+}}
   <span className="letterpaper-hand text-2xl">,</span>
 </div>
               <textarea
