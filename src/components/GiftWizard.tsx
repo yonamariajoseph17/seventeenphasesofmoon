@@ -31,7 +31,7 @@ interface Props {
 }
 
 const PREVIEW_W = 470;
-const MAX_FLOWERS = 15;
+const MAX_FLOWERS = 17;
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
