@@ -285,7 +285,8 @@ style={{
   margin: 0,
   border: "none",
   boxSizing: "content-box",
-}}
+    }}
+  />
   <span className="letterpaper-hand text-2xl">,</span>
 </div>
               <textarea
