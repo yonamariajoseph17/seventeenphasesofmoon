@@ -273,20 +273,23 @@ export function GiftWizard(props: Props) {
             <div className="text-left">
               <div className="mb-3 flex flex-wrap items-baseline gap-x-0">
   <span className="letterpaper-hand text-2xl">Dear&nbsp;</span>
+  <span className="letterpaper-hand relative inline-block text-2xl">
+  <span
+    aria-hidden
+    className="letterpaper-hand invisible whitespace-pre text-2xl"
+  >
+    {greetName || personName || "M"}
+  </span>
   <input
     value={greetName}
     onChange={(e) => setGreetName(e.target.value)}
     placeholder={personName}
     maxLength={40}
-    className="letterpaper-hand bg-transparent text-2xl outline-none placeholder:text-[#7a5a2e]/40"
-style={{
-  width: `${Math.max(2, (greetName || personName).length) * 0.58}em`,
-  padding: 0,
-  margin: 0,
-  border: "none",
-  boxSizing: "content-box",
-    }}
+    className="letterpaper-hand absolute inset-0 w-full bg-transparent text-2xl outline-none placeholder:text-[#7a5a2e]/40"
+    style={{ padding: 0, margin: 0, border: "none" }}
   />
+</span>
+  
   <span className="letterpaper-hand text-2xl">,</span>
 </div>
               <textarea
