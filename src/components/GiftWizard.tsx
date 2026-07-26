@@ -66,7 +66,7 @@ export function GiftWizard(props: Props) {
   const [writtenDate, setWrittenDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [occasion, setOccasion] = useState<LetterOccasion>("birthday");
 
-  // Step 2 — the postcard
+  // 
   // Step 2 — the postcard
   const [flipped, setFlipped] = useState(false);
   const [flipHint, setFlipHint] = useState(false);
@@ -74,6 +74,17 @@ export function GiftWizard(props: Props) {
   const [previewWidth, setPreviewWidth] = useState(PREVIEW_W);
   const frontRef = useRef<HTMLDivElement>(null);
   const backRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function updateWidth() {
+      const vw = window.innerWidth * 0.92;
+      setPreviewWidth(Math.min(PREVIEW_W, vw));
+    }
+    updateWidth();
+    window.addEventListener("resize", updateWidth);
+    return () => window.removeEventListener("resize", updateWidth);
+  }, []);
+  
 
   // Step 3 — the bouquet
   const [subStep, setSubStep] = useState<"flowers" | "wrap" | "assemble">("flowers");
@@ -336,13 +347,7 @@ export function GiftWizard(props: Props) {
           <p className="mb-6 max-w-md text-center text-sm text-muted-foreground">
             A vintage keepsake — the birth-night moon, your milestone moons, and your message on the back. Every value is drawn from the same verified sky.
           </p>
-          <div
-            style={{
-              perspective: 1600,
-              width: `min(${PREVIEW_W}px, 92vw)`,
-              aspectRatio: `${POSTCARD_W} / ${POSTCARD_H}`,
-            }}
-          >
+          <div style={{ perspective: 1600, width: previewWidth, height: previewWidth * (POSTCARD_H / POSTCARD_W) }}>
             <button
               type="button"
               onClick={() => setFlipped((f) => !f)}
@@ -351,12 +356,12 @@ export function GiftWizard(props: Props) {
               aria-label="Flip postcard"
             >
               <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", borderRadius: 16, overflow: "hidden", boxShadow: "0 22px 60px -20px rgba(0,0,0,0.65)" }}>
-                <div style={{ transform: `scale(calc(min(${PREVIEW_W}px, 92vw) / ${POSTCARD_W}))`, transformOrigin: "top left", width: POSTCARD_W, height: POSTCARD_H }}>
+                <div style={{ transform: `scale(${previewWidth / POSTCARD_W})`, transformOrigin: "top left", width: POSTCARD_W, height: POSTCARD_H }}>
                   <PostcardFront {...pcProps} />
                 </div>
               </div>
               <div style={{ position: "absolute", inset: 0, backfaceVisibility: "hidden", transform: "rotateY(180deg)", borderRadius: 16, overflow: "hidden", boxShadow: "0 22px 60px -20px rgba(0,0,0,0.65)" }}>
-                <div style={{ transform: `scale(calc(min(${PREVIEW_W}px, 92vw) / ${POSTCARD_W}))`, transformOrigin: "top left", width: POSTCARD_W, height: POSTCARD_H }}>
+                <div style={{ transform: `scale(${previewWidth / POSTCARD_W})`, transformOrigin: "top left", width: POSTCARD_W, height: POSTCARD_H }}>
                   <PostcardBack {...pcProps} />
                 </div>
               </div>
