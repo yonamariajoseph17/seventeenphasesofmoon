@@ -271,18 +271,18 @@ export function GiftWizard(props: Props) {
 
           <LetterPaper place={headerPlace} dateLabel={writtenDateLabel}>
             <div className="text-left">
-              <div className="mb-3 flex flex-wrap items-baseline gap-x-1">
-                <span className="letterpaper-hand text-2xl">Dear</span>
-                <input
-                  value={greetName}
-                  onChange={(e) => setGreetName(e.target.value)}
-                  placeholder={personName}
-                  maxLength={40}
-                  size={Math.max(4, (greetName || personName).length)}
-                  className="letterpaper-hand bg-transparent text-2xl outline-none placeholder:text-[#7a5a2e]/40"
-                />
-                <span className="letterpaper-hand text-2xl">,</span>
-              </div>
+              <div className="mb-3 flex flex-wrap items-baseline gap-x-0">
+  <span className="letterpaper-hand text-2xl">Dear&nbsp;</span>
+  <input
+    value={greetName}
+    onChange={(e) => setGreetName(e.target.value)}
+    placeholder={personName}
+    maxLength={40}
+    className="letterpaper-hand bg-transparent text-2xl outline-none placeholder:text-[#7a5a2e]/40"
+    style={{ width: `${Math.max(2, (greetName || personName).length) * 0.62}em` }}
+  />
+  <span className="letterpaper-hand text-2xl">,</span>
+</div>
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value.slice(0, 500))}
