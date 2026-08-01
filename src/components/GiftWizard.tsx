@@ -338,7 +338,7 @@ export function GiftWizard(props: Props) {
             <p className="max-w-xs text-[11px] text-muted-foreground/80">The occasion sets the quiet opening line they read first and the closing on the bouquet tag — the letter itself stays the same.</p>
           </div>
 
-          <WizardNav onNext={() => { setTo(greetName); setStep(2); }} nextLabel="Continue to the postcard" />
+          <WizardNav onNext={() => { setTo((t) => t.trim() || greetName); setStep(2); }} nextLabel="Continue to the postcard" />
         </div>
       )}
 
