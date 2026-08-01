@@ -395,10 +395,10 @@ export function GiftWizard(props: Props) {
               </div>
             </button>
           </div>
-          {flipHint && !flipped && <p className="mt-4 animate-pulse text-[11px] tracking-[0.3em] text-accent uppercase">Tap to flip ↓</p>}
+          {flipHint && flipped && <p className="mt-4 animate-pulse text-[11px] tracking-[0.3em] text-accent uppercase">Tap to see the address side ↓</p>}
           <div className="mt-3 flex gap-3">
             <button type="button" onClick={() => setFlipped((f) => !f)} className="rounded-full border border-border px-4 py-1.5 text-[11px] tracking-[0.2em] text-muted-foreground uppercase hover:text-foreground">
-              {flipped ? "Show front" : "Flip to back"}
+              {flipped ? "Show address side" : "Show night sky"}
             </button>
             <button type="button" onClick={downloadPostcard} disabled={exporting} className="rounded-full border border-accent/50 px-4 py-1.5 text-[11px] tracking-[0.2em] text-accent uppercase hover:bg-accent/10 disabled:opacity-50">
               {exporting ? "Rendering…" : "Download PNG"}
