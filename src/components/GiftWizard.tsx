@@ -68,7 +68,8 @@ export function GiftWizard(props: Props) {
 
   // 
   // Step 2 — the postcard
-  const [flipped, setFlipped] = useState(false);
+  const [recipientCity, setRecipientCity] = useState("");
+  const [flipped, setFlipped] = useState(true);   // opens on the night-sky side
   const [flipHint, setFlipHint] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [previewWidth, setPreviewWidth] = useState(PREVIEW_W);
