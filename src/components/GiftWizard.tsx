@@ -121,6 +121,7 @@ export function GiftWizard(props: Props) {
     tz: base.tz,
     city,
     recipient,
+    recipientCity: recipientCity.trim(),
     sender: from.trim(),
     occasion: OCCASION_LABELS[occasion],
     message: buildPostcardMessage(recipient, message),
