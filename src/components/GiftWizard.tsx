@@ -347,9 +347,35 @@ export function GiftWizard(props: Props) {
       {step === 2 && (
         <div className="flex flex-col items-center">
           <p className="mb-6 max-w-md text-center text-sm text-muted-foreground">
-            A vintage keepsake — the birth-night moon, your milestone moons, and your message on the back. Every value is drawn from the same verified sky.
+            A real postcard — the night sky over {city} on the back, and the address side written out in front. Every value is drawn from the same verified sky.
           </p>
+
+          {/* Who it's addressed to — written on the postcard's address lines */}
+          <div className="mb-7 grid w-full max-w-lg gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1.5 text-[11px] tracking-[0.2em] text-muted-foreground uppercase">
+              Recipient name
+              <input
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                placeholder={greetName || personName}
+                maxLength={40}
+                className="input"
+              />
+            </label>
+            <label className="flex flex-col gap-1.5 text-[11px] tracking-[0.2em] text-muted-foreground uppercase">
+              Recipient city
+              <input
+                value={recipientCity}
+                onChange={(e) => setRecipientCity(e.target.value)}
+                placeholder="e.g. Chennai, Tamil Nadu"
+                maxLength={60}
+                className="input"
+              />
+            </label>
+          </div>
+
           <div style={{ perspective: 1600, width: previewWidth, height: previewWidth * (POSTCARD_H / POSTCARD_W) }}>
+
             <button
               type="button"
               onClick={() => setFlipped((f) => !f)}
