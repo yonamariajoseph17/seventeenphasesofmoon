@@ -178,7 +178,7 @@ export const PostcardFront = forwardRef<HTMLDivElement, Props>(function Postcard
               <p style={{ margin: "6px 0 0", fontSize: 9, letterSpacing: 2, textTransform: "uppercase", color: s.sub }}>Sky We Share</p>
             </div>
             {/* circular birth postmark */}
-            <svg width="164" height="164" style={{ position: "absolute", top: -30, left: -66, opacity: 0.6 }} aria-hidden>
+            <svg width="164" height="164" style={{ position: "absolute", top: 6, left: -70, opacity: 0.6 }} aria-hidden>
               <g fill="none" stroke={s.accent} strokeWidth="2">
                 <circle cx="82" cy="82" r="62" />
                 <circle cx="82" cy="82" r="45" strokeDasharray="3 5" />
