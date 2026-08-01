@@ -40,7 +40,7 @@ export function isMilestoneAge(age: number): boolean {
 }
 
 // Ages featured on the postcard's milestone-moon strip.
-export const POSTCARD_MILESTONE_AGES = [0, 1, 5, 10, 18, 21, 25, 30] as const;
+export const POSTCARD_MILESTONE_AGES = [0, 1, 5, 10, 16, 18, 21, 25, 30] as const;
 
 /** Milestone ages that have already occurred for someone of the given current age. */
 export function postcardMilestones(currentAge: number): number[] {
