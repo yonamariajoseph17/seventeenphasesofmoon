@@ -529,10 +529,9 @@ export function GiftWizard(props: Props) {
   );
 }
 
-function buildPostcardMessage(recipient: string, message: string): string {
-  const parts: string[] = [`Dear ${recipient},`];
-  if (message.trim()) parts.push(message.trim());
-  return parts.join(" ");
+/** The postcard renders its own "Dear …" greeting, so only the body travels. */
+function buildPostcardMessage(_recipient: string, message: string): string {
+  return message.trim();
 }
 
 function WizardNav({ onBack, onNext, nextLabel, nextDisabled }: { onBack?: () => void; onNext?: () => void; nextLabel: string; nextDisabled?: boolean }) {
