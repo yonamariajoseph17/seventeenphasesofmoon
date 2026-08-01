@@ -68,7 +68,8 @@ export function GiftWizard(props: Props) {
 
   // 
   // Step 2 — the postcard
-  const [flipped, setFlipped] = useState(false);
+  const [recipientCity, setRecipientCity] = useState("");
+  const [flipped, setFlipped] = useState(true);   // opens on the night-sky side
   const [flipHint, setFlipHint] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [previewWidth, setPreviewWidth] = useState(PREVIEW_W);
@@ -120,6 +121,7 @@ export function GiftWizard(props: Props) {
     tz: base.tz,
     city,
     recipient,
+    recipientCity: recipientCity.trim(),
     sender: from.trim(),
     occasion: OCCASION_LABELS[occasion],
     message: buildPostcardMessage(recipient, message),
@@ -336,7 +338,7 @@ export function GiftWizard(props: Props) {
             <p className="max-w-xs text-[11px] text-muted-foreground/80">The occasion sets the quiet opening line they read first and the closing on the bouquet tag — the letter itself stays the same.</p>
           </div>
 
-          <WizardNav onNext={() => { setTo(greetName); setStep(2); }} nextLabel="Continue to the postcard" />
+          <WizardNav onNext={() => { setTo((t) => t.trim() || greetName); setStep(2); }} nextLabel="Continue to the postcard" />
         </div>
       )}
 
@@ -345,9 +347,35 @@ export function GiftWizard(props: Props) {
       {step === 2 && (
         <div className="flex flex-col items-center">
           <p className="mb-6 max-w-md text-center text-sm text-muted-foreground">
-            A vintage keepsake — the birth-night moon, your milestone moons, and your message on the back. Every value is drawn from the same verified sky.
+            A real postcard — the night sky over {city} on the back, and the address side written out in front. Every value is drawn from the same verified sky.
           </p>
+
+          {/* Who it's addressed to — written on the postcard's address lines */}
+          <div className="mb-7 grid w-full max-w-lg gap-3 sm:grid-cols-2">
+            <label className="flex flex-col gap-1.5 text-[11px] tracking-[0.2em] text-muted-foreground uppercase">
+              Recipient name
+              <input
+                value={to}
+                onChange={(e) => setTo(e.target.value)}
+                placeholder={greetName || personName}
+                maxLength={40}
+                className="input"
+              />
+            </label>
+            <label className="flex flex-col gap-1.5 text-[11px] tracking-[0.2em] text-muted-foreground uppercase">
+              Recipient city
+              <input
+                value={recipientCity}
+                onChange={(e) => setRecipientCity(e.target.value)}
+                placeholder="e.g. Chennai, Tamil Nadu"
+                maxLength={60}
+                className="input"
+              />
+            </label>
+          </div>
+
           <div style={{ perspective: 1600, width: previewWidth, height: previewWidth * (POSTCARD_H / POSTCARD_W) }}>
+
             <button
               type="button"
               onClick={() => setFlipped((f) => !f)}
@@ -367,10 +395,10 @@ export function GiftWizard(props: Props) {
               </div>
             </button>
           </div>
-          {flipHint && !flipped && <p className="mt-4 animate-pulse text-[11px] tracking-[0.3em] text-accent uppercase">Tap to flip ↓</p>}
+          {flipHint && flipped && <p className="mt-4 animate-pulse text-[11px] tracking-[0.3em] text-accent uppercase">Tap to see the address side ↓</p>}
           <div className="mt-3 flex gap-3">
             <button type="button" onClick={() => setFlipped((f) => !f)} className="rounded-full border border-border px-4 py-1.5 text-[11px] tracking-[0.2em] text-muted-foreground uppercase hover:text-foreground">
-              {flipped ? "Show front" : "Flip to back"}
+              {flipped ? "Show address side" : "Show night sky"}
             </button>
             <button type="button" onClick={downloadPostcard} disabled={exporting} className="rounded-full border border-accent/50 px-4 py-1.5 text-[11px] tracking-[0.2em] text-accent uppercase hover:bg-accent/10 disabled:opacity-50">
               {exporting ? "Rendering…" : "Download PNG"}
@@ -501,10 +529,9 @@ export function GiftWizard(props: Props) {
   );
 }
 
-function buildPostcardMessage(recipient: string, message: string): string {
-  const parts: string[] = [`Dear ${recipient},`];
-  if (message.trim()) parts.push(message.trim());
-  return parts.join(" ");
+/** The postcard renders its own "Dear …" greeting, so only the body travels. */
+function buildPostcardMessage(_recipient: string, message: string): string {
+  return message.trim();
 }
 
 function WizardNav({ onBack, onNext, nextLabel, nextDisabled }: { onBack?: () => void; onNext?: () => void; nextLabel: string; nextDisabled?: boolean }) {
