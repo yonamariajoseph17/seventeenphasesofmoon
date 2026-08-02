@@ -255,7 +255,7 @@ function Index() {
     return postcardMilestones(maxAge).map((age) => {
       const d = years[age];
       const mm = accurateMoon(d);
-      return { age, phaseAngle: mm.phaseAngle, illumination: mm.illumination, waxing: mm.waxing };
+      return { age, phaseAngle: mm.phaseAngle, illumination: mm.illumination, waxing: mm.waxing, name: mm.name };
     });
   }, [years, currentYear, birthYear]);
 

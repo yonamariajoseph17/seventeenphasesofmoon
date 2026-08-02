@@ -63,7 +63,11 @@ export function GiftWizard(props: Props) {
   const [message, setMessage] = useState("");
   const [from, setFrom] = useState("");
   const [place, setPlace] = useState(city);
-  const [writtenDate, setWrittenDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
+  // set after mount so SSR and client markup match (server clock may differ by a day)
+  const [writtenDate, setWrittenDate] = useState("");
+  useEffect(() => {
+    setWrittenDate((prev) => prev || format(new Date(), "yyyy-MM-dd"));
+  }, []);
   const [occasion, setOccasion] = useState<LetterOccasion>("birthday");
 
   // 
