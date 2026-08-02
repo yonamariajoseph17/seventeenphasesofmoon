@@ -264,12 +264,12 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
       {/* ── Mounted photograph: cream card-stock mount visible around the scene ── */}
       <div
         style={{
-          position: "relative", margin: "52px 56px 0", padding: 9,
+          position: "relative", margin: "44px 56px 0", padding: 9,
           background: s.light ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.08)",
           boxShadow: `0 0 0 1px ${s.line}`,
         }}
       >
-        <div style={{ position: "relative", height: 662, overflow: "hidden", background: "#04060f" }}>
+        <div style={{ position: "relative", height: 700, overflow: "hidden", background: "#04060f" }}>
           <NightScene moon={p.moon} />
         </div>
       </div>
@@ -279,7 +279,7 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
         <p style={{ margin: 0, fontSize: 13, letterSpacing: 3, textTransform: "uppercase", color: s.ink, fontWeight: 600 }}>
           {scenePlace(p.stateLabel).toUpperCase()}
         </p>
-        <p style={{ margin: 0, fontSize: 11.5, letterSpacing: 2.5, textTransform: "uppercase", color: s.ink, opacity: 0.85, fontWeight: 500 }}>
+        <p style={{ margin: 0, fontSize: 11, letterSpacing: 2.2, textTransform: "uppercase", color: s.ink, opacity: 0.85, fontWeight: 500 }}>
           {captionLoc || p.city.toUpperCase()} · {p.dateLabel.toUpperCase()} · {phaseText}
         </p>
       </div>
@@ -355,8 +355,8 @@ function ridgePath(seed: number, W: number, baseY: number, amp: number, segments
  */
 function NightScene({ moon }: { moon: AccurateMoonInfo }) {
   const W = 1540;
-  const H = 662;
-  const horizon = 404;
+  const H = 700;
+  const horizon = 430;
   const moonSize = 190;
   const moonCx = W * 0.755;
   const moonCy = 132;
