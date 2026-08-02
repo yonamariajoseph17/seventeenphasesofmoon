@@ -17,6 +17,7 @@ export interface PostcardMilestone {
   phaseAngle: number;
   illumination: number;
   waxing: boolean;
+  name?: string;            // verified phase name, e.g. "Waxing Gibbous"
 }
 
 interface Props {
