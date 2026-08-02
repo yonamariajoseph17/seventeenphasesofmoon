@@ -269,7 +269,7 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
           boxShadow: `0 0 0 1px ${s.line}`,
         }}
       >
-        <div style={{ position: "relative", height: 606, overflow: "hidden", background: "#04060f" }}>
+        <div style={{ position: "relative", height: 662, overflow: "hidden", background: "#04060f" }}>
           <NightScene moon={p.moon} />
         </div>
       </div>
@@ -279,14 +279,14 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
         <p style={{ margin: 0, fontSize: 13, letterSpacing: 3, textTransform: "uppercase", color: s.ink, fontWeight: 600 }}>
           {scenePlace(p.stateLabel).toUpperCase()}
         </p>
-        <p style={{ margin: 0, fontSize: 11.5, letterSpacing: 2.5, textTransform: "uppercase", color: s.accent }}>
+        <p style={{ margin: 0, fontSize: 11.5, letterSpacing: 2.5, textTransform: "uppercase", color: s.ink, opacity: 0.85, fontWeight: 500 }}>
           {captionLoc || p.city.toUpperCase()} · {p.dateLabel.toUpperCase()} · {phaseText}
         </p>
       </div>
 
       {/* ── Milestone moon strip — dark plaque, cream type ── */}
       {milestones.length > 0 && (
-        <div style={{ position: "relative", marginTop: "auto", marginBottom: 44, marginLeft: 56, marginRight: 56 }}>
+        <div style={{ position: "relative", marginTop: "auto", marginBottom: 34, marginLeft: 56, marginRight: 56 }}>
           <div style={{ height: 0, borderTop: `1px solid ${s.line}`, opacity: 0.9, marginBottom: 18 }} />
           <div
             style={{
@@ -301,7 +301,7 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
                   <MoonSvg phaseAngle={m.phaseAngle} illumination={m.illumination} waxing={m.waxing} size={96} />
                 </div>
                 {m.name && (
-                  <span style={{ fontSize: 10, letterSpacing: 1.4, color: "#c7d2ea", textAlign: "center", whiteSpace: "nowrap" }}>
+                  <span style={{ fontSize: 10.5, letterSpacing: 1.6, color: "#dbe3f5", textAlign: "center", whiteSpace: "nowrap" }}>
                     {m.name}
                   </span>
                 )}
@@ -355,8 +355,8 @@ function ridgePath(seed: number, W: number, baseY: number, amp: number, segments
  */
 function NightScene({ moon }: { moon: AccurateMoonInfo }) {
   const W = 1540;
-  const H = 606;
-  const horizon = 372;
+  const H = 662;
+  const horizon = 404;
   const moonSize = 190;
   const moonCx = W * 0.755;
   const moonCy = 132;
@@ -510,7 +510,7 @@ function NightScene({ moon }: { moon: AccurateMoonInfo }) {
         </g>
 
         {/* moonlight path — narrow at the far shore, wider at the near edge */}
-        <g filter="url(#pc-blur-sm)" opacity="0.9">
+        <g filter="url(#pc-blur-md)" opacity="0.85">
           <path
             d={`M${moonCx - 24} ${horizon + 6} L${moonCx + 24} ${horizon + 6} L${moonCx + 132} ${H} L${moonCx - 132} ${H} Z`}
             fill="url(#pc-path)"
@@ -528,7 +528,7 @@ function NightScene({ moon }: { moon: AccurateMoonInfo }) {
           })}
         </g>
         {/* faint overall water texture */}
-        <g stroke="rgba(190,208,248,0.13)" strokeWidth="1" fill="none">
+        <g stroke="rgba(190,208,248,0.08)" strokeWidth="1" fill="none">
           {Array.from({ length: 22 }).map((_, i) => {
             const y = horizon + 14 + i * 10.5;
             const len = 120 + treeR() * 700;
