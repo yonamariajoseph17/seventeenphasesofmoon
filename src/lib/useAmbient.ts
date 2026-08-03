@@ -1,16 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 /**
- * Curated soundscape engine — all sound is synthesized with the Web Audio API,
- * so there are no files to stream and looping is inherently seamless. Every
- * soundscape is instrumental, low-volume, and fades gently in and out. Default
- * state is "off"; audio only starts on an explicit user gesture (autoplay).
+ * Curated soundscape engine.
+ *
+ * "Our Song" is a real audio file (the project's own score); the two ambient
+ * soundscapes are synthesized with the Web Audio API so looping is inherently
+ * seamless. Every option is low-volume with a gentle 1.5s fade in and out.
+ *
+ * "Our Song" is the default sitewide selection. Browsers block autoplay, so it
+ * is armed on mount and starts on the first user interaction anywhere.
  */
 
+/** The default background score used sitewide and for every gift experience. */
+export const DEFAULT_BGM_SRC = "/The_metro_proposal(128k).mp3";
+export const DEFAULT_BGM_VOLUME = 0.18;
+export const BGM_FADE_MS = 1500;
+
 export const SOUNDSCAPES = [
-  { id: "piano", label: "Moonlight Piano", desc: "soft felt piano, minimalist" },
-  { id: "strings", label: "Midnight Strings", desc: "gentle orchestral, warm" },
-  { id: "musicbox", label: "Starlit Music Box", desc: "nostalgic, delicate" },
+  { id: "oursong", label: "Our Song", desc: "The Metro Proposal" },
   { id: "garden", label: "Night Garden", desc: "crickets, breeze, ambient" },
   { id: "ocean", label: "Ocean Under Moonlight", desc: "soft waves, spacious" },
   { id: "off", label: "Off", desc: "silence" },
@@ -22,10 +29,7 @@ interface Engine {
   stop: (ctx: AudioContext) => void;
 }
 
-const MASTER_VOLUME: Record<Exclude<SoundscapeId, "off">, number> = {
-  piano: 0.16,
-  strings: 0.1,
-  musicbox: 0.13,
+const MASTER_VOLUME: Record<"garden" | "ocean", number> = {
   garden: 0.09,
   ocean: 0.12,
 };
@@ -37,73 +41,7 @@ function noiseBuffer(ctx: AudioContext, seconds = 2): AudioBuffer {
   return buf;
 }
 
-// A pentatonic-ish set of frequencies for melodic engines (calm, no dissonance).
-const SCALE = [261.63, 293.66, 329.63, 392.0, 440.0, 523.25, 587.33];
-
-function pluck(ctx: AudioContext, master: GainNode, freq: number, when: number, decay: number, type: OscillatorType, bright = 1) {
-  const osc = ctx.createOscillator();
-  osc.type = type;
-  osc.frequency.value = freq;
-  const g = ctx.createGain();
-  g.gain.setValueAtTime(0, when);
-  g.gain.linearRampToValueAtTime(0.5 * bright, when + 0.02);
-  g.gain.exponentialRampToValueAtTime(0.0001, when + decay);
-  osc.connect(g).connect(master);
-  osc.start(when);
-  osc.stop(when + decay + 0.1);
-}
-
-function buildEngine(id: Exclude<SoundscapeId, "off">, ctx: AudioContext, master: GainNode): Engine {
-  if (id === "strings") {
-    // Warm sustained chord (Cmaj9-ish) with slow vibrato per voice.
-    const chord = [130.81, 196.0, 261.63, 329.63, 392.0];
-    const nodes: { osc: OscillatorNode; lfo: OscillatorNode }[] = [];
-    chord.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      osc.type = "sawtooth";
-      osc.frequency.value = freq;
-      osc.detune.value = (i - 2) * 5;
-      const voice = ctx.createGain();
-      voice.gain.value = 0.0001;
-      voice.gain.setTargetAtTime(0.16, ctx.currentTime, 3);
-      const lfo = ctx.createOscillator();
-      lfo.frequency.value = 0.06 + i * 0.011;
-      const lfoGain = ctx.createGain();
-      lfoGain.gain.value = 0.06;
-      lfo.connect(lfoGain).connect(voice.gain);
-      const filter = ctx.createBiquadFilter();
-      filter.type = "lowpass";
-      filter.frequency.value = 900;
-      osc.connect(voice).connect(filter).connect(master);
-      osc.start();
-      lfo.start();
-      nodes.push({ osc, lfo });
-    });
-    return {
-      stop: () => nodes.forEach(({ osc, lfo }) => { try { osc.stop(); lfo.stop(); } catch { /* */ } }),
-    };
-  }
-
-  if (id === "piano" || id === "musicbox") {
-    // Scheduled gentle notes. Music box = bright, fast decay; piano = mellow.
-    const type: OscillatorType = id === "musicbox" ? "triangle" : "sine";
-    const decay = id === "musicbox" ? 1.4 : 2.6;
-    const bright = id === "musicbox" ? 1.1 : 0.8;
-    const octave = id === "musicbox" ? 2 : 1;
-    let step = 0;
-    const tick = () => {
-      const now = ctx.currentTime;
-      const root = SCALE[Math.floor(Math.random() * SCALE.length)] * octave;
-      pluck(ctx, master, root, now + 0.02, decay, type, bright);
-      // Occasional soft harmony note.
-      if (Math.random() < 0.5) pluck(ctx, master, SCALE[Math.floor(Math.random() * SCALE.length)] * octave, now + 0.25, decay, type, bright * 0.6);
-      step++;
-    };
-    tick();
-    const interval = setInterval(tick, id === "musicbox" ? 1100 : 1900);
-    return { stop: () => clearInterval(interval) };
-  }
-
+function buildEngine(id: "garden" | "ocean", ctx: AudioContext, master: GainNode): Engine {
   if (id === "ocean") {
     // Filtered noise with slow swelling waves.
     const src = ctx.createBufferSource();
@@ -163,13 +101,35 @@ function buildEngine(id: Exclude<SoundscapeId, "off">, ctx: AudioContext, master
   return { stop: () => { clearInterval(interval); try { src.stop(); lfo.stop(); } catch { /* */ } } };
 }
 
+/** Fade an <audio> element's volume over `ms`, optionally pausing at the end. */
+function fadeAudio(el: HTMLAudioElement, to: number, ms: number, onDone?: () => void) {
+  const from = el.volume;
+  const t0 = performance.now();
+  const step = (t: number) => {
+    const k = Math.min(1, (t - t0) / ms);
+    el.volume = Math.max(0, Math.min(1, from + (to - from) * k));
+    if (k < 1) requestAnimationFrame(step);
+    else onDone?.();
+  };
+  requestAnimationFrame(step);
+}
+
 export function useSoundscape() {
-  const [current, setCurrent] = useState<SoundscapeId>("off");
+  const [current, setCurrent] = useState<SoundscapeId>("oursong");
+  const [playing, setPlaying] = useState(false);
   const ctxRef = useRef<AudioContext | null>(null);
   const masterRef = useRef<GainNode | null>(null);
   const engineRef = useRef<Engine | null>(null);
+  const songRef = useRef<HTMLAudioElement | null>(null);
+  const currentRef = useRef<SoundscapeId>("oursong");
 
   const teardown = useCallback((fade = true) => {
+    const song = songRef.current;
+    if (song) {
+      songRef.current = null;
+      if (fade) fadeAudio(song, 0, BGM_FADE_MS, () => song.pause());
+      else song.pause();
+    }
     const ctx = ctxRef.current;
     const master = masterRef.current;
     const engine = engineRef.current;
@@ -184,30 +144,72 @@ export function useSoundscape() {
     ctxRef.current = null;
   }, []);
 
-  const select = useCallback((id: SoundscapeId) => {
-    setCurrent(id);
-    teardown();
-    if (id === "off") return;
+  const start = useCallback((id: SoundscapeId) => {
+    if (id === "off") { setPlaying(false); return; }
+
+    if (id === "oursong") {
+      const el = new Audio(DEFAULT_BGM_SRC);
+      el.loop = true;
+      el.preload = "auto";
+      el.volume = 0;
+      songRef.current = el;
+      el.play().then(
+        () => { setPlaying(true); fadeAudio(el, DEFAULT_BGM_VOLUME, BGM_FADE_MS); },
+        () => { setPlaying(false); }, // autoplay blocked — a gesture will retry
+      );
+      return;
+    }
+
     const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
     if (!AC) return;
     const ctx = new AC();
     ctxRef.current = ctx;
     const master = ctx.createGain();
     master.gain.value = 0;
-    master.gain.setTargetAtTime(MASTER_VOLUME[id], ctx.currentTime, 1.4); // gentle fade-in
+    master.gain.setTargetAtTime(MASTER_VOLUME[id], ctx.currentTime, BGM_FADE_MS / 1000);
     master.connect(ctx.destination);
     masterRef.current = master;
     engineRef.current = buildEngine(id, ctx, master);
-  }, [teardown]);
+    setPlaying(true);
+  }, []);
+
+  const select = useCallback((id: SoundscapeId) => {
+    setCurrent(id);
+    currentRef.current = id;
+    teardown();
+    start(id);
+  }, [start, teardown]);
+
+  // Arm the default track: try immediately, then retry on the first gesture.
+  useEffect(() => {
+    start("oursong");
+    const kick = () => {
+      if (currentRef.current !== "off" && !songRef.current && !ctxRef.current) start(currentRef.current);
+      else if (songRef.current?.paused) {
+        songRef.current.play().then(() => setPlaying(true), () => {});
+      }
+      window.removeEventListener("pointerdown", kick);
+      window.removeEventListener("keydown", kick);
+      window.removeEventListener("touchstart", kick);
+    };
+    window.addEventListener("pointerdown", kick, { once: true });
+    window.addEventListener("keydown", kick, { once: true });
+    window.addEventListener("touchstart", kick, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", kick);
+      window.removeEventListener("keydown", kick);
+      window.removeEventListener("touchstart", kick);
+    };
+  }, [start]);
 
   useEffect(() => () => teardown(false), [teardown]);
 
-  return { current, select, playing: current !== "off" };
+  return { current, select, playing: current !== "off" && playing };
 }
 
 /** Legacy simple on/off wrapper kept for backwards compatibility. */
 export function useAmbient() {
   const { playing, select } = useSoundscape();
-  const toggle = useCallback(() => select(playing ? "off" : "strings"), [playing, select]);
+  const toggle = useCallback(() => select(playing ? "off" : "oursong"), [playing, select]);
   return { enabled: playing, toggle };
 }
