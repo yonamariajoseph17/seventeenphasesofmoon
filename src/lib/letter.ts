@@ -80,7 +80,10 @@ export interface LetterPayload {
   style: LetterStyle;
   occasion?: LetterOccasion;  // sets the emotional opening line
   song?: string;        // signed URL of an uploaded personal song
+  songScope?: "letter" | "all"; // where the personal song plays
+  recipientCity?: string;       // recipient's city, shown on envelope + postcard
   bouquet?: Bouquet;    // chosen flowers + wrap
+
 }
 
 function utf8ToB64Url(str: string): string {
