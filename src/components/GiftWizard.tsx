@@ -59,6 +59,9 @@ function fitFontPx(len: number, max: number, min: number): number {
 export function GiftWizard(props: Props) {
   const { base, moon, city, dateLabel, timeLabel, sunriseLabel, sunsetLabel, illumPct, milestones, personName } = props;
 
+  // Gift type — chosen before the wizard begins, carried through to the payload.
+  const [giftType, setGiftType] = useState<GiftType | null>(null);
+  const isDiy = giftType === "diy";
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
   // Step 1 — the letter
