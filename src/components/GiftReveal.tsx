@@ -115,6 +115,7 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
     illumination: snapshot.illumination,
     waxing: snapshot.waxing,
     milestones: milestones.map((m) => ({ age: m.age, illumination: m.illumination, waxing: m.waxing, name: m.name })),
+    giftTagText: payload.giftTagText,
   };
 
   /* ── choreography ─────────────────────────────────────────────── */

@@ -2,9 +2,9 @@ import jsPDF from "jspdf";
 import JSZip from "jszip";
 
 /**
- * DIY physical gift print kit — five print-ready PDFs bundled into one ZIP:
+ * DIY physical gift print kit — six print-ready PDFs bundled into one ZIP:
  * the letter, a mathematically-precise DL envelope net, the two-sided postcard,
- * an instruction card, and a sheet of wax-seal stickers.
+ * an instruction card, a sheet of wax-seal stickers, and a bouquet gift tag.
  *
  * Everything is drawn with vector primitives at true physical dimensions, so
  * the output is resolution-independent (well beyond 300 DPI when printed).
@@ -33,6 +33,8 @@ export interface PrintKitData {
   illumination: number;
   waxing: boolean;
   milestones: { age: number; illumination: number; waxing: boolean; name?: string }[];
+  /** DIY bouquet tag note written by the sender. */
+  giftTagText?: string;
 }
 
 const CREAM: [number, number, number] = [246, 238, 219];
@@ -461,9 +463,53 @@ function buildSeals(): jsPDF {
   return doc;
 }
 
+
+/* ─────────────────── 6. BOUQUET GIFT TAG ─────────────────── */
+function buildBouquetTag(d: PrintKitData): jsPDF {
+  const W = 105, H = 148; // A6 sheet holding one cut-out tag
+  const doc = new jsPDF({ unit: "mm", format: "a6" });
+  paper(doc, W, H, [255, 255, 255]);
+
+  // the tag itself — cream, rounded, punched hole at the top
+  const tw = 62, th = 96, tx = (W - tw) / 2, ty = 26;
+  doc.setFillColor(...CREAM);
+  doc.roundedRect(tx, ty, tw, th, 4, 4, "F");
+  doc.setDrawColor(...SUB);
+  doc.setLineWidth(0.3);
+  doc.setLineDashPattern([1.6, 1.6], 0);
+  doc.roundedRect(tx - 2, ty - 2, tw + 4, th + 4, 5, 5, "S");
+  doc.setLineDashPattern([], 0);
+
+  // punch hole
+  doc.setDrawColor(...SUB);
+  doc.setLineWidth(0.4);
+  doc.circle(W / 2, ty + 8, 2.6, "S");
+
+  moonDisc(doc, W / 2, ty + 24, 7, d.illumination, d.waxing);
+
+  doc.setFont("times", "italic");
+  doc.setFontSize(11);
+  doc.setTextColor(...INK);
+  const note = doc.splitTextToSize(d.giftTagText || d.occasionLine, tw - 14);
+  doc.text(note, W / 2, ty + 44, { align: "center", lineHeightFactor: 1.5 });
+
+  doc.setFontSize(10);
+  doc.text(d.closing, W / 2, ty + th - 22, { align: "center" });
+  if (d.sender) doc.text(d.sender, W / 2, ty + th - 14, { align: "center" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.5);
+  doc.setTextColor(...SUB);
+  doc.text(
+    doc.splitTextToSize("Print, cut out, punch a small hole at the top, tie to a real bouquet with ribbon or twine.", W - 20),
+    W / 2, H - 12, { align: "center" },
+  );
+  return doc;
+}
+
 export interface PrintKitFile { name: string; label: string; blob: Blob }
 
-/** Build all five PDFs. */
+/** Build all six PDFs. */
 export function buildPrintKitFiles(d: PrintKitData): PrintKitFile[] {
   return [
     { name: "letter.pdf", label: "The Letter", blob: buildLetter(d).output("blob") },
@@ -471,8 +517,26 @@ export function buildPrintKitFiles(d: PrintKitData): PrintKitFile[] {
     { name: "postcard.pdf", label: "The Postcard", blob: buildPostcard(d).output("blob") },
     { name: "how-to-make.pdf", label: "How to Make It", blob: buildInstructions().output("blob") },
     { name: "wax-seal-stickers.pdf", label: "Wax Seals", blob: buildSeals().output("blob") },
+    { name: "bouquet-tag.pdf", label: "Bouquet Tag", blob: buildBouquetTag(d).output("blob") },
   ];
 }
+
+function saveBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+/** Download a single kit file by its name. */
+export function downloadPrintKitFile(d: PrintKitData, name: string) {
+  const file = buildPrintKitFiles(d).find((f) => f.name === name);
+  if (!file) return;
+  saveBlob(file.blob, name);
+}
+
 
 /** Build the kit and download it as a single ZIP. */
 export async function downloadPrintKit(d: PrintKitData, filename = "sky-we-share-print-kit.zip") {
@@ -489,16 +553,12 @@ export async function downloadPrintKit(d: PrintKitData, filename = "sky-we-share
       "postcard.pdf .............. 4x6in, two pages — print double-sided on 250-300gsm",
       "how-to-make.pdf ........... A6 instruction card",
       "wax-seal-stickers.pdf ..... A4 sheet of six seals, print on sticker paper",
+      "bouquet-tag.pdf ........... A6, cut out and tie to a real bouquet",
       "",
       "Built in love, under the same sky.",
     ].join("\n"),
   );
   const blob = await zip.generateAsync({ type: "blob" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  saveBlob(blob, filename);
   return blob.size;
 }

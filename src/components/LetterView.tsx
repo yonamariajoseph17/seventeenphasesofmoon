@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { OCCASION_LINES, type LetterStyle } from "@/lib/letter";
+import { type LetterStyle } from "@/lib/letter";
 import type { LetterRecord } from "@/lib/letter-store";
 import { isMilestoneAge } from "@/lib/milestones";
 import { MoonSvg } from "@/components/MoonSvg";
 import { LetterBackground } from "@/components/LetterBackground";
-import { ScrollLetter } from "@/components/ScrollLetter";
-import { LetterAudio } from "@/components/LetterAudio";
+import { GiftReveal } from "@/components/GiftReveal";
 import { useAmbient } from "@/lib/useAmbient";
 import { tzLabel } from "@/lib/tz";
 
@@ -44,8 +43,7 @@ function fmtTimeISO(iso: string, tz: number) {
 
 export function LetterView({ record }: { record: LetterRecord }) {
   const { payload, snapshot } = record;
-  const [stage, setStage] = useState<"scroll" | "moon">("scroll");
-  const [songStarted, setSongStarted] = useState(false);
+  const [mode, setMode] = useState<"reveal" | "record">("reveal");
   const ambient = useAmbient();
 
   const theme = STYLE_THEMES[payload.style] ?? STYLE_THEMES.midnight;
@@ -53,81 +51,39 @@ export function LetterView({ record }: { record: LetterRecord }) {
   const coreOk = snapshot.confidence !== "UNAVAILABLE";
   const partial = snapshot.confidence === "VERIFIED_PARTIAL";
   const forName = payload.to || payload.name;
-  const occasionLine = OCCASION_LINES[payload.occasion ?? "general"];
-  const hasSong = !!payload.song;
   const cardBg = theme.isLight ? "rgba(0,0,0,0.04)" : "rgba(255,255,255,0.04)";
   const years = snapshot.years ?? [];
   const mostRecentYear = years.length ? years[years.length - 1].year : null;
-  // Longer letters shrink to stay within the parchment margins.
-  const msgLen = (payload.msg ?? "").length;
-  const recipientMsgSize =
-    msgLen > 320 ? "clamp(1rem, 3.6vw, 1.35rem)"
-    : msgLen > 180 ? "clamp(1.1rem, 4.3vw, 1.55rem)"
-    : "clamp(1.25rem, 5vw, 1.875rem)";
+
+  // The cinematic gift reveal is the letter experience. The full moon record is
+  // only reachable from its closing screen.
+  if (mode === "reveal") {
+    return <GiftReveal record={record} onSeeRecord={() => setMode("record")} />;
+  }
 
   return (
     <main style={{ color: theme.fg, fontFamily: "'Inter', sans-serif" }} className="relative min-h-screen overflow-hidden">
       {/* Style-specific premium backdrop — never a generic navy */}
       <LetterBackground style={payload.style} seed={seed} />
 
-      {/* Audio — a personal song if uploaded, otherwise a gentle soundscape toggle */}
-      {hasSong ? (
-        <LetterAudio src={payload.song!} autoStart={songStarted} accent={theme.accent} panelBg={`${theme.accent}1c`} />
-      ) : (
-        <button
-          onClick={ambient.toggle}
-          aria-label={ambient.enabled ? "Mute ambient music" : "Play ambient music"}
-          className="fixed top-4 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full backdrop-blur-sm transition-opacity hover:opacity-100"
-          style={{ background: `${theme.accent}1f`, border: `1px solid ${theme.accent}55`, color: theme.accent }}
-        >
-          {ambient.enabled ? (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M11 5 6 9H2v6h4l5 4z" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /><path d="M19 5a9 9 0 0 1 0 14" />
-            </svg>
-          ) : (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M11 5 6 9H2v6h4l5 4z" /><line x1="22" y1="9" x2="16" y2="15" /><line x1="16" y1="9" x2="22" y2="15" />
-            </svg>
-          )}
-        </button>
-      )}
+      <button
+        onClick={ambient.toggle}
+        aria-label={ambient.enabled ? "Mute ambient music" : "Play ambient music"}
+        className="fixed top-4 right-4 z-50 flex h-10 w-10 items-center justify-center rounded-full backdrop-blur-sm transition-opacity hover:opacity-100"
+        style={{ background: `${theme.accent}1f`, border: `1px solid ${theme.accent}55`, color: theme.accent }}
+      >
+        {ambient.enabled ? (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M11 5 6 9H2v6h4l5 4z" /><path d="M15.5 8.5a5 5 0 0 1 0 7" /><path d="M19 5a9 9 0 0 1 0 14" />
+          </svg>
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M11 5 6 9H2v6h4l5 4z" /><line x1="22" y1="9" x2="16" y2="15" /><line x1="16" y1="9" x2="22" y2="15" />
+          </svg>
+        )}
+      </button>
 
-      {/* STAGE 1 — Ancient scroll reveal (greeting, occasion line, personal message) */}
-      {stage === "scroll" && (
-        <ScrollLetter
-          accent={theme.accent}
-          forName={forName}
-          dateLine={payload.writtenDate ? `${payload.writtenDate}${payload.place ? ` · ${payload.place}` : ""}` : `${fmtDateISO(snapshot.momentISO, payload.tz)} · ${payload.city}`}
-          onOpen={() => setSongStarted(true)}
-        >
-          <p className="ink-line text-sm italic leading-relaxed sm:text-base" style={{ animationDelay: "0.5s", color: "#5a4324" }}>
-            {occasionLine}
-          </p>
-          <p
-            className="ink-line mx-auto mt-7 max-w-prose text-balance px-1 leading-relaxed break-words hyphens-auto"
-            style={{ animationDelay: "1.3s", fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic", fontSize: recipientMsgSize, overflowWrap: "anywhere", wordBreak: "break-word" }}
-          >
-            “{payload.msg || "I wanted to show you the moon that existed the night you were here."}”
-          </p>
-          {payload.from && (
-            <div className="ink-line mt-8" style={{ animationDelay: "2.1s", color: "#6e5a38", fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic" }}>
-              <p className="text-lg">{payload.closing || "Yours,"}</p>
-              <p className="mt-1 text-lg break-words" style={{ overflowWrap: "anywhere" }}>{payload.from}</p>
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={() => setStage("moon")}
-            className="ink-line mt-10 rounded-full px-7 py-3 text-[11px] tracking-[0.3em] uppercase transition-opacity hover:opacity-80"
-            style={{ animationDelay: "2.7s", border: "1px solid #7a5a2e", color: "#3a2a14", background: "transparent" }}
-          >
-            See your moon
-          </button>
-        </ScrollLetter>
-      )}
-
-      {/* STAGE 2 — Moon details */}
-      {stage === "moon" && (
+      {/* The full moon record */}
         <section className="relative mx-auto max-w-3xl px-6 py-16 animate-in fade-in duration-700 md:py-24">
           <div className="relative z-10 text-center">
             <p className="text-[11px] tracking-[0.4em] uppercase" style={{ color: theme.accent }}>The sky above {forName}</p>
@@ -259,7 +215,6 @@ export function LetterView({ record }: { record: LetterRecord }) {
             Verified · astronomy-engine (VSOP87 / ELP2000)
           </p>
         </section>
-      )}
     </main>
   );
 }

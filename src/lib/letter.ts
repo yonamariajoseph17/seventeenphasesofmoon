@@ -83,6 +83,8 @@ export interface LetterPayload {
   songScope?: "letter" | "all"; // where the personal song plays
   recipientCity?: string;       // recipient's city, shown on envelope + postcard
   bouquet?: Bouquet;    // chosen flowers + wrap
+  giftType?: "digital" | "diy"; // shared as a link, or printed by hand
+  giftTagText?: string;         // DIY bouquet tag note (max 60 chars)
 
 }
 

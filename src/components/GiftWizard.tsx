@@ -4,7 +4,7 @@ import { format, parseISO } from "date-fns";
 import type { AccurateMoonInfo } from "@/lib/astro-accurate";
 import { poeticLine } from "@/lib/poetic";
 import {
-  LETTER_OCCASIONS, OCCASION_LABELS, FLOWERS, WRAPS,
+  LETTER_OCCASIONS, OCCASION_LABELS, OCCASION_LINES, FLOWERS, WRAPS,
   type LetterOccasion, type LetterPayload, type FlowerId, type WrapId,
 } from "@/lib/letter";
 import { createLetter, uploadLetterSong, SONG_ACCEPT, SONG_MAX_BYTES } from "@/lib/letter-store";
@@ -12,8 +12,12 @@ import {
   PostcardFront, PostcardBack, POSTCARD_W, POSTCARD_H, type PostcardMilestone,
 } from "@/components/Postcard";
 import { FlowerBloom, WrapShape, BouquetArrangement, FLOWER_META, WRAP_META } from "@/components/Bouquet";
+import { GiftDownload } from "@/components/GiftDownload";
+import type { PrintKitData } from "@/lib/printkit";
 
 type BasePayload = Omit<LetterPayload, "style" | "to" | "from" | "msg" | "closing" | "occasion" | "song" | "bouquet" | "place" | "writtenDate">;
+
+type GiftType = "digital" | "diy";
 
 interface Props {
   base: BasePayload;
@@ -55,6 +59,9 @@ function fitFontPx(len: number, max: number, min: number): number {
 export function GiftWizard(props: Props) {
   const { base, moon, city, dateLabel, timeLabel, sunriseLabel, sunsetLabel, illumPct, milestones, personName } = props;
 
+  // Gift type — chosen before the wizard begins, carried through to the payload.
+  const [giftType, setGiftType] = useState<GiftType | null>(null);
+  const isDiy = giftType === "diy";
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
   // Step 1 — the letter
@@ -96,12 +103,15 @@ export function GiftWizard(props: Props) {
   const [flowers, setFlowers] = useState<FlowerId[]>([]);
   const [wrap, setWrap] = useState<WrapId>("kraft");
   const [songFile, setSongFile] = useState<File | null>(null);
+  const [songScope, setSongScope] = useState<"letter" | "all">("letter");
+  const [giftTagText, setGiftTagText] = useState("");
   const songInputRef = useRef<HTMLInputElement>(null);
 
   // Result
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [letterId, setLetterId] = useState<string | null>(null);
+  const [kitReady, setKitReady] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const recipient = to.trim() || greetName.trim() || personName;
@@ -204,10 +214,16 @@ export function GiftWizard(props: Props) {
         writtenDate: writtenDateLabel || undefined,
         occasion,
         bouquet: { flowers, wrap },
+        recipientCity: recipientCity.trim() || undefined,
+        giftType: giftType ?? "digital",
+        giftTagText: isDiy ? (giftTagText.trim() || undefined) : undefined,
       };
-      if (songFile) payload = { ...payload, song: await uploadLetterSong(songFile) };
+      if (!isDiy && songFile) {
+        payload = { ...payload, song: await uploadLetterSong(songFile), songScope };
+      }
       const id = await createLetter(payload);
       setLetterId(id);
+      if (isDiy) setKitReady(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create the gift. Please try again.");
     } finally {
@@ -222,6 +238,51 @@ export function GiftWizard(props: Props) {
   async function copyLink() {
     if (!giftUrl) return;
     try { await navigator.clipboard.writeText(giftUrl); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
+  }
+
+  const occasionLine = OCCASION_LINES[occasion];
+  const narration =
+    `On the night of ${dateLabel}, above ${city}, the sky held a ${moon.name} — ` +
+    `${illumPct}% lit, ${moon.age.toFixed(1)} days into its journey, resting in ${moon.constellation}. ` +
+    `It rose at ${props.moonriseLabel ?? "—"} and slipped away by ${props.moonsetLabel ?? "—"}.`;
+
+  const kitData: PrintKitData = {
+    recipient,
+    recipientCity: recipientCity.trim() || undefined,
+    sender: from.trim() || undefined,
+    place: headerPlace || undefined,
+    writtenDate: writtenDateLabel || undefined,
+    greeting: `Dear ${recipient},`,
+    occasionLine,
+    message: message.trim(),
+    closing: "Yours,",
+    narration,
+    city,
+    dateLabel,
+    phaseName: moon.name,
+    illumPct,
+    moonAge: moon.age.toFixed(1),
+    constellation: moon.constellation,
+    moonrise: props.moonriseLabel ?? "—",
+    moonset: props.moonsetLabel ?? "—",
+    illumination: moon.illumination,
+    waxing: moon.waxing,
+    milestones: milestones.map((m) => ({ age: m.age, illumination: m.illumination, waxing: m.waxing, name: m.name })),
+    giftTagText: giftTagText.trim() || undefined,
+  };
+
+  // ── DIY: the print kit is ready to download ────────────────────────
+  if (kitReady) {
+    return (
+      <div className="rounded-2xl border border-border bg-card/40 backdrop-blur-sm">
+        <GiftDownload data={kitData} giftUrl={giftUrl} recipient={recipient} diyOnly />
+        <div className="pb-8 text-center">
+          <button type="button" onClick={() => { setKitReady(false); setLetterId(null); setStep(1); }} className="text-xs tracking-[0.2em] text-muted-foreground uppercase hover:text-foreground">
+            Create another gift
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // ── Final: gift created ────────────────────────────────────────────
@@ -245,6 +306,37 @@ export function GiftWizard(props: Props) {
       </div>
     );
   }
+
+  // ── Gift type selection ────────────────────────────────────────────
+  if (!giftType) {
+    return (
+      <div className="text-center">
+        <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">Choose how to give it</p>
+        <h3 className="mt-3 font-display text-3xl">Digital, or made by hand</h3>
+        <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
+          A link shared at midnight, or an envelope found in a letterbox on a Tuesday morning. Both carry the same sky.
+        </p>
+        <div className="mx-auto mt-8 grid max-w-2xl gap-4 sm:grid-cols-2">
+          {([
+            ["digital", "Digital Gift", "A shareable link that opens as a cinematic experience — letter, postcard and bouquet, with music."],
+            ["diy", "Make It Real (DIY)", "Six print-ready PDFs: the letter, an envelope you cut and fold, the postcard, seals and a bouquet tag."],
+          ] as const).map(([value, title, blurb]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => { setGiftType(value); setStep(1); }}
+              className="rounded-2xl border border-border/70 p-6 text-left transition-colors hover:border-accent hover:bg-accent/5"
+            >
+              <p className="font-display text-xl">{title}</p>
+              <p className="mt-2 text-sm text-muted-foreground">{blurb}</p>
+              <p className="mt-4 text-[11px] tracking-[0.25em] text-accent uppercase">Choose →</p>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div>
@@ -288,7 +380,7 @@ export function GiftWizard(props: Props) {
             </label>
           </div>
 
-          <LetterPaper place={headerPlace} dateLabel={writtenDateLabel}>
+          <LetterPaper place={headerPlace} dateLabel={writtenDateLabel} foldGuides={isDiy}>
             <div className="text-left">
               <div className="mb-3 flex flex-wrap items-baseline gap-x-0">
   <span className="letterpaper-hand text-2xl">Dear&nbsp;</span>
@@ -500,31 +592,73 @@ export function GiftWizard(props: Props) {
                 <BouquetArrangement flowers={flowers} wrap={wrap} size={320} occasion={occasion} sender={from.trim()} />
               </div>
 
-              {/* Song upload */}
-              <div className="mt-6 w-full max-w-md text-center">
-                <input ref={songInputRef} type="file" accept={SONG_ACCEPT} onChange={pickSong} className="hidden" />
-                <button type="button" onClick={() => songInputRef.current?.click()} className="rounded-full border border-accent/50 px-5 py-2 text-xs tracking-[0.2em] text-accent uppercase hover:bg-accent/10">
-                  Add their song ♪
-                </button>
-                {songFile && (
-                  <span className="ml-3 inline-flex items-center gap-2 text-xs text-muted-foreground">
-                    <span className="max-w-[12rem] truncate text-foreground/85">{songFile.name}</span>
-                    <button type="button" onClick={() => { setSongFile(null); if (songInputRef.current) songInputRef.current.value = ""; }} className="hover:text-foreground">✕</button>
-                  </span>
-                )}
-                <p className="mt-2 text-[11px] text-muted-foreground/80">
-                  {songFile ? "It will play softly when they open this." : "It will play softly when they open this. Falls back to the Night Garden soundscape."}
-                </p>
-              </div>
+              {isDiy ? (
+                /* DIY — a printed gift tag instead of a song */
+                <div className="mt-6 w-full max-w-md text-left">
+                  <label className="text-[11px] tracking-[0.2em] text-muted-foreground uppercase" htmlFor="gift-tag">
+                    Write your gift tag note (max 60 chars)
+                  </label>
+                  <input
+                    id="gift-tag"
+                    value={giftTagText}
+                    maxLength={60}
+                    onChange={(e) => setGiftTagText(e.target.value)}
+                    placeholder={occasionLine.slice(0, 60)}
+                    className="mt-2 w-full rounded-md border border-border bg-background/40 px-3 py-2 text-sm"
+                  />
+                  <p className="mt-2 text-[11px] text-muted-foreground/80">
+                    Printed on the bouquet tag — cut it out and tie it on with twine.
+                  </p>
+                </div>
+              ) : (
+                /* Song upload */
+                <div className="mt-6 w-full max-w-md text-center">
+                  <input ref={songInputRef} type="file" accept={SONG_ACCEPT} onChange={pickSong} className="hidden" />
+                  <button type="button" onClick={() => songInputRef.current?.click()} className="rounded-full border border-accent/50 px-5 py-2 text-xs tracking-[0.2em] text-accent uppercase hover:bg-accent/10">
+                    Add their song ♪
+                  </button>
+                  {songFile && (
+                    <span className="ml-3 inline-flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="max-w-[12rem] truncate text-foreground/85">{songFile.name}</span>
+                      <button type="button" onClick={() => { setSongFile(null); if (songInputRef.current) songInputRef.current.value = ""; }} className="hover:text-foreground">✕</button>
+                    </span>
+                  )}
+                  <p className="mt-2 text-[11px] text-muted-foreground/80">
+                    {songFile ? "It will play softly when they open this." : "It will play softly when they open this. Falls back to Our Song."}
+                  </p>
+                  {songFile && (
+                    <div className="mt-3 flex flex-wrap justify-center gap-2">
+                      {([["letter", "Letter chapter only"], ["all", "Play for the entire gift"]] as const).map(([value, label]) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setSongScope(value)}
+                          className="rounded-full px-4 py-1.5 text-[10px] tracking-[0.2em] uppercase"
+                          style={
+                            songScope === value
+                              ? { background: "hsl(var(--accent))", color: "hsl(var(--accent-foreground))" }
+                              : { border: "1px solid hsl(var(--border))", color: "hsl(var(--muted-foreground))" }
+                          }
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {error && <p className="mt-4 text-xs text-amber-300">{error}</p>}
 
               <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
                 <button type="button" onClick={() => setSubStep("wrap")} className="text-xs tracking-[0.2em] text-muted-foreground uppercase hover:text-foreground">← Back</button>
                 <button type="button" onClick={createGift} disabled={creating} className="rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
-                  {creating ? "Sealing your gift…" : "Create & Send Gift"}
+                  {creating
+                    ? (isDiy ? "Preparing your print kit…" : "Sealing your gift…")
+                    : (isDiy ? "Generate My Print Kit →" : "Create & Send Gift")}
                 </button>
               </div>
+
             </>
           )}
         </div>
@@ -554,7 +688,7 @@ function WizardNav({ onBack, onNext, nextLabel, nextDisabled }: { onBack?: () =>
 }
 
 /* Aged, unlined letter paper wrapper */
-function LetterPaper({ place, dateLabel, children }: { place: string; dateLabel: string; children: React.ReactNode }) {
+function LetterPaper({ place, dateLabel, foldGuides = false, children }: { place: string; dateLabel: string; foldGuides?: boolean; children: React.ReactNode }) {
   const header = [place, dateLabel].filter(Boolean).join(", ");
   return (
     <div
@@ -573,6 +707,17 @@ function LetterPaper({ place, dateLabel, children }: { place: string; dateLabel:
         <filter id="lp-grain"><feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" stitchTiles="stitch" /><feColorMatrix type="saturate" values="0" /></filter>
         <rect width="100%" height="100%" filter="url(#lp-grain)" />
       </svg>
+
+      {/* print preview: the two fold guides that appear on the printed letter */}
+      {foldGuides && ["33.33%", "66.66%"].map((top) => (
+        <div
+          key={top}
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0"
+          style={{ top, height: 0, borderTop: "1px dashed rgba(116,98,70,0.55)" }}
+        />
+      ))}
+
 
       {header && (
         <p className="relative mb-6 text-right text-sm italic" style={{ fontFamily: "'Caveat', cursive", fontSize: 20 }}>{header}</p>
