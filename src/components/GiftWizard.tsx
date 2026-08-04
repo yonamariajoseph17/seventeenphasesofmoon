@@ -103,12 +103,15 @@ export function GiftWizard(props: Props) {
   const [flowers, setFlowers] = useState<FlowerId[]>([]);
   const [wrap, setWrap] = useState<WrapId>("kraft");
   const [songFile, setSongFile] = useState<File | null>(null);
+  const [songScope, setSongScope] = useState<"letter" | "all">("letter");
+  const [giftTagText, setGiftTagText] = useState("");
   const songInputRef = useRef<HTMLInputElement>(null);
 
   // Result
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [letterId, setLetterId] = useState<string | null>(null);
+  const [kitReady, setKitReady] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const recipient = to.trim() || greetName.trim() || personName;
