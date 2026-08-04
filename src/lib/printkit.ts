@@ -2,9 +2,9 @@ import jsPDF from "jspdf";
 import JSZip from "jszip";
 
 /**
- * DIY physical gift print kit — five print-ready PDFs bundled into one ZIP:
+ * DIY physical gift print kit — six print-ready PDFs bundled into one ZIP:
  * the letter, a mathematically-precise DL envelope net, the two-sided postcard,
- * an instruction card, and a sheet of wax-seal stickers.
+ * an instruction card, a sheet of wax-seal stickers, and a bouquet gift tag.
  *
  * Everything is drawn with vector primitives at true physical dimensions, so
  * the output is resolution-independent (well beyond 300 DPI when printed).
