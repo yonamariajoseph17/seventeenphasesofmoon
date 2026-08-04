@@ -688,7 +688,7 @@ function WizardNav({ onBack, onNext, nextLabel, nextDisabled }: { onBack?: () =>
 }
 
 /* Aged, unlined letter paper wrapper */
-function LetterPaper({ place, dateLabel, children }: { place: string; dateLabel: string; children: React.ReactNode }) {
+function LetterPaper({ place, dateLabel, foldGuides = false, children }: { place: string; dateLabel: string; foldGuides?: boolean; children: React.ReactNode }) {
   const header = [place, dateLabel].filter(Boolean).join(", ");
   return (
     <div
@@ -707,6 +707,17 @@ function LetterPaper({ place, dateLabel, children }: { place: string; dateLabel:
         <filter id="lp-grain"><feTurbulence type="fractalNoise" baseFrequency="0.7" numOctaves="2" stitchTiles="stitch" /><feColorMatrix type="saturate" values="0" /></filter>
         <rect width="100%" height="100%" filter="url(#lp-grain)" />
       </svg>
+
+      {/* print preview: the two fold guides that appear on the printed letter */}
+      {foldGuides && ["33.33%", "66.66%"].map((top) => (
+        <div
+          key={top}
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0"
+          style={{ top, height: 0, borderTop: "1px dashed rgba(116,98,70,0.55)" }}
+        />
+      ))}
+
 
       {header && (
         <p className="relative mb-6 text-right text-sm italic" style={{ fontFamily: "'Caveat', cursive", fontSize: 20 }}>{header}</p>
