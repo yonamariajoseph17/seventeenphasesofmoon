@@ -380,7 +380,7 @@ export function GiftWizard(props: Props) {
             </label>
           </div>
 
-          <LetterPaper place={headerPlace} dateLabel={writtenDateLabel}>
+          <LetterPaper place={headerPlace} dateLabel={writtenDateLabel} foldGuides={isDiy}>
             <div className="text-left">
               <div className="mb-3 flex flex-wrap items-baseline gap-x-0">
   <span className="letterpaper-hand text-2xl">Dear&nbsp;</span>
