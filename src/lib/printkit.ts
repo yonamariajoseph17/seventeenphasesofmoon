@@ -33,6 +33,8 @@ export interface PrintKitData {
   illumination: number;
   waxing: boolean;
   milestones: { age: number; illumination: number; waxing: boolean; name?: string }[];
+  /** DIY bouquet tag note written by the sender. */
+  giftTagText?: string;
 }
 
 const CREAM: [number, number, number] = [246, 238, 219];
