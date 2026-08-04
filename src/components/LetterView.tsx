@@ -258,7 +258,7 @@ export function LetterView({ record }: { record: LetterRecord }) {
             Verified · astronomy-engine (VSOP87 / ELP2000)
           </p>
         </section>
-      )}
+        </section>
     </main>
   );
 }
