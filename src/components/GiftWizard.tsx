@@ -592,31 +592,73 @@ export function GiftWizard(props: Props) {
                 <BouquetArrangement flowers={flowers} wrap={wrap} size={320} occasion={occasion} sender={from.trim()} />
               </div>
 
-              {/* Song upload */}
-              <div className="mt-6 w-full max-w-md text-center">
-                <input ref={songInputRef} type="file" accept={SONG_ACCEPT} onChange={pickSong} className="hidden" />
-                <button type="button" onClick={() => songInputRef.current?.click()} className="rounded-full border border-accent/50 px-5 py-2 text-xs tracking-[0.2em] text-accent uppercase hover:bg-accent/10">
-                  Add their song ♪
-                </button>
-                {songFile && (
-                  <span className="ml-3 inline-flex items-center gap-2 text-xs text-muted-foreground">
-                    <span className="max-w-[12rem] truncate text-foreground/85">{songFile.name}</span>
-                    <button type="button" onClick={() => { setSongFile(null); if (songInputRef.current) songInputRef.current.value = ""; }} className="hover:text-foreground">✕</button>
-                  </span>
-                )}
-                <p className="mt-2 text-[11px] text-muted-foreground/80">
-                  {songFile ? "It will play softly when they open this." : "It will play softly when they open this. Falls back to the Night Garden soundscape."}
-                </p>
-              </div>
+              {isDiy ? (
+                /* DIY — a printed gift tag instead of a song */
+                <div className="mt-6 w-full max-w-md text-left">
+                  <label className="text-[11px] tracking-[0.2em] text-muted-foreground uppercase" htmlFor="gift-tag">
+                    Write your gift tag note (max 60 chars)
+                  </label>
+                  <input
+                    id="gift-tag"
+                    value={giftTagText}
+                    maxLength={60}
+                    onChange={(e) => setGiftTagText(e.target.value)}
+                    placeholder={occasionLine.slice(0, 60)}
+                    className="mt-2 w-full rounded-md border border-border bg-background/40 px-3 py-2 text-sm"
+                  />
+                  <p className="mt-2 text-[11px] text-muted-foreground/80">
+                    Printed on the bouquet tag — cut it out and tie it on with twine.
+                  </p>
+                </div>
+              ) : (
+                /* Song upload */
+                <div className="mt-6 w-full max-w-md text-center">
+                  <input ref={songInputRef} type="file" accept={SONG_ACCEPT} onChange={pickSong} className="hidden" />
+                  <button type="button" onClick={() => songInputRef.current?.click()} className="rounded-full border border-accent/50 px-5 py-2 text-xs tracking-[0.2em] text-accent uppercase hover:bg-accent/10">
+                    Add their song ♪
+                  </button>
+                  {songFile && (
+                    <span className="ml-3 inline-flex items-center gap-2 text-xs text-muted-foreground">
+                      <span className="max-w-[12rem] truncate text-foreground/85">{songFile.name}</span>
+                      <button type="button" onClick={() => { setSongFile(null); if (songInputRef.current) songInputRef.current.value = ""; }} className="hover:text-foreground">✕</button>
+                    </span>
+                  )}
+                  <p className="mt-2 text-[11px] text-muted-foreground/80">
+                    {songFile ? "It will play softly when they open this." : "It will play softly when they open this. Falls back to Our Song."}
+                  </p>
+                  {songFile && (
+                    <div className="mt-3 flex flex-wrap justify-center gap-2">
+                      {([["letter", "Letter chapter only"], ["all", "Play for the entire gift"]] as const).map(([value, label]) => (
+                        <button
+                          key={value}
+                          type="button"
+                          onClick={() => setSongScope(value)}
+                          className="rounded-full px-4 py-1.5 text-[10px] tracking-[0.2em] uppercase"
+                          style={
+                            songScope === value
+                              ? { background: "hsl(var(--accent))", color: "hsl(var(--accent-foreground))" }
+                              : { border: "1px solid hsl(var(--border))", color: "hsl(var(--muted-foreground))" }
+                          }
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {error && <p className="mt-4 text-xs text-amber-300">{error}</p>}
 
               <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
                 <button type="button" onClick={() => setSubStep("wrap")} className="text-xs tracking-[0.2em] text-muted-foreground uppercase hover:text-foreground">← Back</button>
                 <button type="button" onClick={createGift} disabled={creating} className="rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
-                  {creating ? "Sealing your gift…" : "Create & Send Gift"}
+                  {creating
+                    ? (isDiy ? "Preparing your print kit…" : "Sealing your gift…")
+                    : (isDiy ? "Generate My Print Kit →" : "Create & Send Gift")}
                 </button>
               </div>
+
             </>
           )}
         </div>
