@@ -4,7 +4,7 @@ import { format, parseISO } from "date-fns";
 import type { AccurateMoonInfo } from "@/lib/astro-accurate";
 import { poeticLine } from "@/lib/poetic";
 import {
-  LETTER_OCCASIONS, OCCASION_LABELS, FLOWERS, WRAPS,
+  LETTER_OCCASIONS, OCCASION_LABELS, OCCASION_LINES, FLOWERS, WRAPS,
   type LetterOccasion, type LetterPayload, type FlowerId, type WrapId,
 } from "@/lib/letter";
 import { createLetter, uploadLetterSong, SONG_ACCEPT, SONG_MAX_BYTES } from "@/lib/letter-store";
@@ -12,8 +12,12 @@ import {
   PostcardFront, PostcardBack, POSTCARD_W, POSTCARD_H, type PostcardMilestone,
 } from "@/components/Postcard";
 import { FlowerBloom, WrapShape, BouquetArrangement, FLOWER_META, WRAP_META } from "@/components/Bouquet";
+import { GiftDownload } from "@/components/GiftDownload";
+import type { PrintKitData } from "@/lib/printkit";
 
 type BasePayload = Omit<LetterPayload, "style" | "to" | "from" | "msg" | "closing" | "occasion" | "song" | "bouquet" | "place" | "writtenDate">;
+
+type GiftType = "digital" | "diy";
 
 interface Props {
   base: BasePayload;
