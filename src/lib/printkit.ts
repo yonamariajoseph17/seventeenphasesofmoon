@@ -463,7 +463,6 @@ function buildSeals(): jsPDF {
   return doc;
 }
 
-export interface PrintKitFile { name: string; label: string; blob: Blob }
 
 /* ─────────────────── 6. BOUQUET GIFT TAG ─────────────────── */
 function buildBouquetTag(d: PrintKitData): jsPDF {
