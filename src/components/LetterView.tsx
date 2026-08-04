@@ -1,12 +1,11 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { OCCASION_LINES, type LetterStyle } from "@/lib/letter";
+import { type LetterStyle } from "@/lib/letter";
 import type { LetterRecord } from "@/lib/letter-store";
 import { isMilestoneAge } from "@/lib/milestones";
 import { MoonSvg } from "@/components/MoonSvg";
 import { LetterBackground } from "@/components/LetterBackground";
-import { ScrollLetter } from "@/components/ScrollLetter";
-import { LetterAudio } from "@/components/LetterAudio";
+import { GiftReveal } from "@/components/GiftReveal";
 import { useAmbient } from "@/lib/useAmbient";
 import { tzLabel } from "@/lib/tz";
 
