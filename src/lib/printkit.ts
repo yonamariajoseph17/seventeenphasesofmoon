@@ -465,7 +465,52 @@ function buildSeals(): jsPDF {
 
 export interface PrintKitFile { name: string; label: string; blob: Blob }
 
-/** Build all five PDFs. */
+/* ─────────────────── 6. BOUQUET GIFT TAG ─────────────────── */
+function buildBouquetTag(d: PrintKitData): jsPDF {
+  const W = 105, H = 148; // A6 sheet holding one cut-out tag
+  const doc = new jsPDF({ unit: "mm", format: "a6" });
+  paper(doc, W, H, [255, 255, 255]);
+
+  // the tag itself — cream, rounded, punched hole at the top
+  const tw = 62, th = 96, tx = (W - tw) / 2, ty = 26;
+  doc.setFillColor(...CREAM);
+  doc.roundedRect(tx, ty, tw, th, 4, 4, "F");
+  doc.setDrawColor(...SUB);
+  doc.setLineWidth(0.3);
+  doc.setLineDashPattern([1.6, 1.6], 0);
+  doc.roundedRect(tx - 2, ty - 2, tw + 4, th + 4, 5, 5, "S");
+  doc.setLineDashPattern([], 0);
+
+  // punch hole
+  doc.setDrawColor(...SUB);
+  doc.setLineWidth(0.4);
+  doc.circle(W / 2, ty + 8, 2.6, "S");
+
+  moonDisc(doc, W / 2, ty + 24, 7, d.illumination, d.waxing);
+
+  doc.setFont("times", "italic");
+  doc.setFontSize(11);
+  doc.setTextColor(...INK);
+  const note = doc.splitTextToSize(d.giftTagText || d.occasionLine, tw - 14);
+  doc.text(note, W / 2, ty + 44, { align: "center", lineHeightFactor: 1.5 });
+
+  doc.setFontSize(10);
+  doc.text(d.closing, W / 2, ty + th - 22, { align: "center" });
+  if (d.sender) doc.text(d.sender, W / 2, ty + th - 14, { align: "center" });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(6.5);
+  doc.setTextColor(...SUB);
+  doc.text(
+    doc.splitTextToSize("Print, cut out, punch a small hole at the top, tie to a real bouquet with ribbon or twine.", W - 20),
+    W / 2, H - 12, { align: "center" },
+  );
+  return doc;
+}
+
+export interface PrintKitFile { name: string; label: string; blob: Blob }
+
+/** Build all six PDFs. */
 export function buildPrintKitFiles(d: PrintKitData): PrintKitFile[] {
   return [
     { name: "letter.pdf", label: "The Letter", blob: buildLetter(d).output("blob") },
@@ -473,10 +518,27 @@ export function buildPrintKitFiles(d: PrintKitData): PrintKitFile[] {
     { name: "postcard.pdf", label: "The Postcard", blob: buildPostcard(d).output("blob") },
     { name: "how-to-make.pdf", label: "How to Make It", blob: buildInstructions().output("blob") },
     { name: "wax-seal-stickers.pdf", label: "Wax Seals", blob: buildSeals().output("blob") },
+    { name: "bouquet-tag.pdf", label: "Bouquet Tag", blob: buildBouquetTag(d).output("blob") },
   ];
 }
 
-/** Build the kit and download it as a single ZIP. */
+function saveBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+/** Download a single kit file by its name. */
+export function downloadPrintKitFile(d: PrintKitData, name: string) {
+  const file = buildPrintKitFiles(d).find((f) => f.name === name);
+  if (!file) return;
+  saveBlob(file.blob, name);
+}
+
+
 export async function downloadPrintKit(d: PrintKitData, filename = "sky-we-share-print-kit.zip") {
   const files = buildPrintKitFiles(d);
   const zip = new JSZip();
