@@ -538,6 +538,7 @@ export function downloadPrintKitFile(d: PrintKitData, name: string) {
 }
 
 
+/** Build the kit and download it as a single ZIP. */
 export async function downloadPrintKit(d: PrintKitData, filename = "sky-we-share-print-kit.zip") {
   const files = buildPrintKitFiles(d);
   const zip = new JSZip();
@@ -552,16 +553,12 @@ export async function downloadPrintKit(d: PrintKitData, filename = "sky-we-share
       "postcard.pdf .............. 4x6in, two pages — print double-sided on 250-300gsm",
       "how-to-make.pdf ........... A6 instruction card",
       "wax-seal-stickers.pdf ..... A4 sheet of six seals, print on sticker paper",
+      "bouquet-tag.pdf ........... A6, cut out and tie to a real bouquet",
       "",
       "Built in love, under the same sky.",
     ].join("\n"),
   );
   const blob = await zip.generateAsync({ type: "blob" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = filename;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  saveBlob(blob, filename);
   return blob.size;
 }
