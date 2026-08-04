@@ -214,10 +214,16 @@ export function GiftWizard(props: Props) {
         writtenDate: writtenDateLabel || undefined,
         occasion,
         bouquet: { flowers, wrap },
+        recipientCity: recipientCity.trim() || undefined,
+        giftType: giftType ?? "digital",
+        giftTagText: isDiy ? (giftTagText.trim() || undefined) : undefined,
       };
-      if (songFile) payload = { ...payload, song: await uploadLetterSong(songFile) };
+      if (!isDiy && songFile) {
+        payload = { ...payload, song: await uploadLetterSong(songFile), songScope };
+      }
       const id = await createLetter(payload);
       setLetterId(id);
+      if (isDiy) setKitReady(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not create the gift. Please try again.");
     } finally {
@@ -232,6 +238,51 @@ export function GiftWizard(props: Props) {
   async function copyLink() {
     if (!giftUrl) return;
     try { await navigator.clipboard.writeText(giftUrl); setCopied(true); setTimeout(() => setCopied(false), 1500); } catch { /* ignore */ }
+  }
+
+  const occasionLine = OCCASION_LINES[occasion];
+  const narration =
+    `On the night of ${dateLabel}, above ${city}, the sky held a ${moon.name} — ` +
+    `${illumPct}% lit, ${moon.age.toFixed(1)} days into its journey, resting in ${moon.constellation}. ` +
+    `It rose at ${props.moonriseLabel ?? "—"} and slipped away by ${props.moonsetLabel ?? "—"}.`;
+
+  const kitData: PrintKitData = {
+    recipient,
+    recipientCity: recipientCity.trim() || undefined,
+    sender: from.trim() || undefined,
+    place: headerPlace || undefined,
+    writtenDate: writtenDateLabel || undefined,
+    greeting: `Dear ${recipient},`,
+    occasionLine,
+    message: message.trim(),
+    closing: "Yours,",
+    narration,
+    city,
+    dateLabel,
+    phaseName: moon.name,
+    illumPct,
+    moonAge: moon.age.toFixed(1),
+    constellation: moon.constellation,
+    moonrise: props.moonriseLabel ?? "—",
+    moonset: props.moonsetLabel ?? "—",
+    illumination: moon.illumination,
+    waxing: moon.waxing,
+    milestones: milestones.map((m) => ({ age: m.age, illumination: m.illumination, waxing: m.waxing, name: m.name })),
+    giftTagText: giftTagText.trim() || undefined,
+  };
+
+  // ── DIY: the print kit is ready to download ────────────────────────
+  if (kitReady) {
+    return (
+      <div className="rounded-2xl border border-border bg-card/40 backdrop-blur-sm">
+        <GiftDownload data={kitData} giftUrl={giftUrl} recipient={recipient} diyOnly />
+        <div className="pb-8 text-center">
+          <button type="button" onClick={() => { setKitReady(false); setLetterId(null); setStep(1); }} className="text-xs tracking-[0.2em] text-muted-foreground uppercase hover:text-foreground">
+            Create another gift
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // ── Final: gift created ────────────────────────────────────────────
@@ -255,6 +306,37 @@ export function GiftWizard(props: Props) {
       </div>
     );
   }
+
+  // ── Gift type selection ────────────────────────────────────────────
+  if (!giftType) {
+    return (
+      <div className="text-center">
+        <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">Choose how to give it</p>
+        <h3 className="mt-3 font-display text-3xl">Digital, or made by hand</h3>
+        <p className="mx-auto mt-3 max-w-md text-sm text-muted-foreground">
+          A link shared at midnight, or an envelope found in a letterbox on a Tuesday morning. Both carry the same sky.
+        </p>
+        <div className="mx-auto mt-8 grid max-w-2xl gap-4 sm:grid-cols-2">
+          {([
+            ["digital", "Digital Gift", "A shareable link that opens as a cinematic experience — letter, postcard and bouquet, with music."],
+            ["diy", "Make It Real (DIY)", "Six print-ready PDFs: the letter, an envelope you cut and fold, the postcard, seals and a bouquet tag."],
+          ] as const).map(([value, title, blurb]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => { setGiftType(value); setStep(1); }}
+              className="rounded-2xl border border-border/70 p-6 text-left transition-colors hover:border-accent hover:bg-accent/5"
+            >
+              <p className="font-display text-xl">{title}</p>
+              <p className="mt-2 text-sm text-muted-foreground">{blurb}</p>
+              <p className="mt-4 text-[11px] tracking-[0.25em] text-accent uppercase">Choose →</p>
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div>
