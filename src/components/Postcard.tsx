@@ -126,10 +126,6 @@ const CARD_STYLE = (bg: string): React.CSSProperties => ({
 /* ══════════════════════════  FRONT — ADDRESS SIDE  ══════════════════════════ */
 export const PostcardFront = forwardRef<HTMLDivElement, Props>(function PostcardFront(p, ref) {
   const s = STOCKS[p.style];
-  const dear = p.recipient ? `Dear ${p.recipient},` : "Dear friend,";
-  const signoff = p.sender ? `Yours, ${p.sender}` : "Yours, always";
-  const messageLen = (p.message || "").length;
-  const msgFont = messageLen > 320 ? 26 : messageLen > 200 ? 30 : 34;
 
   return (
     <div ref={ref} style={{ ...CARD_STYLE(s.card), fontFamily: s.body, color: s.ink, padding: 72, display: "flex" }}>
@@ -139,26 +135,22 @@ export const PostcardFront = forwardRef<HTMLDivElement, Props>(function Postcard
       <div style={{ position: "absolute", inset: 24, border: `1.5px solid ${s.line}`, borderRadius: 16, opacity: 0.65, pointerEvents: "none" }} />
       <div style={{ position: "absolute", inset: 34, border: `1px solid ${s.line}`, borderRadius: 12, opacity: 0.35, pointerEvents: "none" }} />
 
-      {/* ── Left half — Post Card heading + handwritten message ── */}
+      {/* ── Left half — Post Card heading + blank correspondence lines ── */}
       <div style={{ position: "relative", flex: 1.08, paddingRight: 56, display: "flex", flexDirection: "column" }}>
         <p style={{ margin: 0, fontFamily: s.heading, fontSize: 40, letterSpacing: 2, color: s.ink }}>Post Card</p>
         <p style={{ margin: "6px 0 0", fontSize: 11, letterSpacing: 3.5, textTransform: "uppercase", color: s.sub }}>
-          This space for writing messages
+          This space for correspondence
         </p>
         <div style={{ height: 0, borderTop: `1px solid ${s.line}`, opacity: 0.6, margin: "16px 0 26px", width: "72%" }} />
 
-        <p style={{ margin: 0, fontFamily: "'Caveat', cursive", fontSize: 38, color: s.ink }}>{dear}</p>
-        <p
-          style={{
-            margin: "14px 0 0", fontFamily: "'Caveat', cursive", fontSize: msgFont, lineHeight: 1.45,
-            color: s.ink, opacity: 0.93, flex: 1, whiteSpace: "pre-wrap",
-            overflowWrap: "anywhere", wordBreak: "break-word", overflow: "hidden",
-          }}
-        >
-          {p.message || "Wherever you are tonight, the same moon is watching over you."}
-        </p>
-        <p style={{ margin: "12px 0 0", fontFamily: "'Caveat', cursive", fontSize: 34, color: s.accent }}>{signoff}</p>
+        <div style={{ marginTop: 40 }}>
+          {[0, 1, 2].map((i) => (
+            <div key={i} style={{ height: 0, borderBottom: `1.5px solid ${s.line}`, opacity: 0.7, marginBottom: 78, width: i === 2 ? "72%" : "94%" }} />
+          ))}
+        </div>
+        <div style={{ flex: 1 }} />
       </div>
+
 
       {/* ── Vertical dividing line ── */}
       <div style={{ position: "relative", width: 0, borderLeft: `2px solid ${s.line}`, opacity: 0.8, margin: "8px 0 60px" }} />
@@ -296,22 +288,26 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
             }}
           >
             {milestones.map((m) => (
-              <div key={m.age} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 9, flex: 1 }}>
+              <div key={m.age} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, flex: 1 }}>
                 <div style={{ borderRadius: "50%", boxShadow: "0 0 0 1.5px rgba(214,224,248,0.5), 0 0 22px rgba(180,200,255,0.14)", lineHeight: 0 }}>
-                  <MoonSvg phaseAngle={m.phaseAngle} illumination={m.illumination} waxing={m.waxing} size={96} />
+                  <MoonSvg phaseAngle={m.phaseAngle} illumination={m.illumination} waxing={m.waxing} size={104} />
                 </div>
+                <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: 2.4, textTransform: "uppercase", color: "#f7f2e6" }}>
+                  {milestoneLabel(m.age)}
+                </span>
                 {m.name && (
-                  <span style={{ fontSize: 10.5, letterSpacing: 1.6, color: "#dbe3f5", textAlign: "center", whiteSpace: "nowrap" }}>
+                  <span style={{ fontSize: 12, letterSpacing: 1.2, color: "#dcd3c0", textAlign: "center", whiteSpace: "nowrap" }}>
                     {m.name}
                   </span>
                 )}
-                <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: 2.6, textTransform: "uppercase", color: "#f3efe4" }}>
-                  {milestoneLabel(m.age)}
-                </span>
               </div>
             ))}
           </div>
+          <p style={{ margin: "16px 0 0", textAlign: "center", fontFamily: s.heading, fontStyle: "italic", fontSize: 17, color: s.ink, opacity: 0.9 }}>
+            This is the moon's phase on your birthday, and how it has changed on each birthday since.
+          </p>
         </div>
+
       )}
     </div>
   );

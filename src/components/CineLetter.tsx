@@ -1,10 +1,11 @@
 import { useId, type ReactNode } from "react";
 
 /**
- * The letter itself — aged cream paper with faint ruled lines, a thin red
- * margin, ink bleed-through from the reverse side, corner foxing and a warm
+ * The letter itself — plain aged cream paper (no ruled lines, no margin rule),
+ * with ink bleed-through from the reverse side, corner foxing and a warm
  * lamp-lit vignette. `state` drives the fold choreography.
  */
+
 
 export type LetterFoldState = "inside" | "rising" | "unfolding" | "open" | "refolding" | "folded";
 
@@ -48,16 +49,8 @@ export function CineLetter({ state, children, bleedText }: Props) {
           transformOrigin: "center",
         }}
       >
-        {/* ruled lines + red margin */}
-        <div
-          className="pointer-events-none absolute inset-0"
-          style={{
-            backgroundImage:
-              "repeating-linear-gradient(180deg, transparent 0 31px, rgba(96,116,150,0.20) 31px 32px)",
-          }}
-          aria-hidden
-        />
-        <div className="pointer-events-none absolute inset-y-0" style={{ left: "9%", width: 1.5, background: "rgba(178,88,96,0.5)" }} aria-hidden />
+        {/* plain aged paper — no ruled lines, no margin rule */}
+
 
         {/* ink bleed-through from the other side of the paper */}
         {bleedText && (

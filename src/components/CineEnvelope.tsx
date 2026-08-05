@@ -56,7 +56,9 @@ export function CineEnvelope({
         ["--tilt" as string]: "-2.5deg",
         transform: `rotate(-2.5deg) rotateY(${showBack ? 180 : 0}deg)`,
         transformStyle: "preserve-3d",
-        transition: "transform 1.6s cubic-bezier(0.4,0,0.2,1)",
+        transition: "transform 1.2s cubic-bezier(0.4,0,0.2,1)",
+        willChange: "transform",
+
         animation: phase === "arriving" ? "cine-materialise 2.4s cubic-bezier(0.22,0.61,0.36,1) both" : undefined,
         filter: "drop-shadow(0 22px 34px rgba(0,0,0,0.55))",
       }}
@@ -115,9 +117,29 @@ export function CineEnvelope({
           <Foxing />
           {/* side flaps */}
           <div style={{ position: "absolute", inset: 0, background: `linear-gradient(90deg, rgba(150,118,70,0.16), transparent 22%, transparent 78%, rgba(150,118,70,0.16))` }} />
+          {/* interior cavity — patterned security lining, revealed as the flap lifts */}
+          <div
+            style={{
+              position: "absolute", left: 0, right: 0, top: 0, height: h * 0.56,
+              background: "linear-gradient(180deg, #2b2114 0%, #3a2c1a 60%, #4a3822 100%)",
+              clipPath: "polygon(0% 0%, 100% 0%, 50% 100%)",
+              opacity: flapUp ? 1 : 0,
+              transition: "opacity 0.5s ease-out 0.35s",
+            }}
+          >
+            <div
+              style={{
+                position: "absolute", inset: 0,
+                backgroundImage:
+                  "repeating-linear-gradient(45deg, rgba(214,180,120,0.16) 0 2px, transparent 2px 9px), repeating-linear-gradient(-45deg, rgba(214,180,120,0.12) 0 2px, transparent 2px 9px)",
+              }}
+            />
+            <div style={{ position: "absolute", inset: 0, boxShadow: "inset 0 14px 22px rgba(0,0,0,0.6)" }} />
+          </div>
           {/* bottom flap seam */}
           <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: h * 0.52, background: "linear-gradient(180deg, rgba(255,246,222,0.35), rgba(190,160,110,0.18))", clipPath: "polygon(0% 100%, 50% 0%, 100% 100%)" }} />
         </div>
+
 
         {/* the flap — hinged at the top, with visible thickness */}
         <div

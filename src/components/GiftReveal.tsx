@@ -156,11 +156,11 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
     }
     if (phase === "bouquet") {
       score.resumeDefault();
-      const cleanup = run([[1, 1000], [2, 2200], [3, 5000], [4, 7000]]);
+      const cleanup = run([[1, 1000], [2, 2200], [3, 5000], [4, 7000]], () => setTapReady(true));
       const s = window.setTimeout(() => score.swell(), 6500);
-      const t = window.setTimeout(() => setPhase("closing"), 15000);
-      return () => { cleanup(); window.clearTimeout(s); window.clearTimeout(t); };
+      return () => { cleanup(); window.clearTimeout(s); };
     }
+
     if (phase === "closing") {
       score.fadeOut(10000);
       return run([[1, 3000], [2, 6000], [3, 8500], [4, 11500], [5, 17000], [6, 19500]]);
@@ -177,7 +177,9 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
     if (phase === "letter") { setPhase("reclosing"); return; }
     if (phase === "postcard-back") { setPhase("postcard-front"); return; }
     if (phase === "postcard-front") { setPhase("bouquet"); return; }
+    if (phase === "bouquet") { setPhase("closing"); return; }
   }
+
 
   if (phase === "download") {
     return (
@@ -253,9 +255,8 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
               <p className="cine-fade text-sm" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#e9e0cd", letterSpacing: "0.08em" }}>
                 Something arrived for you.
               </p>
-              <p className="cine-fade mt-4 text-[11px] tracking-[0.35em] uppercase" style={{ color: "#c9c0ae", animationDelay: "2s", fontFamily: "'Cormorant Garamond', serif" }}>
-                Tap to open ↓
-              </p>
+              <TapPrompt label="Tap to open" tone="warm" delay="2s" />
+
             </div>
           )}
 
@@ -289,10 +290,11 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
           ) : null}
 
           {phase === "letter" && tapReady && (
-            <p className="cine-fade mt-10 text-[10px] tracking-[0.35em] uppercase" style={{ color: "#8e8674" }}>
-              Tap to continue ↓
-            </p>
+            <div className="mt-10">
+              <TapPrompt label="Tap to continue" tone="warm" />
+            </div>
           )}
+
         </section>
       )}
 
@@ -320,10 +322,11 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
             />
           </ScaledCard>
           {tapReady && (
-            <p className="cine-fade mt-10 text-[10px] tracking-[0.35em] uppercase" style={{ color: "#9aa6c4" }}>
-              {phase === "postcard-back" ? "Tap to read the other side ↓" : "Tap to receive your bouquet ↓"}
-            </p>
+            <div className="mt-10">
+              <TapPrompt label={phase === "postcard-back" ? "Tap to read the other side" : "Tap to receive your bouquet"} tone="cool" />
+            </div>
           )}
+
         </section>
       )}
 
@@ -358,9 +361,15 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
               className="mt-6 max-w-xs text-center letterpaper-hand text-lg"
               style={{ color: "#f0e4cd", animation: "cine-tag-swing 2.4s ease-out both" }}
             >
-              {BOUQUET_TAG[occasion] ?? BOUQUET_TAG.general}
+              {payload.giftTagText?.trim() || BOUQUET_TAG[occasion] || BOUQUET_TAG.general}
             </p>
           )}
+          {tapReady && (
+            <div className="mt-8">
+              <TapPrompt label="Tap to close the night" tone="warm" />
+            </div>
+          )}
+
         </section>
       )}
 
@@ -465,5 +474,27 @@ function ScaledCard({ flipped, children }: { flipped: boolean; children: React.R
         ))}
       </div>
     </div>
+  );
+}
+
+/** The one consistent way every chapter invites the next tap. */
+function TapPrompt({ label, tone = "warm", delay }: { label: string; tone?: "warm" | "cool"; delay?: string }) {
+  const c = tone === "warm"
+    ? { fg: "#efe4cd", border: "rgba(236,224,198,0.45)", glow: "rgba(240,214,150,0.18)" }
+    : { fg: "#dbe4fb", border: "rgba(200,214,250,0.45)", glow: "rgba(160,190,255,0.16)" };
+  return (
+    <span
+      className="cine-fade inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-[10px] tracking-[0.35em] uppercase"
+      style={{
+        color: c.fg,
+        border: `1px solid ${c.border}`,
+        background: c.glow,
+        backdropFilter: "blur(2px)",
+        fontFamily: "'Cormorant Garamond', serif",
+        animationDelay: delay,
+      }}
+    >
+      {label} <span aria-hidden>↓</span>
+    </span>
   );
 }
