@@ -216,7 +216,7 @@ export function GiftWizard(props: Props) {
         bouquet: { flowers, wrap },
         recipientCity: recipientCity.trim() || undefined,
         giftType: giftType ?? "digital",
-        giftTagText: isDiy ? (giftTagText.trim() || undefined) : undefined,
+        giftTagText: giftTagText.trim() || undefined,
       };
       if (!isDiy && songFile) {
         payload = { ...payload, song: await uploadLetterSong(songFile), songScope };
@@ -592,25 +592,28 @@ export function GiftWizard(props: Props) {
                 <BouquetArrangement flowers={flowers} wrap={wrap} size={320} occasion={occasion} sender={from.trim()} />
               </div>
 
-              {isDiy ? (
-                /* DIY — a printed gift tag instead of a song */
-                <div className="mt-6 w-full max-w-md text-left">
-                  <label className="text-[11px] tracking-[0.2em] text-muted-foreground uppercase" htmlFor="gift-tag">
-                    Write your gift tag note (max 60 chars)
-                  </label>
-                  <input
-                    id="gift-tag"
-                    value={giftTagText}
-                    maxLength={60}
-                    onChange={(e) => setGiftTagText(e.target.value)}
-                    placeholder={occasionLine.slice(0, 60)}
-                    className="mt-2 w-full rounded-md border border-border bg-background/40 px-3 py-2 text-sm"
-                  />
-                  <p className="mt-2 text-[11px] text-muted-foreground/80">
-                    Printed on the bouquet tag — cut it out and tie it on with twine.
-                  </p>
-                </div>
-              ) : (
+              {/* the bouquet tag note — printed for DIY, shown under the blooms for digital */}
+              <div className="mt-6 w-full max-w-md text-left">
+                <label className="text-[11px] tracking-[0.2em] text-muted-foreground uppercase" htmlFor="gift-tag">
+                  Write your gift tag note (max 60 chars)
+                </label>
+                <input
+                  id="gift-tag"
+                  value={giftTagText}
+                  maxLength={60}
+                  onChange={(e) => setGiftTagText(e.target.value)}
+                  placeholder={occasionLine.slice(0, 60)}
+                  className="mt-2 w-full rounded-md border border-border bg-background/40 px-3 py-2 text-sm"
+                />
+                <p className="mt-2 text-[11px] text-muted-foreground/80">
+                  {isDiy
+                    ? "Printed on the bouquet tag — cut it out and tie it on with twine."
+                    : "Appears beneath the bouquet as it blooms."}
+                </p>
+              </div>
+
+              {!isDiy && (
+
                 /* Song upload */
                 <div className="mt-6 w-full max-w-md text-center">
                   <input ref={songInputRef} type="file" accept={SONG_ACCEPT} onChange={pickSong} className="hidden" />
