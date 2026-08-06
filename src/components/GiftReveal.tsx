@@ -301,11 +301,15 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
             </div>
           ) : null}
 
-          {phase === "letter" && tapReady && (
+          {(phase === "letter" || phase === "unsealing" || phase === "reclosing") && tapReady && (
             <div className="mt-10">
-              <TapPrompt label="Tap to continue" tone="warm" />
+              <TapPrompt
+                label={phase === "unsealing" ? "Tap to read the letter" : phase === "reclosing" ? "Tap to continue" : "Tap to continue"}
+                tone="warm"
+              />
             </div>
           )}
+
 
         </section>
       )}
