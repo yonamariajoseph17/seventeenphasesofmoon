@@ -408,7 +408,17 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
               This was made for you — under the same sky.
             </p>
           )}
-          {beat >= 4 && tonight && (
+          {beat >= 4 && (
+            <div
+              className="mt-10"
+              style={{ animation: "cine-fade-in 0.8s ease-out both", fontFamily: "'Cormorant Garamond', serif", color: "#f5f0e8" }}
+            >
+              {(CLOSING_CAPTION[occasion] ?? CLOSING_CAPTION.general).map((line) => (
+                <p key={line} className="text-lg leading-relaxed md:text-xl">{line}</p>
+              ))}
+            </div>
+          )}
+          {beat >= 5 && tonight && (
             <div className="cine-fade mt-12 flex flex-col items-center">
               <MoonSvg phaseAngle={tonight.phaseAngle} illumination={tonight.illumination} waxing={tonight.waxing} size={80} />
               <p className="mt-4 text-[9px] tracking-[0.35em] uppercase" style={{ color: "#cfc6b3" }}>
@@ -416,12 +426,16 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
               </p>
             </div>
           )}
-          {beat >= 5 && (
-            <p className="cine-fade mx-auto mt-14 max-w-md text-[9px] leading-relaxed tracking-[0.24em] uppercase" style={{ color: "#8d8674" }}>
-              Sky We Share ✦ Built in love, for someone who loved moongazing and never knew how much she was watched over by it.
-            </p>
-          )}
           {beat >= 6 && (
+            <div className="cine-fade mx-auto mt-14 max-w-md" style={{ color: "#8d8674" }}>
+              <p className="text-[9px] leading-relaxed tracking-[0.24em] uppercase">Sky We Share ✦ A diary in moonlight</p>
+              <p className="mt-2 text-[9px] leading-relaxed tracking-[0.2em] uppercase">
+                For her — who loved the moon, and every sky we shared beneath it.
+              </p>
+            </div>
+          )}
+          {beat >= 7 && (
+
             <div className="cine-fade mt-8 flex flex-wrap justify-center gap-3">
               <button
                 type="button"
