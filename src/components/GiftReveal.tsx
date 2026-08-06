@@ -43,6 +43,18 @@ const BOUQUET_TAG: Record<string, string> = {
   general: "These made me think of you.",
 };
 
+/** Closing caption — driven by the same occasion field as the letter and tag. */
+const CLOSING_CAPTION: Record<string, string[]> = {
+  birthday: ["The moon has circled back to find you again.", "Every year it returns to the same sky", "it first found you under."],
+  anniversary: ["Some nights don't end —", "they just keep being remembered.", "This one, the sky remembers with you."],
+  memory: ["The moon doesn't disappear when it's not visible.", "It simply waits on the other side,", "the way love does."],
+  friendship: ["Different cities, same moon.", "However far apart, you're always standing", "under the same quiet light."],
+  proposal: ["Under this moon, everything changed.", "And the sky has remembered every night since."],
+  "first-met": ["The sky was different that night.", "It has never quite gone back", "to the way it was before."],
+  general: ["The moon keeps no calendar.", "It simply returns, night after night,", "to the same sky it has always known."],
+};
+
+
 function fmtDate(iso: string, tz: number) {
   const s = new Date(new Date(iso).getTime() + tz * 3_600_000);
   return s.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
