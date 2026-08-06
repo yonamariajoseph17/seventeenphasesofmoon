@@ -319,6 +319,17 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
           <p style={{ margin: "16px 0 0", textAlign: "center", fontFamily: s.heading, fontStyle: "italic", fontSize: 17, color: s.ink, opacity: 0.9 }}>
             This is the moon's phase on your birthday, and how it has changed on each birthday since.
           </p>
+          <p
+            style={{
+              margin: "10px auto 0", maxWidth: 1100, textAlign: "center",
+              fontFamily: s.heading, fontStyle: "italic", fontSize: 19, lineHeight: 1.5,
+              color: s.light ? s.sub : "#f0e8d8", opacity: s.light ? 0.95 : 0.92,
+            }}
+          >
+            Each moon above represents a birthday — the same date, the same city, a different sky. From the night of
+            birth to today, the moon has quietly kept count.
+          </p>
+
         </div>
 
       )}
