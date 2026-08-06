@@ -147,18 +147,14 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
     }
     if (phase === "unsealing") {
       // turn → seal glow/crack → flap → letter rises → unfold → read
-      const cleanup = run([[1, 1700], [2, 3200], [3, 5000], [4, 6400], [5, 7600]]);
-      const t = window.setTimeout(() => { setPhase("letter"); }, 9200);
-      return () => { cleanup(); window.clearTimeout(t); };
+      return run([[1, 1700], [2, 3200], [3, 5000], [4, 6400], [5, 7600]], () => setTapReady(true));
     }
     if (phase === "letter") {
       score.enterLetter();
       return run([[1, 900], [2, 4200], [3, 6600]], () => setTapReady(true));
     }
     if (phase === "reclosing") {
-      const cleanup = run([[1, 1600], [2, 3000], [3, 4200]]);
-      const t = window.setTimeout(() => setPhase("postcard-back"), 6200);
-      return () => { cleanup(); window.clearTimeout(t); };
+      return run([[1, 1600], [2, 3000], [3, 4200]], () => setTapReady(true));
     }
     if (phase === "postcard-back") {
       return run([[1, 900], [2, 2400], [3, 4200], [4, 5800]], () => setTapReady(true));
@@ -174,8 +170,9 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
     }
 
     if (phase === "closing") {
-      score.fadeOut(10000);
-      return run([[1, 3000], [2, 6000], [3, 8500], [4, 11500], [5, 17000], [6, 19500]]);
+      score.fadeOut(12000);
+      // lines → occasion caption (1.5s after line 3) → tonight's moon → trademark → actions
+      return run([[1, 3000], [2, 6000], [3, 8500], [4, 10000], [5, 13500], [6, 19000], [7, 21500]]);
     }
     return undefined;
     // score identity is stable enough for a chapter transition
@@ -186,11 +183,14 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
     if (!tapReady) return;
     setTapReady(false);
     if (phase === "opening") { score.start(); setPhase("unsealing"); return; }
+    if (phase === "unsealing") { setPhase("letter"); return; }
     if (phase === "letter") { setPhase("reclosing"); return; }
+    if (phase === "reclosing") { setPhase("postcard-back"); return; }
     if (phase === "postcard-back") { setPhase("postcard-front"); return; }
     if (phase === "postcard-front") { setPhase("bouquet"); return; }
     if (phase === "bouquet") { setPhase("closing"); return; }
   }
+
 
 
   if (phase === "download") {
