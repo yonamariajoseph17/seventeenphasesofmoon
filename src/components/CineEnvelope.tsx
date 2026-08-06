@@ -105,19 +105,41 @@ export function CineEnvelope({
         </div>
       </div>
 
-      {/* ── BACK: flap + wax seal ─────────────────────────────────── */}
+      {/* ── BACK: aged interior, flap + broken wax seal ─────────────── */}
       <div
         style={{
           position: "absolute", inset: 0, backfaceVisibility: "hidden",
-          transform: "rotateY(180deg)", background: PAPER_DEEP, borderRadius: 4, overflow: "visible",
+          transform: "rotateY(180deg)",
+          background: "linear-gradient(146deg, #e0cca4 0%, #d4bd8f 58%, #c5ac7b 100%)",
+          borderRadius: 4, overflow: "visible",
         }}
       >
-        <div style={{ position: "absolute", inset: 0, borderRadius: 4, overflow: "hidden", boxShadow: "inset 0 0 40px rgba(120,90,40,0.3)" }}>
+        {/* texture + lining layer (not mirrored — no text here) */}
+        <div style={{ position: "absolute", inset: 0, borderRadius: 4, overflow: "hidden" }}>
           <Grain uid={`b${uid}`} />
           <Foxing />
-          {/* side flaps */}
-          <div style={{ position: "absolute", inset: 0, background: `linear-gradient(90deg, rgba(150,118,70,0.16), transparent 22%, transparent 78%, rgba(150,118,70,0.16))` }} />
-          {/* interior cavity — patterned security lining, revealed as the flap lifts */}
+          {/* antique security lining — diagonal deep-red / navy stripes */}
+          <div
+            style={{
+              position: "absolute", inset: 0,
+              backgroundImage:
+                "repeating-linear-gradient(45deg, rgba(122,20,32,0.11) 0 3px, transparent 3px 12px), repeating-linear-gradient(-45deg, rgba(20,32,86,0.10) 0 3px, transparent 3px 12px)",
+            }}
+          />
+          {/* ghost postmark bled through from the outside stamp */}
+          <div
+            style={{
+              position: "absolute", top: h * 0.1, left: width * 0.1,
+              width: width * 0.19, height: width * 0.19, borderRadius: "50%",
+              border: "2px solid rgba(92,20,32,0.16)",
+              boxShadow: "inset 0 0 0 6px rgba(92,20,32,0.05)",
+              filter: "blur(0.6px)", transform: "rotate(-9deg)",
+            }}
+          />
+          {/* the flap crease near the top, with a soft shadow above it */}
+          <div style={{ position: "absolute", left: 0, right: 0, top: h * 0.5, height: 1.5, background: "rgba(120,88,44,0.5)" }} />
+          <div style={{ position: "absolute", left: 0, right: 0, top: h * 0.5 - 26, height: 26, background: "linear-gradient(180deg, transparent, rgba(70,50,22,0.24))" }} />
+          {/* interior cavity, revealed as the flap lifts */}
           <div
             style={{
               position: "absolute", left: 0, right: 0, top: 0, height: h * 0.56,
@@ -137,9 +159,10 @@ export function CineEnvelope({
             <div style={{ position: "absolute", inset: 0, boxShadow: "inset 0 14px 22px rgba(0,0,0,0.6)" }} />
           </div>
           {/* bottom flap seam */}
-          <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: h * 0.52, background: "linear-gradient(180deg, rgba(255,246,222,0.35), rgba(190,160,110,0.18))", clipPath: "polygon(0% 100%, 50% 0%, 100% 100%)" }} />
+          <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: h * 0.52, background: "linear-gradient(180deg, rgba(255,246,222,0.28), rgba(190,160,110,0.16))", clipPath: "polygon(0% 100%, 50% 0%, 100% 100%)" }} />
+          {/* inner edge shadow — depth, like looking inside a real envelope */}
+          <div style={{ position: "absolute", inset: 0, borderRadius: 4, boxShadow: "inset 0 0 0 1px rgba(120,90,40,0.4), inset 0 0 30px rgba(70,50,22,0.45)", pointerEvents: "none" }} />
         </div>
-
 
         {/* the flap — hinged at the top, with visible thickness */}
         <div
@@ -154,26 +177,36 @@ export function CineEnvelope({
           <div
             style={{
               position: "absolute", inset: 0,
-              background: PAPER,
+              background: PAPER_DEEP,
               clipPath: "polygon(0% 0%, 100% 0%, 50% 100%)",
               boxShadow: "0 5px 10px rgba(0,0,0,0.28)",
-              borderTop: "1px solid rgba(255,248,226,0.7)",
+              borderTop: "1px solid rgba(255,248,226,0.55)",
             }}
           />
           {/* paper thickness at the folded edge */}
           <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 2, background: "rgba(160,128,78,0.7)" }} />
         </div>
 
-        {/* wax seal at the flap point */}
+        {/* wax seal at the flap point — content layer un-mirrored */}
         <div
           style={{
             position: "absolute", left: "50%", top: h * 0.5,
             width: width * 0.16, height: width * 0.16,
-            transform: "translate(-50%,-50%)",
+            transform: "translate(-50%,-50%) scaleX(-1)",
             transition: "opacity 0.6s",
             opacity: phase === "empty" ? 0 : 1,
           }}
         >
+          {/* faint wax residue between the halves */}
+          {cracked && (
+            <div
+              aria-hidden
+              style={{
+                position: "absolute", left: "44%", top: "12%", width: width * 0.022, height: width * 0.12,
+                background: "radial-gradient(ellipse, rgba(120,26,42,0.28), transparent 70%)", filter: "blur(1.5px)",
+              }}
+            />
+          )}
           <SealHalf side="l" wax broken={cracked} />
           <SealHalf side="r" wax broken={cracked} />
           <div
@@ -206,6 +239,7 @@ export function CineEnvelope({
           )}
         </div>
       </div>
+
     </div>
   );
 }

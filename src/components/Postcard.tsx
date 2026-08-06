@@ -191,11 +191,24 @@ export const PostcardFront = forwardRef<HTMLDivElement, Props>(function Postcard
           <p style={{ margin: "0 0 22px", fontSize: 10.5, letterSpacing: 3.5, textTransform: "uppercase", color: s.sub }}>To</p>
           <AddressLine ink={s.ink} line={s.line} width="80%" value={p.recipient} />
           <AddressLine ink={s.ink} line={s.line} width="100%" value={p.recipientCity ?? ""} />
-          <AddressLine ink={s.ink} line={s.line} width="100%" value="" />
         </div>
+
+        {/* Dynamic description — computed astronomy, never placeholder text */}
+        <p
+          style={{
+            margin: "8px 0 0", fontFamily: s.heading, fontStyle: "italic",
+            fontSize: 20, lineHeight: 1.55, letterSpacing: 0.2,
+            color: s.light ? s.sub : "#f0e8d8", opacity: s.light ? 0.95 : 0.92,
+          }}
+        >
+          On {p.dateLabel || "—"}, above {p.city || "—"}, the moon was a {p.moon.name || "—"} —{" "}
+          {p.illumPct ?? "—"}% illuminated, {Number.isFinite(p.moon.age) ? p.moon.age.toFixed(1) : "—"} days into its
+          cycle. This is the sky exactly as it was on the night {p.recipient || "—"} came into the world.
+        </p>
 
         <div style={{ flex: 1 }} />
       </div>
+
 
       {/* Printer's credit */}
       <p style={{ position: "absolute", bottom: 26, left: "50%", transform: "translateX(-50%)", margin: 0, fontSize: 10.5, letterSpacing: 2.5, textTransform: "uppercase", color: s.sub, opacity: 0.75, whiteSpace: "nowrap" }}>
@@ -306,6 +319,17 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
           <p style={{ margin: "16px 0 0", textAlign: "center", fontFamily: s.heading, fontStyle: "italic", fontSize: 17, color: s.ink, opacity: 0.9 }}>
             This is the moon's phase on your birthday, and how it has changed on each birthday since.
           </p>
+          <p
+            style={{
+              margin: "10px auto 0", maxWidth: 1100, textAlign: "center",
+              fontFamily: s.heading, fontStyle: "italic", fontSize: 19, lineHeight: 1.5,
+              color: s.light ? s.sub : "#f0e8d8", opacity: s.light ? 0.95 : 0.92,
+            }}
+          >
+            Each moon above represents a birthday — the same date, the same city, a different sky. From the night of
+            birth to today, the moon has quietly kept count.
+          </p>
+
         </div>
 
       )}

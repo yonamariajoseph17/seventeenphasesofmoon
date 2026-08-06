@@ -43,6 +43,18 @@ const BOUQUET_TAG: Record<string, string> = {
   general: "These made me think of you.",
 };
 
+/** Closing caption — driven by the same occasion field as the letter and tag. */
+const CLOSING_CAPTION: Record<string, string[]> = {
+  birthday: ["The moon has circled back to find you again.", "Every year it returns to the same sky", "it first found you under."],
+  anniversary: ["Some nights don't end —", "they just keep being remembered.", "This one, the sky remembers with you."],
+  memory: ["The moon doesn't disappear when it's not visible.", "It simply waits on the other side,", "the way love does."],
+  friendship: ["Different cities, same moon.", "However far apart, you're always standing", "under the same quiet light."],
+  proposal: ["Under this moon, everything changed.", "And the sky has remembered every night since."],
+  "first-met": ["The sky was different that night.", "It has never quite gone back", "to the way it was before."],
+  general: ["The moon keeps no calendar.", "It simply returns, night after night,", "to the same sky it has always known."],
+};
+
+
 function fmtDate(iso: string, tz: number) {
   const s = new Date(new Date(iso).getTime() + tz * 3_600_000);
   return s.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
@@ -135,18 +147,14 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
     }
     if (phase === "unsealing") {
       // turn → seal glow/crack → flap → letter rises → unfold → read
-      const cleanup = run([[1, 1700], [2, 3200], [3, 5000], [4, 6400], [5, 7600]]);
-      const t = window.setTimeout(() => { setPhase("letter"); }, 9200);
-      return () => { cleanup(); window.clearTimeout(t); };
+      return run([[1, 1700], [2, 3200], [3, 5000], [4, 6400], [5, 7600]], () => setTapReady(true));
     }
     if (phase === "letter") {
       score.enterLetter();
       return run([[1, 900], [2, 4200], [3, 6600]], () => setTapReady(true));
     }
     if (phase === "reclosing") {
-      const cleanup = run([[1, 1600], [2, 3000], [3, 4200]]);
-      const t = window.setTimeout(() => setPhase("postcard-back"), 6200);
-      return () => { cleanup(); window.clearTimeout(t); };
+      return run([[1, 1600], [2, 3000], [3, 4200]], () => setTapReady(true));
     }
     if (phase === "postcard-back") {
       return run([[1, 900], [2, 2400], [3, 4200], [4, 5800]], () => setTapReady(true));
@@ -162,8 +170,9 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
     }
 
     if (phase === "closing") {
-      score.fadeOut(10000);
-      return run([[1, 3000], [2, 6000], [3, 8500], [4, 11500], [5, 17000], [6, 19500]]);
+      score.fadeOut(12000);
+      // lines → occasion caption (1.5s after line 3) → tonight's moon → trademark → actions
+      return run([[1, 3000], [2, 6000], [3, 8500], [4, 10000], [5, 13500], [6, 19000], [7, 21500]]);
     }
     return undefined;
     // score identity is stable enough for a chapter transition
@@ -174,11 +183,14 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
     if (!tapReady) return;
     setTapReady(false);
     if (phase === "opening") { score.start(); setPhase("unsealing"); return; }
+    if (phase === "unsealing") { setPhase("letter"); return; }
     if (phase === "letter") { setPhase("reclosing"); return; }
+    if (phase === "reclosing") { setPhase("postcard-back"); return; }
     if (phase === "postcard-back") { setPhase("postcard-front"); return; }
     if (phase === "postcard-front") { setPhase("bouquet"); return; }
     if (phase === "bouquet") { setPhase("closing"); return; }
   }
+
 
 
   if (phase === "download") {
@@ -289,11 +301,15 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
             </div>
           ) : null}
 
-          {phase === "letter" && tapReady && (
+          {(phase === "letter" || phase === "unsealing" || phase === "reclosing") && tapReady && (
             <div className="mt-10">
-              <TapPrompt label="Tap to continue" tone="warm" />
+              <TapPrompt
+                label={phase === "unsealing" ? "Tap to read the letter" : phase === "reclosing" ? "Tap to continue" : "Tap to continue"}
+                tone="warm"
+              />
             </div>
           )}
+
 
         </section>
       )}
@@ -392,7 +408,17 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
               This was made for you — under the same sky.
             </p>
           )}
-          {beat >= 4 && tonight && (
+          {beat >= 4 && (
+            <div
+              className="mt-10"
+              style={{ animation: "cine-fade-in 0.8s ease-out both", fontFamily: "'Cormorant Garamond', serif", color: "#f5f0e8" }}
+            >
+              {(CLOSING_CAPTION[occasion] ?? CLOSING_CAPTION.general).map((line) => (
+                <p key={line} className="text-lg leading-relaxed md:text-xl">{line}</p>
+              ))}
+            </div>
+          )}
+          {beat >= 5 && tonight && (
             <div className="cine-fade mt-12 flex flex-col items-center">
               <MoonSvg phaseAngle={tonight.phaseAngle} illumination={tonight.illumination} waxing={tonight.waxing} size={80} />
               <p className="mt-4 text-[9px] tracking-[0.35em] uppercase" style={{ color: "#cfc6b3" }}>
@@ -400,12 +426,16 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
               </p>
             </div>
           )}
-          {beat >= 5 && (
-            <p className="cine-fade mx-auto mt-14 max-w-md text-[9px] leading-relaxed tracking-[0.24em] uppercase" style={{ color: "#8d8674" }}>
-              Sky We Share ✦ Built in love, for someone who loved moongazing and never knew how much she was watched over by it.
-            </p>
-          )}
           {beat >= 6 && (
+            <div className="cine-fade mx-auto mt-14 max-w-md" style={{ color: "#8d8674" }}>
+              <p className="text-[9px] leading-relaxed tracking-[0.24em] uppercase">Sky We Share ✦ A diary in moonlight</p>
+              <p className="mt-2 text-[9px] leading-relaxed tracking-[0.2em] uppercase">
+                For her — who loved the moon, and every sky we shared beneath it.
+              </p>
+            </div>
+          )}
+          {beat >= 7 && (
+
             <div className="cine-fade mt-8 flex flex-wrap justify-center gap-3">
               <button
                 type="button"

@@ -102,8 +102,9 @@ export function CineLetter({ state, children, bleedText }: Props) {
           style={{ background: "radial-gradient(ellipse at 50% 44%, rgba(255,240,200,0.16), transparent 58%), radial-gradient(ellipse at 50% 50%, transparent 52%, rgba(78,54,22,0.26) 100%)" }}
         />
 
-        {/* horizontal fold crease */}
-        <div className="pointer-events-none absolute inset-x-0" aria-hidden style={{ top: "33%", height: 1, background: "rgba(140,108,58,0.22)" }} />
+        {/* no horizontal crease rule — the salutation flows straight into the body */}
+
+
 
         {/* content */}
         <div className="relative px-5 py-8 sm:px-10 sm:py-12" style={{ color: "#33260f" }}>
