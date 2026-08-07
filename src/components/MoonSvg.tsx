@@ -1,7 +1,6 @@
 import { useId } from "react";
 import { validateMoonVisualInputs, visualTierForIllumination } from "@/lib/moon-visual";
-import moonTexture from "@/assets/moon-texture.jpg";
-interface Props {
+import moonTexture from "@/assets/moon-texture.jpg?url";
   phaseAngle: number;
   illumination: number;
   waxing: boolean;
