@@ -8,7 +8,7 @@ interface Props {
   size?: number;
 }
 
-const TEXTURE_URL = moonTexture.url;
+ const TEXTURE_URL = moonTexture;
 
 /**
  * Build the lit-region polygon. The terminator is the projected ellipse of the
