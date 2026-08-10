@@ -192,7 +192,7 @@ export function CineEnvelope({
           style={{
             position: "absolute", left: "50%", top: h * 0.5,
             width: width * 0.16, height: width * 0.16,
-            transform: "translate(-50%,-50%),
+            transform: "translate(-50%,-50%)",
             transition: "opacity 0.6s",
             opacity: phase === "empty" ? 0 : 1,
           }}
