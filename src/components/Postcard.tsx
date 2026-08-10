@@ -274,7 +274,7 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
           boxShadow: `0 0 0 1px ${s.line}`,
         }}
       >
-        <div style={{ position: "relative", height: 700, overflow: "hidden", background: "#04060f" }}>
+        <div style={{ position: "relative", height: 600, overflow: "hidden", background: "#04060f" }}>
           <NightScene moon={p.moon} />
         </div>
       </div>
@@ -303,7 +303,7 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
             {milestones.map((m) => (
               <div key={m.age} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, flex: 1 }}>
                 <div style={{ borderRadius: "50%", boxShadow: "0 0 0 1.5px rgba(214,224,248,0.5), 0 0 22px rgba(180,200,255,0.14)", lineHeight: 0 }}>
-                  <MoonSvg phaseAngle={m.phaseAngle} illumination={m.illumination} waxing={m.waxing} size={104} />
+                  <MoonSvg phaseAngle={m.phaseAngle} illumination={m.illumination} waxing={m.waxing} size={84} />
                 </div>
                 <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: 2.4, textTransform: "uppercase", color: "#f7f2e6" }}>
                   {milestoneLabel(m.age)}
@@ -319,17 +319,6 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
           <p style={{ margin: "16px 0 0", textAlign: "center", fontFamily: s.heading, fontStyle: "italic", fontSize: 17, color: s.ink, opacity: 0.9 }}>
             This is the moon's phase on your birthday, and how it has changed on each birthday since.
           </p>
-          <p
-            style={{
-              margin: "10px auto 0", maxWidth: 1100, textAlign: "center",
-              fontFamily: s.heading, fontStyle: "italic", fontSize: 19, lineHeight: 1.5,
-              color: s.light ? s.sub : "#f0e8d8", opacity: s.light ? 0.95 : 0.92,
-            }}
-          >
-            Each moon above represents a birthday — the same date, the same city, a different sky. From the night of
-            birth to today, the moon has quietly kept count.
-          </p>
-
         </div>
 
       )}
@@ -584,4 +573,3 @@ function NightScene({ moon }: { moon: AccurateMoonInfo }) {
     </div>
   );
 }
-
