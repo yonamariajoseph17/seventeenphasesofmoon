@@ -246,8 +246,7 @@ export function CineEnvelope({
         </div>
       </div>
     </div>
-    </div>
-  );
+     );
 }
 
 function SealHalf({ side, broken }: { side: "l" | "r"; wax?: boolean; broken: boolean }) {
