@@ -211,7 +211,7 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
     : "empty";
 
   const letterState: LetterFoldState =
-    phase === "unsealing" ? (beat < 4 ? "inside" : beat < 5 ? "rising" : "unfolding")
+    phase === "unsealing" ? (beat < 4 ? "inside":"rising")
     : phase === "letter" ? "open"
     : phase === "reclosing" ? (beat < 1 ? "refolding" : "folded")
     : "inside";
