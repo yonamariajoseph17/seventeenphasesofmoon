@@ -47,20 +47,25 @@ export function CineEnvelope({
   const flapUp = phase === "opening" || phase === "empty";
 
   return (
+  <div
+    style={{
+      width,
+      height: h,
+      position: "relative",
+      filter: "drop-shadow(0 22px 34px rgba(0,0,0,0.55))",
+      animation: phase === "arriving" ? "cine-materialise 2.4s cubic-bezier(0.22,0.61,0.36,1) both" : undefined,
+    }}
+  >
     <div
       style={{
-        width,
-        height: h,
+        width: "100%",
+        height: "100%",
         position: "relative",
-        // 2.5° tilt — as if it was just set down
         ["--tilt" as string]: "-2.5deg",
         transform: `rotate(-2.5deg) rotateY(${showBack ? 180 : 0}deg)`,
         transformStyle: "preserve-3d",
         transition: "transform 1.2s cubic-bezier(0.4,0,0.2,1)",
         willChange: "transform",
-
-        animation: phase === "arriving" ? "cine-materialise 2.4s cubic-bezier(0.22,0.61,0.36,1) both" : undefined,
-        filter: "drop-shadow(0 22px 34px rgba(0,0,0,0.55))",
       }}
     >
       {/* ── FRONT: addressed side ─────────────────────────────────── */}
@@ -309,6 +314,8 @@ function MoonStamp({ w, variant = false }: { w: number; variant?: boolean }) {
         <span style={{ color: "#f7dcbd", fontSize: w * 0.42, lineHeight: 1, fontFamily: "'Cormorant Garamond', serif" }}>{variant ? "☾" : "☽"}</span>
         <span style={{ color: "#f2cfae", fontSize: w * 0.13, letterSpacing: 0.6, textTransform: "uppercase" }}>Sky</span>
       </div>
+
+    </div>
     </div>
   );
 }
