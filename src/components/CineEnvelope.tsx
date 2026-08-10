@@ -245,10 +245,10 @@ export function CineEnvelope({
         </div>
       </div>
 
-    2      </div>
-249        </div>
-250      );
-251    }
+      </div>
+      </div>
+      );
+    }
 
 function SealHalf({ side, broken }: { side: "l" | "r"; wax?: boolean; broken: boolean }) {
   return (
