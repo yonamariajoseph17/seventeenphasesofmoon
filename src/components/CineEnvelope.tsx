@@ -246,6 +246,7 @@ export function CineEnvelope({
         </div>
       </div>
     </div>
+    </div>
   );
 }
 
