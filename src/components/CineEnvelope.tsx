@@ -245,9 +245,10 @@ export function CineEnvelope({
         </div>
       </div>
 
-    </div>
-  );
-}
+    2      </div>
+249        </div>
+250      );
+251    }
 
 function SealHalf({ side, broken }: { side: "l" | "r"; wax?: boolean; broken: boolean }) {
   return (
@@ -313,11 +314,9 @@ function MoonStamp({ w, variant = false }: { w: number; variant?: boolean }) {
       <div style={{ width: "100%", height: "100%", border: `1px solid rgba(255,225,200,0.6)`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: h * 0.05 }}>
         <span style={{ color: "#f7dcbd", fontSize: w * 0.42, lineHeight: 1, fontFamily: "'Cormorant Garamond', serif" }}>{variant ? "☾" : "☽"}</span>
         <span style={{ color: "#f2cfae", fontSize: w * 0.13, letterSpacing: 0.6, textTransform: "uppercase" }}>Sky</span>
-      </div>
-
+      </div> 
     </div>
-    </div>
-  );
+      );
 }
 
 /** Classic circular postmark — city arched above, date below. */
