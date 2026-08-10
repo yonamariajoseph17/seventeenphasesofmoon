@@ -47,208 +47,207 @@ export function CineEnvelope({
   const flapUp = phase === "opening" || phase === "empty";
 
   return (
-  <div
-    style={{
-      width,
-      height: h,
-      position: "relative",
-      filter: "drop-shadow(0 22px 34px rgba(0,0,0,0.55))",
-      animation: phase === "arriving" ? "cine-materialise 2.4s cubic-bezier(0.22,0.61,0.36,1) both" : undefined,
-    }}
-  >
     <div
       style={{
-        width: "100%",
-        height: "100%",
+        width,
+        height: h,
         position: "relative",
-        ["--tilt" as string]: "-2.5deg",
-        transform: `rotate(-2.5deg) rotateY(${showBack ? 180 : 0}deg)`,
-        transformStyle: "preserve-3d",
-        transition: "transform 1.2s cubic-bezier(0.4,0,0.2,1)",
-        willChange: "transform",
+        filter: "drop-shadow(0 22px 34px rgba(0,0,0,0.55))",
+        animation: phase === "arriving" ? "cine-materialise 2.4s cubic-bezier(0.22,0.61,0.36,1) both" : undefined,
       }}
     >
-      {/* ── FRONT: addressed side ─────────────────────────────────── */}
       <div
         style={{
-          position: "absolute", inset: 0, backfaceVisibility: "hidden",
-          background: PAPER, borderRadius: 4, overflow: "hidden",
-          boxShadow: "inset 0 0 40px rgba(120,90,40,0.28)",
+          width: "100%",
+          height: "100%",
+          position: "relative",
+          ["--tilt" as string]: "-2.5deg",
+          transform: `rotate(-2.5deg) rotateY(${showBack ? 180 : 0}deg)`,
+          transformStyle: "preserve-3d",
+          transition: "transform 1.2s cubic-bezier(0.4,0,0.2,1)",
+          willChange: "transform",
         }}
       >
-        <Grain uid={`f${uid}`} />
-        <Foxing />
-        {/* worn edges */}
-        <div style={{ position: "absolute", inset: 0, borderRadius: 4, boxShadow: "inset 0 0 0 1px rgba(120,90,40,0.35), inset 0 0 22px rgba(90,66,30,0.28)", pointerEvents: "none" }} />
+        {/* ── FRONT: addressed side ─────────────────────────────────── */}
+        <div
+          style={{
+            position: "absolute", inset: 0, backfaceVisibility: "hidden",
+            background: PAPER, borderRadius: 4, overflow: "hidden",
+            boxShadow: "inset 0 0 40px rgba(120,90,40,0.28)",
+          }}
+        >
+          <Grain uid={`f${uid}`} />
+          <Foxing />
+          {/* worn edges */}
+          <div style={{ position: "absolute", inset: 0, borderRadius: 4, boxShadow: "inset 0 0 0 1px rgba(120,90,40,0.35), inset 0 0 22px rgba(90,66,30,0.28)", pointerEvents: "none" }} />
 
-        {/* sender, top left */}
-        {sender && (
-          <p style={{ position: "absolute", top: h * 0.08, left: width * 0.07, margin: 0, fontFamily: "'Caveat', cursive", fontSize: width * 0.052, color: "#4a3a22", transform: "rotate(-1.2deg)" }}>
-            {sender}
-          </p>
-        )}
-
-        {/* stamps + postmark, top right */}
-        <div style={{ position: "absolute", top: h * 0.06, right: width * 0.06, display: "flex", gap: width * 0.015 }}>
-          <MoonStamp w={width * 0.115} />
-          <MoonStamp w={width * 0.115} variant />
-        </div>
-        <div style={{ position: "absolute", top: h * 0.05, right: width * 0.045 }}>
-          <Postmark size={width * 0.2} city={postmarkCity} date={postmarkDate} />
-        </div>
-
-        {/* recipient, centre, handwritten */}
-        <div style={{ position: "absolute", left: width * 0.2, top: h * 0.47, transform: "rotate(-1deg)" }}>
-          <p style={{ margin: 0, fontFamily: "'Caveat', cursive", fontSize: width * 0.086, color: INK, lineHeight: 1.1 }}>{recipient}</p>
-          {recipientCity && (
-            <p style={{ margin: `${width * 0.012}px 0 0`, fontFamily: "'Caveat', cursive", fontSize: width * 0.058, color: "#54432a", transform: "rotate(0.8deg)" }}>
-              {recipientCity}
+          {/* sender, top left */}
+          {sender && (
+            <p style={{ position: "absolute", top: h * 0.08, left: width * 0.07, margin: 0, fontFamily: "'Caveat', cursive", fontSize: width * 0.052, color: "#4a3a22", transform: "rotate(-1.2deg)" }}>
+              {sender}
             </p>
           )}
-          <div style={{ marginTop: width * 0.018, width: width * 0.46, height: 1, background: "rgba(90,70,40,0.35)" }} />
-          <div style={{ marginTop: width * 0.03, width: width * 0.36, height: 1, background: "rgba(90,70,40,0.28)" }} />
-        </div>
-      </div>
 
-      {/* ── BACK: aged interior, flap + broken wax seal ─────────────── */}
-      <div
-        style={{
-          position: "absolute", inset: 0, backfaceVisibility: "hidden",
-          transform: "rotateY(180deg)",
-          background: "linear-gradient(146deg, #e0cca4 0%, #d4bd8f 58%, #c5ac7b 100%)",
-          borderRadius: 4, overflow: "visible",
-        }}
-      >
-        {/* texture + lining layer (not mirrored — no text here) */}
-        <div style={{ position: "absolute", inset: 0, borderRadius: 4, overflow: "hidden" }}>
-          <Grain uid={`b${uid}`} />
-          <Foxing />
-          {/* antique security lining — diagonal deep-red / navy stripes */}
-          <div
-            style={{
-              position: "absolute", inset: 0,
-              backgroundImage:
-                "repeating-linear-gradient(45deg, rgba(122,20,32,0.11) 0 3px, transparent 3px 12px), repeating-linear-gradient(-45deg, rgba(20,32,86,0.10) 0 3px, transparent 3px 12px)",
-            }}
-          />
-          {/* ghost postmark bled through from the outside stamp */}
-          <div
-            style={{
-              position: "absolute", top: h * 0.1, left: width * 0.1,
-              width: width * 0.19, height: width * 0.19, borderRadius: "50%",
-              border: "2px solid rgba(92,20,32,0.16)",
-              boxShadow: "inset 0 0 0 6px rgba(92,20,32,0.05)",
-              filter: "blur(0.6px)", transform: "rotate(-9deg)",
-            }}
-          />
-          {/* the flap crease near the top, with a soft shadow above it */}
-          <div style={{ position: "absolute", left: 0, right: 0, top: h * 0.5, height: 1.5, background: "rgba(120,88,44,0.5)" }} />
-          <div style={{ position: "absolute", left: 0, right: 0, top: h * 0.5 - 26, height: 26, background: "linear-gradient(180deg, transparent, rgba(70,50,22,0.24))" }} />
-          {/* interior cavity, revealed as the flap lifts */}
+          {/* stamps + postmark, top right */}
+          <div style={{ position: "absolute", top: h * 0.06, right: width * 0.06, display: "flex", gap: width * 0.015 }}>
+            <MoonStamp w={width * 0.115} />
+            <MoonStamp w={width * 0.115} variant />
+          </div>
+          <div style={{ position: "absolute", top: h * 0.05, right: width * 0.045 }}>
+            <Postmark size={width * 0.2} city={postmarkCity} date={postmarkDate} />
+          </div>
+
+          {/* recipient, centre, handwritten */}
+          <div style={{ position: "absolute", left: width * 0.2, top: h * 0.47, transform: "rotate(-1deg)" }}>
+            <p style={{ margin: 0, fontFamily: "'Caveat', cursive", fontSize: width * 0.086, color: INK, lineHeight: 1.1 }}>{recipient}</p>
+            {recipientCity && (
+              <p style={{ margin: `${width * 0.012}px 0 0`, fontFamily: "'Caveat', cursive", fontSize: width * 0.058, color: "#54432a", transform: "rotate(0.8deg)" }}>
+                {recipientCity}
+              </p>
+            )}
+            <div style={{ marginTop: width * 0.018, width: width * 0.46, height: 1, background: "rgba(90,70,40,0.35)" }} />
+            <div style={{ marginTop: width * 0.03, width: width * 0.36, height: 1, background: "rgba(90,70,40,0.28)" }} />
+          </div>
+        </div>
+
+        {/* ── BACK: aged interior, flap + broken wax seal ─────────────── */}
+        <div
+          style={{
+            position: "absolute", inset: 0, backfaceVisibility: "hidden",
+            transform: "rotateY(180deg)",
+            background: "linear-gradient(146deg, #e0cca4 0%, #d4bd8f 58%, #c5ac7b 100%)",
+            borderRadius: 4, overflow: "visible",
+          }}
+        >
+          {/* texture + lining layer (not mirrored — no text here) */}
+          <div style={{ position: "absolute", inset: 0, borderRadius: 4, overflow: "hidden" }}>
+            <Grain uid={`b${uid}`} />
+            <Foxing />
+            {/* antique security lining — diagonal deep-red / navy stripes */}
+            <div
+              style={{
+                position: "absolute", inset: 0,
+                backgroundImage:
+                  "repeating-linear-gradient(45deg, rgba(122,20,32,0.11) 0 3px, transparent 3px 12px), repeating-linear-gradient(-45deg, rgba(20,32,86,0.10) 0 3px, transparent 3px 12px)",
+              }}
+            />
+            {/* ghost postmark bled through from the outside stamp */}
+            <div
+              style={{
+                position: "absolute", top: h * 0.1, left: width * 0.1,
+                width: width * 0.19, height: width * 0.19, borderRadius: "50%",
+                border: "2px solid rgba(92,20,32,0.16)",
+                boxShadow: "inset 0 0 0 6px rgba(92,20,32,0.05)",
+                filter: "blur(0.6px)", transform: "rotate(-9deg)",
+              }}
+            />
+            {/* the flap crease near the top, with a soft shadow above it */}
+            <div style={{ position: "absolute", left: 0, right: 0, top: h * 0.5, height: 1.5, background: "rgba(120,88,44,0.5)" }} />
+            <div style={{ position: "absolute", left: 0, right: 0, top: h * 0.5 - 26, height: 26, background: "linear-gradient(180deg, transparent, rgba(70,50,22,0.24))" }} />
+            {/* interior cavity, revealed as the flap lifts */}
+            <div
+              style={{
+                position: "absolute", left: 0, right: 0, top: 0, height: h * 0.56,
+                background: "linear-gradient(180deg, #2b2114 0%, #3a2c1a 60%, #4a3822 100%)",
+                clipPath: "polygon(0% 0%, 100% 0%, 50% 100%)",
+                opacity: flapUp ? 1 : 0,
+                transition: "opacity 0.5s ease-out 0.35s",
+              }}
+            >
+              <div
+                style={{
+                  position: "absolute", inset: 0,
+                  backgroundImage:
+                    "repeating-linear-gradient(45deg, rgba(214,180,120,0.16) 0 2px, transparent 2px 9px), repeating-linear-gradient(-45deg, rgba(214,180,120,0.12) 0 2px, transparent 2px 9px)",
+                }}
+              />
+              <div style={{ position: "absolute", inset: 0, boxShadow: "inset 0 14px 22px rgba(0,0,0,0.6)" }} />
+            </div>
+            {/* bottom flap seam */}
+            <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: h * 0.52, background: "linear-gradient(180deg, rgba(255,246,222,0.28), rgba(190,160,110,0.16))", clipPath: "polygon(0% 100%, 50% 0%, 100% 100%)" }} />
+            {/* inner edge shadow — depth, like looking inside a real envelope */}
+            <div style={{ position: "absolute", inset: 0, borderRadius: 4, boxShadow: "inset 0 0 0 1px rgba(120,90,40,0.4), inset 0 0 30px rgba(70,50,22,0.45)", pointerEvents: "none" }} />
+          </div>
+
+          {/* the flap — hinged at the top, with visible thickness */}
           <div
             style={{
               position: "absolute", left: 0, right: 0, top: 0, height: h * 0.56,
-              background: "linear-gradient(180deg, #2b2114 0%, #3a2c1a 60%, #4a3822 100%)",
-              clipPath: "polygon(0% 0%, 100% 0%, 50% 100%)",
-              opacity: flapUp ? 1 : 0,
-              transition: "opacity 0.5s ease-out 0.35s",
+              transformOrigin: "top center",
+              transform: `rotateX(${flapUp ? -168 : 0}deg)`,
+              transition: "transform 1.5s cubic-bezier(0.33,0.02,0.2,1)",
+              transformStyle: "preserve-3d",
             }}
           >
             <div
               style={{
                 position: "absolute", inset: 0,
-                backgroundImage:
-                  "repeating-linear-gradient(45deg, rgba(214,180,120,0.16) 0 2px, transparent 2px 9px), repeating-linear-gradient(-45deg, rgba(214,180,120,0.12) 0 2px, transparent 2px 9px)",
+                background: PAPER_DEEP,
+                clipPath: "polygon(0% 0%, 100% 0%, 50% 100%)",
+                boxShadow: "0 5px 10px rgba(0,0,0,0.28)",
+                borderTop: "1px solid rgba(255,248,226,0.55)",
               }}
             />
-            <div style={{ position: "absolute", inset: 0, boxShadow: "inset 0 14px 22px rgba(0,0,0,0.6)" }} />
+            {/* paper thickness at the folded edge */}
+            <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 2, background: "rgba(160,128,78,0.7)" }} />
           </div>
-          {/* bottom flap seam */}
-          <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: h * 0.52, background: "linear-gradient(180deg, rgba(255,246,222,0.28), rgba(190,160,110,0.16))", clipPath: "polygon(0% 100%, 50% 0%, 100% 100%)" }} />
-          {/* inner edge shadow — depth, like looking inside a real envelope */}
-          <div style={{ position: "absolute", inset: 0, borderRadius: 4, boxShadow: "inset 0 0 0 1px rgba(120,90,40,0.4), inset 0 0 30px rgba(70,50,22,0.45)", pointerEvents: "none" }} />
-        </div>
 
-        {/* the flap — hinged at the top, with visible thickness */}
-        <div
-          style={{
-            position: "absolute", left: 0, right: 0, top: 0, height: h * 0.56,
-            transformOrigin: "top center",
-            transform: `rotateX(${flapUp ? -168 : 0}deg)`,
-            transition: "transform 1.5s cubic-bezier(0.33,0.02,0.2,1)",
-            transformStyle: "preserve-3d",
-          }}
-        >
+          {/* wax seal at the flap point — content layer un-mirrored */}
           <div
             style={{
-              position: "absolute", inset: 0,
-              background: PAPER_DEEP,
-              clipPath: "polygon(0% 0%, 100% 0%, 50% 100%)",
-              boxShadow: "0 5px 10px rgba(0,0,0,0.28)",
-              borderTop: "1px solid rgba(255,248,226,0.55)",
-            }}
-          />
-          {/* paper thickness at the folded edge */}
-          <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 2, background: "rgba(160,128,78,0.7)" }} />
-        </div>
-
-        {/* wax seal at the flap point — content layer un-mirrored */}
-        <div
-          style={{
-            position: "absolute", left: "50%", top: h * 0.5,
-            width: width * 0.16, height: width * 0.16,
-            transform: "translate(-50%,-50%)",
-            transition: "opacity 0.6s",
-            opacity: phase === "empty" ? 0 : 1,
-          }}
-        >
-          {/* faint wax residue between the halves */}
-          {cracked && (
-            <div
-              aria-hidden
-              style={{
-                position: "absolute", left: "44%", top: "12%", width: width * 0.022, height: width * 0.12,
-                background: "radial-gradient(ellipse, rgba(120,26,42,0.28), transparent 70%)", filter: "blur(1.5px)",
-              }}
-            />
-          )}
-          <SealHalf side="l" wax broken={cracked} />
-          <SealHalf side="r" wax broken={cracked} />
-          <div
-            style={{
-              position: "absolute", inset: 0, borderRadius: "50%",
-              background: WAX,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              color: "#f0cfa6", fontFamily: "'Cormorant Garamond', serif", fontSize: width * 0.08,
-              clipPath: "polygon(6% 24%, 22% 6%, 62% 2%, 92% 18%, 98% 58%, 84% 88%, 46% 99%, 14% 86%, 2% 56%)",
-              boxShadow: "0 4px 10px rgba(0,0,0,0.5), inset 0 2px 3px rgba(255,170,180,0.5)",
-              animation: phase === "cracking"
-                ? "cine-seal-glow 1.1s ease-in-out 1"
-                : phase === "resealing"
-                  ? "cine-seal-glow 1.4s ease-in-out 1"
-                  : undefined,
-              opacity: cracked ? 0 : 1,
-              transition: "opacity 0.5s 0.6s",
+              position: "absolute", left: "50%", top: h * 0.5,
+              width: width * 0.16, height: width * 0.16,
+              transform: "translate(-50%,-50%)",
+              transition: "opacity 0.6s",
+              opacity: phase === "empty" ? 0 : 1,
             }}
           >
-            ☾
-          </div>
-          {cracked && (
-            <svg viewBox="0 0 100 100" style={{ position: "absolute", inset: 0 }} aria-hidden>
-              <path
-                d="M50 4 L44 30 L58 44 L40 58 L52 78 L46 96"
-                fill="none" stroke="#3d0a14" strokeWidth="3" strokeLinecap="round"
-                strokeDasharray="60" style={{ animation: "cine-crack 0.5s ease-out forwards" }}
+            {/* faint wax residue between the halves */}
+            {cracked && (
+              <div
+                aria-hidden
+                style={{
+                  position: "absolute", left: "44%", top: "12%", width: width * 0.022, height: width * 0.12,
+                  background: "radial-gradient(ellipse, rgba(120,26,42,0.28), transparent 70%)", filter: "blur(1.5px)",
+                }}
               />
-            </svg>
-          )}
+            )}
+            <SealHalf side="l" wax broken={cracked} />
+            <SealHalf side="r" wax broken={cracked} />
+            <div
+              style={{
+                position: "absolute", inset: 0, borderRadius: "50%",
+                background: WAX,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "#f0cfa6", fontFamily: "'Cormorant Garamond', serif", fontSize: width * 0.08,
+                clipPath: "polygon(6% 24%, 22% 6%, 62% 2%, 92% 18%, 98% 58%, 84% 88%, 46% 99%, 14% 86%, 2% 56%)",
+                boxShadow: "0 4px 10px rgba(0,0,0,0.5), inset 0 2px 3px rgba(255,170,180,0.5)",
+                animation: phase === "cracking"
+                  ? "cine-seal-glow 1.1s ease-in-out 1"
+                  : phase === "resealing"
+                    ? "cine-seal-glow 1.4s ease-in-out 1"
+                    : undefined,
+                opacity: cracked ? 0 : 1,
+                transition: "opacity 0.5s 0.6s",
+              }}
+            >
+              ☾
+            </div>
+            {cracked && (
+              <svg viewBox="0 0 100 100" style={{ position: "absolute", inset: 0 }} aria-hidden>
+                <path
+                  d="M50 4 L44 30 L58 44 L40 58 L52 78 L46 96"
+                  fill="none" stroke="#3d0a14" strokeWidth="3" strokeLinecap="round"
+                  strokeDasharray="60" style={{ animation: "cine-crack 0.5s ease-out forwards" }}
+                />
+              </svg>
+            )}
+          </div>
         </div>
       </div>
-
-      </div>
-      </div>
-      );
-    }
+    </div>
+  );
+}
 
 function SealHalf({ side, broken }: { side: "l" | "r"; wax?: boolean; broken: boolean }) {
   return (
@@ -314,9 +313,9 @@ function MoonStamp({ w, variant = false }: { w: number; variant?: boolean }) {
       <div style={{ width: "100%", height: "100%", border: `1px solid rgba(255,225,200,0.6)`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: h * 0.05 }}>
         <span style={{ color: "#f7dcbd", fontSize: w * 0.42, lineHeight: 1, fontFamily: "'Cormorant Garamond', serif" }}>{variant ? "☾" : "☽"}</span>
         <span style={{ color: "#f2cfae", fontSize: w * 0.13, letterSpacing: 0.6, textTransform: "uppercase" }}>Sky</span>
-      </div> 
+      </div>
     </div>
-      );
+  );
 }
 
 /** Classic circular postmark — city arched above, date below. */
