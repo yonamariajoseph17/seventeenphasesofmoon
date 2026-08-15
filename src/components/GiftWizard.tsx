@@ -71,7 +71,9 @@ export function GiftWizard(props: Props) {
   const [greetName, setGreetName] = useState("");
   const [message, setMessage] = useState("");
   const [from, setFrom] = useState("");
-  const [place, setPlace] = useState(city);
+  // Left blank by default — the sender's location isn't the same as the
+  // recipient's birth city, so we only show the birth city as a placeholder hint.
+  const [place, setPlace] = useState("");
   // set after mount so SSR and client markup match (server clock may differ by a day)
   const [writtenDate, setWrittenDate] = useState("");
   useEffect(() => {
@@ -367,7 +369,7 @@ export function GiftWizard(props: Props) {
               <input
                 value={place}
                 onChange={(e) => setPlace(e.target.value)}
-                placeholder="e.g. Mumbai"
+                placeholder={`e.g. ${city}`}
                 maxLength={60}
                 className="input"
               />
