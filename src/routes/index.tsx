@@ -79,6 +79,7 @@ const formSchema = z.object({
   lat: z.coerce.number().min(-90).max(90),
   lon: z.coerce.number().min(-180).max(180),
   mode: z.enum(MODE_OPTIONS),
+  occasion: z.enum(LETTER_OCCASIONS),
 });
 type FormValues = z.infer<typeof formSchema>;
 
@@ -92,6 +93,7 @@ const DEFAULTS: FormValues = {
   lat: 11.0168,
   lon: 76.9558,
   mode: "sunset",
+  occasion: "birthday",
 };
 
 function loadSavedPresets(): CityPreset[] {
@@ -153,6 +155,31 @@ function eventLabelForMoment(date: Date, events: RiseSet): AstroEventKind | null
 function timeWithVerifiedEvent(date: Date, tz: number, events: RiseSet) {
   const event = eventLabelForMoment(date, events);
   return `${fmtTime(date, tz)} local${event ? ` · ${event}` : ""}`;
+}
+
+
+
+// Per-occasion phrasing for the "Night one" section — same data, different framing.
+const OCCASION_EYEBROW: Record<LetterOccasion, string> = {
+  birthday: "Night one",
+  anniversary: "The night it mattered",
+  "first-met": "Where it began",
+  proposal: "The night everything changed",
+  friendship: "Since then",
+  memory: "That night",
+  general: "The night",
+};
+
+function nightOneOpening(occasion: LetterOccasion, subject: string, was: string): string {
+  switch (occasion) {
+    case "birthday": return `The night ${subject} ${was} born`;
+    case "anniversary": return "The night that mattered most";
+    case "first-met": return "The night it all began";
+    case "proposal": return "The night everything changed";
+    case "friendship": return "The night this friendship began";
+    case "memory": return "The night this memory was made";
+    default: return "That quiet night";
+  }
 }
 
 
@@ -493,7 +520,7 @@ function Index() {
           </div>
           <h1 className="text-balance font-display text-6xl leading-[1.02] tracking-tight md:text-8xl">Sky We Share</h1>
           <p className="mx-auto mt-6 max-w-md text-balance text-base text-muted-foreground md:text-lg">
-            Every birthday. The same sky. A different moon.
+            Made with everlasting love, for someone who loved moongazing.
           </p>
           <a href="#begin" className="mt-12 inline-flex items-center gap-2 rounded-full border border-accent/40 px-6 py-3 text-xs tracking-[0.3em] text-accent uppercase transition-colors hover:bg-accent/10">
             Enter a name to begin <span aria-hidden>↓</span>
@@ -575,6 +602,19 @@ function Index() {
                   Approximate location — set exact latitude &amp; longitude in Advanced settings for a precise sky.
                 </p>
               )}
+            </Field>
+
+            <Field label="Occasion" error={errors.occasion}>
+              <select
+                value={form.occasion}
+                onChange={(e) => setForm({ ...form, occasion: e.target.value as LetterOccasion })}
+                className="input"
+              >
+                {LETTER_OCCASIONS.map((o) => <option key={o} value={o}>{OCCASION_LABELS[o]}</option>)}
+              </select>
+              <p className="mt-1.5 text-xs text-muted-foreground">
+                Sets the tone here and carries through to the letter and bouquet.
+              </p>
             </Field>
 
           </div>
@@ -725,7 +765,7 @@ function Index() {
 
       {/* The night they were born — moon is the centerpiece */}
       <section className="relative mx-auto max-w-3xl px-6 pb-28 text-center">
-        <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">Night one</p>
+        <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">{OCCASION_EYEBROW[applied.occasion]}</p>
         <h2 className="mt-2 font-display text-3xl md:text-4xl">{fmtDate(birth, applied.tz)}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{birthTimeLabel} · {applied.city} · {tzText}</p>
 
@@ -742,7 +782,7 @@ function Index() {
         <div className="mx-auto max-w-2xl text-left">
           <p className="font-display text-2xl md:text-3xl">{birthMoon.name}</p>
           <p className="mt-3 text-muted-foreground">
-            The night {personName} {pronouns.was} born, {applied.city} slept beneath a{" "}
+            {nightOneOpening(applied.occasion, pronouns.subject, pronouns.was)}, {applied.city} slept beneath a{" "}
             <span className="text-foreground">{birthMoon.name.toLowerCase()}</span> —{" "}
             <span className="text-foreground">
               {birthMoon.illumination * 100 >= 0.05 ? (birthMoon.illumination * 100).toFixed(1) : (birthMoon.illumination * 100).toFixed(2)}%
@@ -825,6 +865,7 @@ function Index() {
               lon: applied.lon,
               mode: applied.mode,
             }}
+            occasion={applied.occasion}
             moon={birthMoon}
             city={applied.city}
             dateLabel={dateLabelShort}
