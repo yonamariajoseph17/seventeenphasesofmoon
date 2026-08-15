@@ -289,10 +289,10 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
         </p>
       </div>
 
-      {/* ── Milestone moon strip — dark plaque, cream type ── */}
-      {milestones.length > 0 && (
-        <div style={{ position: "relative", marginTop: "auto", marginBottom: 34, marginLeft: 56, marginRight: 56 }}>
-          <div style={{ height: 0, borderTop: `1px solid ${s.line}`, opacity: 0.9, marginBottom: 18 }} />
+      {/* ── Milestone moon strip — dark plaque, cream type (caption always shows, strip only when data exists) ── */}
+      <div style={{ position: "relative", marginTop: "auto", marginBottom: 34, marginLeft: 56, marginRight: 56 }}>
+        <div style={{ height: 0, borderTop: `1px solid ${s.line}`, opacity: 0.9, marginBottom: 18 }} />
+        {milestones.length > 0 && (
           <div
             style={{
               background: "linear-gradient(160deg, #101830 0%, #0a1022 60%, #070b18 100%)",
@@ -316,12 +316,11 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
               </div>
             ))}
           </div>
-          <p style={{ margin: "16px 0 0", textAlign: "center", fontFamily: s.heading, fontStyle: "italic", fontSize: 17, color: s.ink, opacity: 0.9 }}>
-            This is the moon's phase on your birthday, and how it has changed on each birthday since.
-          </p>
-        </div>
-
-      )}
+        )}
+        <p style={{ margin: "16px 0 0", textAlign: "center", fontFamily: s.heading, fontStyle: "italic", fontSize: 17, color: s.ink, opacity: 0.9 }}>
+          This is the moon's phase on your birthday, and how it has changed on each birthday since.
+        </p>
+      </div>
     </div>
   );
 });
