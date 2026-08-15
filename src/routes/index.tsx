@@ -653,9 +653,15 @@ function Index() {
                 <input
                   type="time"
                   value={form.time}
+                  disabled={form.mode !== "custom"}
                   onChange={(e) => setForm({ ...form, time: e.target.value })}
-                  className="input"
+                  className="input disabled:opacity-40"
                 />
+                {form.mode !== "custom" && (
+                  <p className="mt-1 text-[11px] text-muted-foreground">
+                    Ignored while computing at local {form.mode}.
+                  </p>
+                )}
               </Field>
               <Field label="UTC offset (hours)" error={errors.tz}>
                 <input
@@ -776,7 +782,7 @@ function Index() {
       {/* Stats */}
       <section className="relative mx-auto max-w-5xl px-6 pb-20">
         <div className="grid w-full grid-cols-1 gap-6 md:grid-cols-3">
-          <StatCard label={`Days with ${personName} under the stars`} value={totalDays.toLocaleString()} />
+          <StatCard label={`Days with ${personName} under the stars`} value={now ? totalDays.toLocaleString() : "—"} />
           <StatCard label="Sun sign" value={`${birthZodiac.symbol} ${birthZodiac.sign}`} sub={`${birthZodiac.element} · ruled by ${birthZodiac.ruling}`} />
           <StatCard label="Moon tonight" value={todayMoon.name} sub={`${Math.round(todayMoon.illumination * 100)}% illuminated`} />
         </div>
@@ -830,7 +836,7 @@ function Index() {
 
               {/* Poetic line — generated ONLY from verified astronomy */}
               <p className="mt-5 border-l-2 border-accent/40 pl-4 font-display text-lg leading-relaxed text-foreground/90 italic">
-                “{poetic}”
+                "{poetic}"
               </p>
 
               {/* Confidence badge */}
