@@ -18,6 +18,7 @@ import { createLetter, uploadLetterSong, SONG_ACCEPT, SONG_MAX_BYTES } from "@/l
 import { ALL_PRESETS, resolvePreset, searchPresets, type CityPreset } from "@/lib/india-locations";
 import { isMilestoneAge, postcardMilestones } from "@/lib/milestones";
 import { GiftWizard } from "@/components/GiftWizard";
+import auroraBg from "@/assets/aurorayellowknife_takasaka.jpg";
 
 const PREVIEW_W = 520;
 
@@ -471,8 +472,15 @@ function Index() {
 
   return (
     <main className="relative min-h-screen overflow-hidden">
-      <StarField seed={42} className="pointer-events-none fixed inset-0 h-full w-full opacity-70" count={140} />
-      <div className="pointer-events-none fixed inset-0" style={{ background: "radial-gradient(ellipse at 50% 0%, oklch(0.3 0.12 280 / 0.4), transparent 60%)" }} />
+      {/* Aurora photo backdrop */}
+      <div
+        className="pointer-events-none fixed inset-0 h-full w-full bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: `url(${auroraBg})` }}
+      />
+      {/* Dark scrim so text stays readable over the photo */}
+      <div className="pointer-events-none fixed inset-0 bg-background/70" />
+      <StarField seed={42} className="pointer-events-none fixed inset-0 h-full w-full opacity-50" count={140} />
+      <div className="pointer-events-none fixed inset-0" style={{ background: "radial-gradient(ellipse at 50% 0%, oklch(0.3 0.12 280 / 0.35), transparent 60%)" }} />
 
       <SoundscapeControl current={soundscape.current} onSelect={soundscape.select} />
 
@@ -734,11 +742,14 @@ function Index() {
         <div className="mx-auto max-w-2xl text-left">
           <p className="font-display text-2xl md:text-3xl">{birthMoon.name}</p>
           <p className="mt-3 text-muted-foreground">
-            Above {applied.city}, the Moon was a <span className="text-foreground">{birthMoon.name.toLowerCase()}</span>
-            {" "}at <span className="text-foreground">{birthMoon.illumination * 100 >= 0.05 ? (birthMoon.illumination * 100).toFixed(1) : (birthMoon.illumination * 100).toFixed(2)}%</span> illumination,
-            {" "}{birthMoon.age.toFixed(1)} days into its cycle, {birthMoon.waxing ? "waxing" : "waning"}.
-            {" "}Visual: <span className="text-foreground">{birthVisualLabel}</span>.
-            {" "}Moon in <span className="text-foreground">{birthMoon.constellation}</span> when {personName} {pronouns.was} born.
+            The night {personName} {pronouns.was} born, {applied.city} slept beneath a{" "}
+            <span className="text-foreground">{birthMoon.name.toLowerCase()}</span> —{" "}
+            <span className="text-foreground">
+              {birthMoon.illumination * 100 >= 0.05 ? (birthMoon.illumination * 100).toFixed(1) : (birthMoon.illumination * 100).toFixed(2)}%
+            </span>{" "}
+            lit, {birthMoon.age.toFixed(1)} days into its journey,{" "}
+            {birthMoon.waxing ? "still filling with light" : "quietly letting its light go"}, drifting through{" "}
+            <span className="text-foreground">{birthMoon.constellation}</span>.
           </p>
               <dl className="mt-5 grid grid-cols-2 gap-x-4 gap-y-2 text-xs text-muted-foreground sm:grid-cols-3">
                 {birthRiseSet.moonrise && (
