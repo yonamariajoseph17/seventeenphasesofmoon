@@ -32,6 +32,8 @@ interface Props {
   illumPct: string;
   milestones: PostcardMilestone[];
   personName: string;
+  /** Chosen once on the main page — the letter/postcard/bouquet all inherit this, no re-asking here. */
+  occasion: LetterOccasion;
 }
 
 const PREVIEW_W = 470;
@@ -57,7 +59,7 @@ function fitFontPx(len: number, max: number, min: number): number {
 }
 
 export function GiftWizard(props: Props) {
-  const { base, moon, city, dateLabel, timeLabel, sunriseLabel, sunsetLabel, illumPct, milestones, personName } = props;
+  const { base, moon, city, dateLabel, timeLabel, sunriseLabel, sunsetLabel, illumPct, milestones, personName, occasion } = props;
 
   // Gift type — chosen before the wizard begins, carried through to the payload.
   const [giftType, setGiftType] = useState<GiftType | null>(null);
@@ -75,7 +77,8 @@ export function GiftWizard(props: Props) {
   useEffect(() => {
     setWrittenDate((prev) => prev || format(new Date(), "yyyy-MM-dd"));
   }, []);
-  const [occasion, setOccasion] = useState<LetterOccasion>("birthday");
+  // Occasion is chosen once on the main page and passed in as `occasion` —
+  // no local state, no re-asking here.
 
   // 
   // Step 2 — the postcard
@@ -424,14 +427,13 @@ export function GiftWizard(props: Props) {
             </div>
           </LetterPaper>
 
+          {/* Occasion is set once on the main page — shown here read-only for context, not re-askable. */}
           <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
-            <label className="flex items-center gap-3 text-xs tracking-[0.2em] text-muted-foreground uppercase">
+            <span className="flex items-center gap-3 text-xs tracking-[0.2em] text-muted-foreground uppercase">
               Occasion
-              <select value={occasion} onChange={(e) => setOccasion(e.target.value as LetterOccasion)} className="input max-w-[200px]">
-                {LETTER_OCCASIONS.map((o) => <option key={o} value={o}>{OCCASION_LABELS[o]}</option>)}
-              </select>
-            </label>
-            <p className="max-w-xs text-[11px] text-muted-foreground/80">The occasion sets the quiet opening line they read first and the closing on the bouquet tag — the letter itself stays the same.</p>
+              <span className="rounded-full border border-accent/40 bg-accent/10 px-3 py-1 text-accent">{OCCASION_LABELS[occasion]}</span>
+            </span>
+            <p className="max-w-xs text-[11px] text-muted-foreground/80">Set on the previous screen — it shapes the opening line they read first and the closing on the bouquet tag.</p>
           </div>
 
           <WizardNav onNext={() => { setTo((t) => t.trim() || greetName); setStep(2); }} nextLabel="Continue to the postcard" />
