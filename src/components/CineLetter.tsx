@@ -29,7 +29,7 @@ export function CineLetter({ state, children, bleedText }: Props) {
       style={{
         position: "relative",
         width: "100%",
-        maxWidth: 620,
+        maxWidth: 480,
         perspective: 1600,
         animation:
           state === "rising" ? "cine-letter-pull 1s cubic-bezier(0.25,0.6,0.3,1) both"
@@ -47,6 +47,7 @@ export function CineLetter({ state, children, bleedText }: Props) {
           boxShadow: "0 26px 60px rgba(0,0,0,0.55), inset 0 0 80px rgba(140,105,50,0.22)",
           overflow: "hidden",
           transformOrigin: "center",
+          aspectRatio: "1 / 1.4142",
         }}
       >
         {/* plain aged paper — no ruled lines, no margin rule */}
@@ -107,7 +108,7 @@ export function CineLetter({ state, children, bleedText }: Props) {
 
 
         {/* content */}
-        <div className="relative px-5 py-8 sm:px-10 sm:py-12" style={{ color: "#33260f" }}>
+        <div className="relative px-5 py-8 sm:px-10 sm:py-12 h-full overflow-y-auto" style={{ color: "#33260f" }}>
           {children}
         </div>
 
