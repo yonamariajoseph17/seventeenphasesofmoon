@@ -182,6 +182,26 @@ function nightOneOpening(occasion: LetterOccasion, subject: string, was: string)
   }
 }
 
+// Subtitle under "The sky we've shared with [name], since [date]" — same per-occasion tone.
+function diarySubtitle(occasion: LetterOccasion, city: string): string {
+  switch (occasion) {
+    case "birthday":
+      return `Every birthday, the moon returns a little different. Here is its quiet diary — drawn over ${city}, from the first night to the sky tonight.`;
+    case "anniversary":
+      return `Every year, the moon returns to mark this day. Here is its quiet diary — drawn over ${city}, from that night to the sky tonight.`;
+    case "first-met":
+      return `The sky was different the night it all began. Here is its quiet diary — drawn over ${city}, from that first night to the sky tonight.`;
+    case "proposal":
+      return `Under this moon, everything changed. Here is its quiet diary — drawn over ${city}, from that night to the sky tonight.`;
+    case "friendship":
+      return `Not all who share a sky know how rare that is. Here is its quiet diary — drawn over ${city}, from that first night to the sky tonight.`;
+    case "memory":
+      return `Some moments live longer in the heart than in time. Here is its quiet diary — drawn over ${city}, from that night to the sky tonight.`;
+    default:
+      return `The moon kept watch that night, as it always has. Here is its quiet diary — drawn over ${city}, from that night to the sky tonight.`;
+  }
+}
+
 
 
 function Index() {
@@ -539,8 +559,7 @@ function Index() {
           </span>
         </h2>
         <p className="mt-6 max-w-xl text-balance text-base text-muted-foreground md:text-lg">
-          Every birthday, the moon returns a little different. Here is its quiet diary — drawn over {applied.city},
-          from the first night to the sky tonight.
+          {diarySubtitle(applied.occasion, applied.city)}
         </p>
       </section>
 
@@ -736,7 +755,7 @@ function Index() {
               ))}
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Sunrise &amp; sunset are computed per year from latitude &amp; longitude — so the moon and stars reflect the actual night-time window each birthday.
+              Sunrise &amp; sunset are computed per year from latitude &amp; longitude — so the moon and stars reflect the actual night-time window each year.
             </p>
           </div>
 
@@ -899,6 +918,7 @@ function Index() {
               birthYear={birthYear}
               currentYear={currentYear}
               mode={applied.mode}
+              occasion={applied.occasion}
             />
           ))}
         </div>
@@ -955,8 +975,8 @@ function StatCard({ label, value, sub }: { label: string; value: string; sub?: s
   );
 }
 
-function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
-  date: Date; tz: number; lat: number; lon: number; birthYear: number; currentYear: number; mode: Mode;
+function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode, occasion }: {
+  date: Date; tz: number; lat: number; lon: number; birthYear: number; currentYear: number; mode: Mode; occasion: LetterOccasion;
 }) {
   const m = accurateMoon(date);
   const shifted = new Date(date.getTime() + tz * 3_600_000);
@@ -967,7 +987,7 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode }: {
   const validation = validateMoon(m);
   const seed = year * 10000 + month * 100 + day;
   const age = year - birthYear;
-  const ageLabel = `Turning ${age}`;
+  const ageLabel = occasion === "birthday" ? `Turning ${age}` : `Year ${age}`;
   const dateLabel = shifted.toLocaleDateString("en-US", {
     month: "long", day: "numeric", year: "numeric", timeZone: "UTC",
   });
