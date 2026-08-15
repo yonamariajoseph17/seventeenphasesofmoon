@@ -337,6 +337,16 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
               milestones={milestones}
             />
           </ScaledCard>
+
+          {/* explanation, sitting below the postcard graphic itself */}
+          <div className="mt-6 max-w-md text-center px-4">
+            <p className="text-[13px] leading-relaxed" style={{ color: "#c9c2ae", fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic" }}>
+              {phase === "postcard-back"
+                ? `The front shows the address side — a postcard sent under the night sky over ${payload.city}, the moon exactly as it was the night ${recipient} was born.`
+                : `Below the sky, each moon marks a birthday since — the same date, the same city, a different sky each year.`}
+            </p>
+          </div>
+
           {tapReady && (
             <div className="mt-10">
               <TapPrompt label={phase === "postcard-back" ? "Tap to read the other side" : "Tap to receive your bouquet"} tone="cool" />
