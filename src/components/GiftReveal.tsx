@@ -211,7 +211,7 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
     : "empty";
 
   const letterState: LetterFoldState =
-    phase === "unsealing" ? (beat < 4 ? "inside":"rising")
+    phase === "unsealing" ? (beat < 4 ? "inside" : "rising")
     : phase === "letter" ? "open"
     : phase === "reclosing" ? (beat < 1 ? "refolding" : "folded")
     : "inside";
@@ -318,6 +318,14 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
       {(phase === "postcard-back" || phase === "postcard-front") && (
         <section className="relative z-10 flex min-h-screen flex-col items-center justify-center px-3 py-14">
           <ScaledCard flipped={phase === "postcard-front"}>
+            <PostcardFront
+              style="vintage" moon={moon} date={new Date(snapshot.momentISO)} tz={payload.tz}
+              city={payload.city} recipient={recipient} recipientCity={payload.recipientCity}
+              sender={payload.from} occasion={occasion} message={payload.msg ?? ""} poetic={snapshot.poetic}
+              letterExcerpt={payload.msg} illumPct={snapshot.illumPct} dateLabel={dateLine}
+              timeLabel={fmtTime(snapshot.momentISO, payload.tz)}
+              milestones={milestones}
+            />
             <PostcardBack
               style="vintage" moon={moon} date={new Date(snapshot.momentISO)} tz={payload.tz}
               city={payload.city} recipient={recipient} recipientCity={payload.recipientCity}
@@ -326,14 +334,6 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
               timeLabel={fmtTime(snapshot.momentISO, payload.tz)}
               moonriseLabel={fmtTime(snapshot.moonriseISO, payload.tz)}
               moonsetLabel={fmtTime(snapshot.moonsetISO, payload.tz)}
-              milestones={milestones}
-            />
-            <PostcardFront
-              style="vintage" moon={moon} date={new Date(snapshot.momentISO)} tz={payload.tz}
-              city={payload.city} recipient={recipient} recipientCity={payload.recipientCity}
-              sender={payload.from} occasion={occasion} message={payload.msg ?? ""} poetic={snapshot.poetic}
-              letterExcerpt={payload.msg} illumPct={snapshot.illumPct} dateLabel={dateLine}
-              timeLabel={fmtTime(snapshot.momentISO, payload.tz)}
               milestones={milestones}
             />
           </ScaledCard>
