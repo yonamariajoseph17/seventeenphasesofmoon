@@ -10,13 +10,11 @@ interface Props {
 }
 
 /**
- * Realistic night sky: a deterministic field of varied stars with gentle
- * twinkle, a soft Milky Way gradient band, and occasional shooting stars.
- * No bokeh circles — sizes and brightness follow a natural distribution.
+ * Realistic night sky: a soft Milky Way gradient band and occasional
+ * shooting stars. Static star dots removed — background photo supplies
+ * the starfield now.
  */
 export function StarField({ seed, className, count = 120, rich = true }: Props) {
-  const stars = useMemo(() => starField(seed, count), [seed, count]);
-
   // Deterministic shooting-star streaks from the same seed.
   const shooters = useMemo(() => {
     if (!rich) return [];
@@ -43,22 +41,6 @@ export function StarField({ seed, className, count = 120, rich = true }: Props) 
           }}
         />
       )}
-      <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
-        {stars.map((st, i) => {
-          const bright = st.o > 0.85;
-          return (
-            <circle
-              key={i}
-              cx={st.x}
-              cy={st.y}
-              r={st.r * (bright ? 0.9 : 0.55)}
-              fill="var(--color-star)"
-              opacity={st.o}
-              style={{ animation: `twinkle ${2.4 + (i % 5)}s ease-in-out ${st.delay}s infinite` }}
-            />
-          );
-        })}
-      </svg>
       {/* Shooting stars */}
       {shooters.map((sh, i) => (
         <span
