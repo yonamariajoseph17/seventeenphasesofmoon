@@ -101,9 +101,10 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
   }, [snapshot]);
 
   const narration =
-    `On the night of ${dateLine}, above ${payload.city}, the sky held a ${snapshot.name} — ` +
-    `${snapshot.illumPct}% lit, ${snapshot.age.toFixed(1)} days into its journey, resting in ${snapshot.constellation}. ` +
-    `It rose at ${fmtTime(snapshot.moonriseISO, payload.tz)} and slipped away by ${fmtTime(snapshot.moonsetISO, payload.tz)}.`;
+    `On ${dateLine}, above ${payload.city}, the moon was a ${snapshot.name} — barely there, only ${snapshot.illumPct}% lit, ` +
+    `${snapshot.age.toFixed(1)} days into its quiet journey, resting in ${snapshot.constellation}. ` +
+    `It rose at ${fmtTime(snapshot.moonriseISO, payload.tz)}, and slipped away again by ${fmtTime(snapshot.moonsetISO, payload.tz)} — ` +
+    `unnoticed by almost everyone, except the sky itself.`;
 
   const kit: PrintKitData = {
     recipient,
