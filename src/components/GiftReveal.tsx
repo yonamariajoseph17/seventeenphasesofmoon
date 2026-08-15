@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Link } from "@tanstack/react-router";
 import { OCCASION_LINES } from "@/lib/letter";
 import type { LetterRecord } from "@/lib/letter-store";
 import { accurateMoon, type AccurateMoonInfo } from "@/lib/astro-accurate";
@@ -55,6 +54,30 @@ const CLOSING_CAPTION: Record<string, string[]> = {
 };
 
 
+/** Poetic narration, phrased differently per occasion — same facts, different heart. */
+function buildNarration(
+  occasion: string,
+  dateLine: string,
+  city: string,
+  moonName: string,
+  illumPct: string,
+  age: string,
+  constellation: string,
+  moonrise: string,
+  moonset: string,
+): string {
+  const templates: Record<string, string> = {
+    birthday: `On ${dateLine}, above ${city}, the sky wore a ${moonName} — just ${illumPct}% lit, ${age} days into its journey, resting quietly in ${constellation}. It rose at ${moonrise} and slipped away by ${moonset} — the same sky that first held you.`,
+    anniversary: `On ${dateLine}, above ${city}, a ${moonName} hung in ${constellation} — ${illumPct}% lit, ${age} days into its quiet turning. It rose at ${moonrise}, and stayed until ${moonset} — the sky that has kept your date every year since.`,
+    memory: `On ${dateLine}, above ${city}, the moon was a ${moonName} — ${illumPct}% lit, resting in ${constellation}. It rose at ${moonrise} and faded by ${moonset}. Some nights leave nothing behind but light, and this was one of them.`,
+    proposal: `On ${dateLine}, above ${city}, a ${moonName} watched — ${illumPct}% lit, ${age} days into its cycle, in ${constellation}. It rose at ${moonrise} and stayed until ${moonset} — the sky that was there the moment everything changed.`,
+    friendship: `On ${dateLine}, above ${city}, the sky held a ${moonName} — ${illumPct}% lit, quietly in ${constellation}. It rose at ${moonrise} and left by ${moonset} — the same moon that, however far apart, still finds you both.`,
+    "first-met": `On ${dateLine}, above ${city}, a ${moonName} rose over ${constellation} — ${illumPct}% lit, ${age} days into its journey. It appeared at ${moonrise} and slipped away by ${moonset} — the sky on the night everything started.`,
+    general: `On ${dateLine}, above ${city}, the moon was a ${moonName} — barely there, only ${illumPct}% lit, ${age} days into its quiet journey, resting in ${constellation}. It rose at ${moonrise}, and slipped away again by ${moonset} — unnoticed by almost everyone, except the sky itself.`,
+  };
+  return templates[occasion] ?? templates.general;
+}
+
 function fmtDate(iso: string, tz: number) {
   const s = new Date(new Date(iso).getTime() + tz * 3_600_000);
   return s.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
@@ -100,11 +123,17 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
       .map((y) => ({ age: y.age, phaseAngle: y.phaseAngle, illumination: y.illumination, waxing: y.waxing, name: y.name }));
   }, [snapshot]);
 
-  const narration =
-    `On ${dateLine}, above ${payload.city}, the moon was a ${snapshot.name} — barely there, only ${snapshot.illumPct}% lit, ` +
-    `${snapshot.age.toFixed(1)} days into its quiet journey, resting in ${snapshot.constellation}. ` +
-    `It rose at ${fmtTime(snapshot.moonriseISO, payload.tz)}, and slipped away again by ${fmtTime(snapshot.moonsetISO, payload.tz)} — ` +
-    `unnoticed by almost everyone, except the sky itself.`;
+  const narration = buildNarration(
+    occasion,
+    dateLine,
+    payload.city,
+    snapshot.name,
+    snapshot.illumPct,
+    snapshot.age.toFixed(1),
+    snapshot.constellation,
+    fmtTime(snapshot.moonriseISO, payload.tz),
+    fmtTime(snapshot.moonsetISO, payload.tz),
+  );
 
   const kit: PrintKitData = {
     recipient,
@@ -409,11 +438,6 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
               The moon changes every night.
             </p>
           )}
-          {beat >= 2 && (
-            <p className="cine-rise mt-6 text-xl md:text-2xl" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#e2d9c8" }}>
-              Some nights, it watches over someone irreplaceable.
-            </p>
-          )}
           {beat >= 3 && (
             <p className="cine-rise mt-6 text-base md:text-lg" style={{ fontFamily: "'Cormorant Garamond', serif", color: "#bdb3a0" }}>
               This was made for you — under the same sky.
@@ -450,25 +474,9 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
             <div className="cine-fade mt-8 flex flex-wrap justify-center gap-3">
               <button
                 type="button"
-                onClick={(e) => { e.stopPropagation(); setPhase("download"); }}
-                className="rounded-full px-6 py-2.5 text-[10px] tracking-[0.3em] uppercase"
-                style={{ border: "1px solid rgba(236,227,214,0.4)", color: "#ece3d6" }}
-              >
-                Download your gift
-              </button>
-              <Link
-                to="/"
-                onClick={(e) => e.stopPropagation()}
-                className="rounded-full px-6 py-2.5 text-[10px] tracking-[0.3em] uppercase"
-                style={{ border: "1px solid rgba(236,227,214,0.25)", color: "#c8c0ae" }}
-              >
-                Create your own →
-              </Link>
-              <button
-                type="button"
                 onClick={(e) => { e.stopPropagation(); onSeeRecord(); }}
                 className="rounded-full px-6 py-2.5 text-[10px] tracking-[0.3em] uppercase"
-                style={{ border: "1px solid rgba(236,227,214,0.18)", color: "#a49c8c" }}
+                style={{ border: "1px solid rgba(236,227,214,0.4)", color: "#ece3d6" }}
               >
                 See the full moon record
               </button>
