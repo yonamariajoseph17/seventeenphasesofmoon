@@ -1,9 +1,10 @@
 import { useId } from "react";
 
 /**
- * The envelope of the gift — aged cream paper, vintage moon stamps, a circular
- * birth-city postmark, handwritten names and a red crescent wax seal on the flap.
- * The seal is nested inside the flap so it travels upward with it on opening.
+ * The envelope of the gift — aged cream paper, an "INDIA POST" letterhead
+ * inscription, vintage moon stamps, a circular birth-city postmark, a proper
+ * name + address block, and a red crescent wax seal on the flap. The seal is
+ * nested inside the flap so it travels upward with it on opening.
  */
 
 export type EnvelopePhase =
@@ -21,6 +22,8 @@ interface Props {
   width?: number;
   recipient: string;
   recipientCity?: string;
+  /** Optional street/locality line(s) under the city, for a fuller address block. */
+  recipientAddress?: string;
   sender?: string;
   postmarkCity: string;
   postmarkDate: string;
@@ -35,7 +38,7 @@ export function CineEnvelope({
   width = 330,
   recipient,
   recipientCity,
-  sender,
+  recipientAddress,
   postmarkCity,
   postmarkDate,
 }: Props) {
@@ -77,31 +80,53 @@ export function CineEnvelope({
         >
           <Grain uid={`f${uid}`} />
           <Foxing />
+          {/* worn edges */}
           <div style={{ position: "absolute", inset: 0, borderRadius: 4, boxShadow: "inset 0 0 0 1px rgba(120,90,40,0.35), inset 0 0 22px rgba(90,66,30,0.28)", pointerEvents: "none" }} />
 
-          {sender && (
-            <p style={{ position: "absolute", top: h * 0.08, left: width * 0.07, margin: 0, fontFamily: "'Caveat', cursive", fontSize: width * 0.052, color: "#4a3a22", transform: "rotate(-1.2deg)" }}>
-              {sender}
+          {/* "INDIA POST" letterhead inscription, top left */}
+          <div style={{ position: "absolute", top: h * 0.07, left: width * 0.07 }}>
+            <p
+              style={{
+                margin: 0, fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic",
+                fontSize: width * 0.048, letterSpacing: "0.14em", color: "#7a4a3a",
+                textTransform: "uppercase", opacity: 0.75,
+              }}
+            >
+              India Post
             </p>
-          )}
+            <div style={{ marginTop: 2, width: width * 0.24, height: 1, background: "rgba(122,74,58,0.4)" }} />
+          </div>
 
-          <div style={{ position: "absolute", top: h * 0.06, right: width * 0.06, display: "flex", gap: width * 0.015 }}>
+          {/* stamps + postmark, top right */}
+          <div style={{ position: "absolute", top: h * 0.06, right: width * 0.06, display: "flex", gap: width * 0.02 }}>
             <MoonStamp w={width * 0.115} />
             <MoonStamp w={width * 0.115} variant />
           </div>
-          <div style={{ position: "absolute", top: h * 0.05, right: width * 0.045 }}>
-            <Postmark size={width * 0.2} city={postmarkCity} date={postmarkDate} />
+          <div style={{ position: "absolute", top: h * 0.16, right: width * 0.1 }}>
+            <Postmark size={width * 0.19} city={postmarkCity} date={postmarkDate} />
           </div>
 
-          <div style={{ position: "absolute", left: width * 0.2, top: h * 0.47, transform: "rotate(-1deg)" }}>
-            <p style={{ margin: 0, fontFamily: "'Caveat', cursive", fontSize: width * 0.086, color: INK, lineHeight: 1.1 }}>{recipient}</p>
+          {/* recipient address block, centre-left, handwritten, with room
+              for name + city + a couple of address lines */}
+          <div style={{ position: "absolute", left: width * 0.2, top: h * 0.42, right: width * 0.12 }}>
+            <p style={{ margin: 0, fontFamily: "'Caveat', cursive", fontSize: width * 0.086, color: INK, lineHeight: 1.1, transform: "rotate(-1deg)" }}>
+              {recipient}
+            </p>
             {recipientCity && (
-              <p style={{ margin: `${width * 0.012}px 0 0`, fontFamily: "'Caveat', cursive", fontSize: width * 0.058, color: "#54432a", transform: "rotate(0.8deg)" }}>
+              <p style={{ margin: `${width * 0.02}px 0 0`, fontFamily: "'Caveat', cursive", fontSize: width * 0.058, color: "#54432a", transform: "rotate(0.6deg)" }}>
                 {recipientCity}
               </p>
             )}
-            <div style={{ marginTop: width * 0.018, width: width * 0.46, height: 1, background: "rgba(90,70,40,0.35)" }} />
-            <div style={{ marginTop: width * 0.03, width: width * 0.36, height: 1, background: "rgba(90,70,40,0.28)" }} />
+            {recipientAddress && (
+              <p style={{ margin: `${width * 0.014}px 0 0`, fontFamily: "'Caveat', cursive", fontSize: width * 0.05, color: "#5c4a2e", lineHeight: 1.35, transform: "rotate(0.3deg)" }}>
+                {recipientAddress}
+              </p>
+            )}
+            {/* address guide lines — always present, so the block reads as
+                a proper addressed envelope even with minimal data */}
+            <div style={{ marginTop: width * 0.03, width: "100%", height: 1, background: "rgba(90,70,40,0.32)" }} />
+            <div style={{ marginTop: width * 0.045, width: "88%", height: 1, background: "rgba(90,70,40,0.26)" }} />
+            <div style={{ marginTop: width * 0.045, width: "62%", height: 1, background: "rgba(90,70,40,0.2)" }} />
           </div>
         </div>
 
@@ -143,7 +168,7 @@ export function CineEnvelope({
             <div style={{ position: "absolute", inset: 0, borderRadius: 4, boxShadow: "inset 0 0 0 1px rgba(120,90,40,0.4), inset 0 0 30px rgba(70,50,22,0.45)", pointerEvents: "none" }} />
           </div>
 
-          {/* the flap — hinged at the top; the seal now lives inside it,
+          {/* the flap — hinged at the top; the seal lives inside it,
               so it lifts and rotates away together with the flap */}
           <div
             style={{
@@ -260,28 +285,36 @@ function Foxing() {
   );
 }
 
+/** Vintage crimson moon stamp — solid printed panel with a serrated white
+ *  frame, like a real perforated postage stamp (not a full-area dot pattern). */
 function MoonStamp({ w, variant = false }: { w: number; variant?: boolean }) {
   const h = w * 1.25;
   return (
     <div
       style={{
-        width: w, height: h, background: variant ? "#8d1f2c" : "#a2262f",
-        padding: w * 0.07,
-        maskImage: "radial-gradient(circle at 3px 3px, transparent 2.4px, #000 2.6px)",
-        maskSize: "6px 6px",
-        WebkitMaskImage: "radial-gradient(circle at 3px 3px, transparent 2.4px, #000 2.6px)",
-        WebkitMaskSize: "6px 6px",
+        width: w, height: h,
+        background: variant ? "#8d1f2c" : "#a2262f",
+        borderRadius: 1,
+        boxShadow: `
+          0 0 0 ${w * 0.09}px #f6ead2,
+          0 0 0 ${w * 0.11}px ${variant ? "#8d1f2c" : "#a2262f"},
+          0 3px 6px rgba(0,0,0,0.35)
+        `,
+        margin: w * 0.11,
         transform: variant ? "rotate(1.6deg)" : "rotate(-1.4deg)",
+        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+        gap: h * 0.05,
       }}
     >
-      <div style={{ width: "100%", height: "100%", border: `1px solid rgba(255,225,200,0.6)`, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: h * 0.05 }}>
-        <span style={{ color: "#f7dcbd", fontSize: w * 0.42, lineHeight: 1, fontFamily: "'Cormorant Garamond', serif" }}>{variant ? "☾" : "☽"}</span>
-        <span style={{ color: "#f2cfae", fontSize: w * 0.13, letterSpacing: 0.6, textTransform: "uppercase" }}>Sky</span>
-      </div>
+      <span style={{ color: "#f7dcbd", fontSize: w * 0.42, lineHeight: 1, fontFamily: "'Cormorant Garamond', serif" }}>
+        {variant ? "☾" : "☽"}
+      </span>
+      <span style={{ color: "#f2cfae", fontSize: w * 0.13, letterSpacing: 0.6, textTransform: "uppercase" }}>Sky</span>
     </div>
   );
 }
 
+/** Classic circular postmark — city arched above, date below. */
 function Postmark({ size, city, date }: { size: number; city: string; date: string }) {
   const uid = useId().replace(/:/g, "");
   return (
@@ -303,4 +336,4 @@ function Postmark({ size, city, date }: { size: number; city: string; date: stri
       <line x1="28" y1="55" x2="72" y2="55" stroke="#5c1420" strokeWidth="0.8" />
     </svg>
   );
-                         }
+          }
