@@ -30,10 +30,6 @@ const PAPER = "linear-gradient(146deg, #f3e6cc 0%, #ecdcbc 42%, #e3d0a8 78%, #d8
 const PAPER_DEEP = "linear-gradient(146deg, #e7d5b1 0%, #dcc79c 60%, #cfb787 100%)";
 const INK = "#2f2415";
 
-/** Crescent moon silhouette path, used for both the whole seal and its two
- *  cracked halves — an outer circle with an offset inner circle subtracted. */
-const CRESCENT_PATH = "M50 6 A44 44 0 1 0 50 94 A34 34 0 1 1 50 6 Z";
-
 export function CineEnvelope({
   phase,
   width = 330,
@@ -209,6 +205,7 @@ export function CineEnvelope({
                 position: "absolute", inset: 0,
                 opacity: cracked ? 0 : 1,
                 transition: "opacity 0.5s 0.6s",
+                borderRadius: "50%",
                 animation: phase === "cracking"
                   ? "cine-seal-glow 1.1s ease-in-out 1"
                   : phase === "resealing"
@@ -216,16 +213,7 @@ export function CineEnvelope({
                     : undefined,
               }}
             >
-              <svg viewBox="0 0 100 100" style={{ width: "100%", height: "100%", filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.5))" }} aria-hidden>
-                <defs>
-                  <radialGradient id={`wax-${uid}`} cx="36%" cy="30%" r="80%">
-                    <stop offset="0%" stopColor="#e94a3a" />
-                    <stop offset="55%" stopColor="#b81f1f" />
-                    <stop offset="100%" stopColor="#711010" />
-                  </radialGradient>
-                </defs>
-                <path d={CRESCENT_PATH} fill={`url(#wax-${uid})`} stroke="#5a0d0d" strokeWidth="0.6" />
-              </svg>
+              <CrescentSvg uid={`main-${uid}`} />
             </div>
 
             {cracked && (
@@ -244,36 +232,42 @@ export function CineEnvelope({
   );
 }
 
-function SealHalf({ uid, side, broken }: { uid: string; side: "l" | "r"; broken: boolean }) {
-  const gradId = `wax-${uid}-${side}`;
+/** A filled crescent moon: an outer red circle with a smaller offset circle
+ *  masked out of it. Far more reliable across browsers than hand-built arc
+ *  paths, which can silently collapse into a full circle if the radii don't
+ *  mathematically fit the endpoints. */
+function CrescentSvg({ uid }: { uid: string }) {
   return (
-    <svg
-      viewBox="0 0 100 100"
+    <svg viewBox="0 0 100 100" style={{ width: "100%", height: "100%", filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.5))" }} aria-hidden>
+      <defs>
+        <radialGradient id={`wax-${uid}`} cx="36%" cy="30%" r="80%">
+          <stop offset="0%" stopColor="#f0594a" />
+          <stop offset="55%" stopColor="#c22323" />
+          <stop offset="100%" stopColor="#7a1212" />
+        </radialGradient>
+        <mask id={`mask-${uid}`}>
+          <rect x="0" y="0" width="100" height="100" fill="white" />
+          <circle cx="63" cy="42" r="33" fill="black" />
+        </mask>
+      </defs>
+      <circle cx="50" cy="50" r="44" fill={`url(#wax-${uid})`} mask={`url(#mask-${uid})`} stroke="#5a0d0d" strokeWidth="0.6" />
+    </svg>
+  );
+}
+
+function SealHalf({ uid, side, broken }: { uid: string; side: "l" | "r"; broken: boolean }) {
+  return (
+    <div
       style={{
         position: "absolute", inset: 0,
         opacity: broken ? 1 : 0,
+        overflow: "hidden",
+        clipPath: side === "l" ? "polygon(0 0, 50% 0, 50% 100%, 0 100%)" : "polygon(50% 0, 100% 0, 100% 100%, 50% 100%)",
         animation: broken ? `${side === "l" ? "cine-seal-split-l" : "cine-seal-split-r"} 1.4s 0.45s cubic-bezier(0.3,0.1,0.2,1) forwards` : undefined,
       }}
-      aria-hidden
     >
-      <defs>
-        <radialGradient id={gradId} cx="36%" cy="30%" r="80%">
-          <stop offset="0%" stopColor="#e94a3a" />
-          <stop offset="55%" stopColor="#b81f1f" />
-          <stop offset="100%" stopColor="#711010" />
-        </radialGradient>
-        <clipPath id={`half-${uid}-${side}`}>
-          <rect x={side === "l" ? 0 : 50} y="0" width="50" height="100" />
-        </clipPath>
-      </defs>
-      <path
-        d={CRESCENT_PATH}
-        fill={`url(#${gradId})`}
-        stroke="#5a0d0d"
-        strokeWidth="0.6"
-        clipPath={`url(#half-${uid}-${side})`}
-      />
-    </svg>
+      <CrescentSvg uid={`${side}-${uid}`} />
+    </div>
   );
 }
 
