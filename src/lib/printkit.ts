@@ -1,6 +1,5 @@
 import jsPDF from "jspdf";
 import JSZip from "jszip";
-import { scenePlace } from "@/components/Postcard";
 
 /**
  * DIY physical gift print kit — print-ready PDFs bundled into one ZIP:
@@ -24,9 +23,9 @@ export interface PrintKitData {
   closing: string;
   narration: string;
   city: string;
-  /** The state/region the birth city is in, e.g. "Tamil Nadu" — drives the
-   * real-place postcard caption (scenePlace), same lookup the digital
-   * postcard's photo side uses. */
+  /** The state/region the birth city is in, e.g. "Tamil Nadu" — no longer
+   * drives the postcard caption (which is now a generic line), kept for
+   * backward compatibility with any caller still passing it. */
   stateLabel?: string;
   dateLabel: string;
   phaseName: string;
@@ -448,7 +447,8 @@ function buildPostcard(d: PrintKitData): jsPDF {
       moonDisc(doc, W - 34, 20, 9, d.illumination, d.waxing);
     }
 
-    const caption = scenePlace(d.stateLabel);
+    // Generic caption — matches the digital postcard, no invented place name.
+    const caption = "Under this quiet sky, a moment kept exactly as it was.";
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7);
     const capW = Math.min(doc.getTextWidth(caption) + 6, W - 8);
@@ -981,4 +981,4 @@ export async function downloadPrintKit(d: PrintKitData, filename = "sky-we-share
   const blob = await zip.generateAsync({ type: "blob" });
   saveBlob(blob, filename);
   return blob.size;
-                                                                         }
+    }
