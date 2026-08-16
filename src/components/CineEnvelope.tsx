@@ -2,7 +2,7 @@ import { useId } from "react";
 
 /**
  * The envelope of the gift — aged cream paper, vintage moon stamps, a circular
- * birth-city postmark, handwritten names and a dusty-rose wax seal on the flap.
+ * birth-city postmark, handwritten names and a red crescent wax seal on the flap.
  * All motion is driven by `phase`, so the reveal sequence controls the timing.
  */
 
@@ -29,7 +29,10 @@ interface Props {
 const PAPER = "linear-gradient(146deg, #f3e6cc 0%, #ecdcbc 42%, #e3d0a8 78%, #d8c496 100%)";
 const PAPER_DEEP = "linear-gradient(146deg, #e7d5b1 0%, #dcc79c 60%, #cfb787 100%)";
 const INK = "#2f2415";
-const WAX = "radial-gradient(circle at 36% 30%, #dda3ae 0%, #ba7284 55%, #8d4d5e 100%)";
+
+/** Crescent moon silhouette path, used for both the whole seal and its two
+ *  cracked halves — an outer circle with an offset inner circle subtracted. */
+const CRESCENT_PATH = "M50 6 A44 44 0 1 0 50 94 A34 34 0 1 1 50 6 Z";
 
 export function CineEnvelope({
   phase,
@@ -146,13 +149,6 @@ export function CineEnvelope({
                 transition: "opacity 0.5s ease-out 0.35s",
               }}
             >
-              <div
-                style={{
-                  position: "absolute", inset: 0,
-                  backgroundImage:
-                    "repeating-linear-gradient(45deg, rgba(214,180,120,0.16) 0 2px, transparent 2px 9px), repeating-linear-gradient(-45deg, rgba(214,180,120,0.12) 0 2px, transparent 2px 9px)",
-                }}
-              />
               <div style={{ position: "absolute", inset: 0, boxShadow: "inset 0 14px 22px rgba(0,0,0,0.6)" }} />
             </div>
             {/* bottom flap seam */}
@@ -184,10 +180,7 @@ export function CineEnvelope({
             <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 2, background: "rgba(160,128,78,0.7)" }} />
           </div>
 
-          {/* dried flower sprig, rising from behind the seal */}
-          <FloralSprig top={h * 0.5} width={width} />
-
-          {/* wax seal at the flap point — content layer un-mirrored */}
+          {/* red crescent wax seal at the flap point */}
           <div
             style={{
               position: "absolute", left: "50%", top: h * 0.5,
@@ -207,31 +200,38 @@ export function CineEnvelope({
                 }}
               />
             )}
-            <SealHalf side="l" wax broken={cracked} />
-            <SealHalf side="r" wax broken={cracked} />
+            <SealHalf uid={uid} side="l" broken={cracked} />
+            <SealHalf uid={uid} side="r" broken={cracked} />
+
+            {/* whole crescent, visible until it cracks apart */}
             <div
               style={{
-                position: "absolute", inset: 0, borderRadius: "50%",
-                background: WAX,
-                display: "flex", alignItems: "center", justifyContent: "center",
-                color: "#f0cfa6", fontFamily: "'Cormorant Garamond', serif", fontSize: width * 0.08,
-                clipPath: "polygon(6% 24%, 22% 6%, 62% 2%, 92% 18%, 98% 58%, 84% 88%, 46% 99%, 14% 86%, 2% 56%)",
-                boxShadow: "0 4px 10px rgba(0,0,0,0.5), inset 0 2px 3px rgba(255,170,180,0.5)",
+                position: "absolute", inset: 0,
+                opacity: cracked ? 0 : 1,
+                transition: "opacity 0.5s 0.6s",
                 animation: phase === "cracking"
                   ? "cine-seal-glow 1.1s ease-in-out 1"
                   : phase === "resealing"
                     ? "cine-seal-glow 1.4s ease-in-out 1"
                     : undefined,
-                opacity: cracked ? 0 : 1,
-                transition: "opacity 0.5s 0.6s",
               }}
             >
-              ☾
+              <svg viewBox="0 0 100 100" style={{ width: "100%", height: "100%", filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.5))" }} aria-hidden>
+                <defs>
+                  <radialGradient id={`wax-${uid}`} cx="36%" cy="30%" r="80%">
+                    <stop offset="0%" stopColor="#e94a3a" />
+                    <stop offset="55%" stopColor="#b81f1f" />
+                    <stop offset="100%" stopColor="#711010" />
+                  </radialGradient>
+                </defs>
+                <path d={CRESCENT_PATH} fill={`url(#wax-${uid})`} stroke="#5a0d0d" strokeWidth="0.6" />
+              </svg>
             </div>
+
             {cracked && (
               <svg viewBox="0 0 100 100" style={{ position: "absolute", inset: 0 }} aria-hidden>
                 <path
-                  d="M50 4 L44 30 L58 44 L40 58 L52 78 L46 96"
+                  d="M52 12 L46 30 L58 42 L44 56 L54 72 L48 90"
                   fill="none" stroke="#3d0a14" strokeWidth="3" strokeLinecap="round"
                   strokeDasharray="60" style={{ animation: "cine-crack 0.5s ease-out forwards" }}
                 />
@@ -244,50 +244,35 @@ export function CineEnvelope({
   );
 }
 
-function SealHalf({ side, broken }: { side: "l" | "r"; wax?: boolean; broken: boolean }) {
+function SealHalf({ uid, side, broken }: { uid: string; side: "l" | "r"; broken: boolean }) {
+  const gradId = `wax-${uid}-${side}`;
   return (
-    <div
+    <svg
+      viewBox="0 0 100 100"
       style={{
-        position: "absolute", inset: 0, borderRadius: "50%", background: WAX,
-        clipPath: side === "l" ? "polygon(0 0, 52% 0, 44% 100%, 0 100%)" : "polygon(52% 0, 100% 0, 100% 100%, 44% 100%)",
+        position: "absolute", inset: 0,
         opacity: broken ? 1 : 0,
         animation: broken ? `${side === "l" ? "cine-seal-split-l" : "cine-seal-split-r"} 1.4s 0.45s cubic-bezier(0.3,0.1,0.2,1) forwards` : undefined,
       }}
-    />
-  );
-}
-
-/** Small dried-flower sprig, rising up from behind the wax seal — matches a
- *  pressed baby's-breath bouquet tucked under the seal on a real envelope. */
-function FloralSprig({ top, width }: { top: number; width: number }) {
-  const w = width * 0.34;
-  const h = w * 1.6;
-  return (
-    <svg
-      width={w}
-      height={h}
-      viewBox="0 0 100 160"
-      style={{ position: "absolute", left: "50%", top, transform: "translate(-50%, -78%)", pointerEvents: "none" }}
       aria-hidden
     >
-      <g stroke="#8f8a68" strokeWidth="1.3" fill="none" opacity="0.85">
-        <path d="M50 160 C 47 130, 53 108, 47 78" />
-        <path d="M48 118 C 39 110, 30 106, 22 96" />
-        <path d="M51 106 C 60 98, 69 94, 78 86" />
-        <path d="M46 90 C 38 80, 31 74, 26 62" />
-        <path d="M50 78 C 59 68, 66 62, 73 51" />
-      </g>
-      <g fill="#c9b79c" opacity="0.9">
-        <circle cx="47" cy="76" r="3.4" />
-        <circle cx="22" cy="94" r="2.8" />
-        <circle cx="78" cy="84" r="3" />
-        <circle cx="26" cy="60" r="2.6" />
-        <circle cx="73" cy="49" r="2.8" />
-        <circle cx="40" cy="68" r="1.9" />
-        <circle cx="58" cy="60" r="2.1" />
-        <circle cx="32" cy="44" r="1.9" />
-        <circle cx="65" cy="38" r="1.9" />
-      </g>
+      <defs>
+        <radialGradient id={gradId} cx="36%" cy="30%" r="80%">
+          <stop offset="0%" stopColor="#e94a3a" />
+          <stop offset="55%" stopColor="#b81f1f" />
+          <stop offset="100%" stopColor="#711010" />
+        </radialGradient>
+        <clipPath id={`half-${uid}-${side}`}>
+          <rect x={side === "l" ? 0 : 50} y="0" width="50" height="100" />
+        </clipPath>
+      </defs>
+      <path
+        d={CRESCENT_PATH}
+        fill={`url(#${gradId})`}
+        stroke="#5a0d0d"
+        strokeWidth="0.6"
+        clipPath={`url(#half-${uid}-${side})`}
+      />
     </svg>
   );
 }
@@ -332,7 +317,6 @@ function MoonStamp({ w, variant = false }: { w: number; variant?: boolean }) {
       style={{
         width: w, height: h, background: variant ? "#8d1f2c" : "#a2262f",
         padding: w * 0.07,
-        // serrated edge via a repeating radial mask
         maskImage: "radial-gradient(circle at 3px 3px, transparent 2.4px, #000 2.6px)",
         maskSize: "6px 6px",
         WebkitMaskImage: "radial-gradient(circle at 3px 3px, transparent 2.4px, #000 2.6px)",
