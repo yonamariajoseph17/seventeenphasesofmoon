@@ -3,15 +3,15 @@ import { useId } from "react";
 /**
  * The envelope of the gift — aged cream paper, vintage moon stamps, a circular
  * birth-city postmark, handwritten names and a red crescent wax seal on the flap.
- * All motion is driven by `phase`, so the reveal sequence controls the timing.
+ * The seal is nested inside the flap so it travels upward with it on opening.
  */
 
 export type EnvelopePhase =
   | "arriving"    // materialising from centre
   | "rest"        // sitting still, sealed
   | "turning"     // rotating to show the back / seal
-  | "cracking"    // wax seal glows, then cracks apart
-  | "opening"     // flap lifts
+  | "cracking"    // wax seal glows, then cracks
+  | "opening"     // flap lifts, seal rides with it
   | "empty"       // letter has been drawn out
   | "resealing"   // letter returned, flap closes, seal reforms
   | "sealed";     // whole again
@@ -77,17 +77,14 @@ export function CineEnvelope({
         >
           <Grain uid={`f${uid}`} />
           <Foxing />
-          {/* worn edges */}
           <div style={{ position: "absolute", inset: 0, borderRadius: 4, boxShadow: "inset 0 0 0 1px rgba(120,90,40,0.35), inset 0 0 22px rgba(90,66,30,0.28)", pointerEvents: "none" }} />
 
-          {/* sender, top left */}
           {sender && (
             <p style={{ position: "absolute", top: h * 0.08, left: width * 0.07, margin: 0, fontFamily: "'Caveat', cursive", fontSize: width * 0.052, color: "#4a3a22", transform: "rotate(-1.2deg)" }}>
               {sender}
             </p>
           )}
 
-          {/* stamps + postmark, top right */}
           <div style={{ position: "absolute", top: h * 0.06, right: width * 0.06, display: "flex", gap: width * 0.015 }}>
             <MoonStamp w={width * 0.115} />
             <MoonStamp w={width * 0.115} variant />
@@ -96,7 +93,6 @@ export function CineEnvelope({
             <Postmark size={width * 0.2} city={postmarkCity} date={postmarkDate} />
           </div>
 
-          {/* recipient, centre, handwritten */}
           <div style={{ position: "absolute", left: width * 0.2, top: h * 0.47, transform: "rotate(-1deg)" }}>
             <p style={{ margin: 0, fontFamily: "'Caveat', cursive", fontSize: width * 0.086, color: INK, lineHeight: 1.1 }}>{recipient}</p>
             {recipientCity && (
@@ -109,7 +105,7 @@ export function CineEnvelope({
           </div>
         </div>
 
-        {/* ── BACK: aged interior, flap + broken wax seal ─────────────── */}
+        {/* ── BACK: aged interior, flap + red crescent seal ───────────── */}
         <div
           style={{
             position: "absolute", inset: 0, backfaceVisibility: "hidden",
@@ -118,11 +114,9 @@ export function CineEnvelope({
             borderRadius: 4, overflow: "visible",
           }}
         >
-          {/* texture layer (not mirrored — no text here) */}
           <div style={{ position: "absolute", inset: 0, borderRadius: 4, overflow: "hidden" }}>
             <Grain uid={`b${uid}`} />
             <Foxing />
-            {/* ghost postmark bled through from the outside stamp */}
             <div
               style={{
                 position: "absolute", top: h * 0.1, left: width * 0.1,
@@ -132,10 +126,8 @@ export function CineEnvelope({
                 filter: "blur(0.6px)", transform: "rotate(-9deg)",
               }}
             />
-            {/* the flap crease near the top, with a soft shadow above it */}
             <div style={{ position: "absolute", left: 0, right: 0, top: h * 0.5, height: 1.5, background: "rgba(120,88,44,0.5)" }} />
             <div style={{ position: "absolute", left: 0, right: 0, top: h * 0.5 - 26, height: 26, background: "linear-gradient(180deg, transparent, rgba(70,50,22,0.24))" }} />
-            {/* interior cavity, revealed as the flap lifts */}
             <div
               style={{
                 position: "absolute", left: 0, right: 0, top: 0, height: h * 0.56,
@@ -147,13 +139,12 @@ export function CineEnvelope({
             >
               <div style={{ position: "absolute", inset: 0, boxShadow: "inset 0 14px 22px rgba(0,0,0,0.6)" }} />
             </div>
-            {/* bottom flap seam */}
             <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: h * 0.52, background: "linear-gradient(180deg, rgba(255,246,222,0.28), rgba(190,160,110,0.16))", clipPath: "polygon(0% 100%, 50% 0%, 100% 100%)" }} />
-            {/* inner edge shadow — depth, like looking inside a real envelope */}
             <div style={{ position: "absolute", inset: 0, borderRadius: 4, boxShadow: "inset 0 0 0 1px rgba(120,90,40,0.4), inset 0 0 30px rgba(70,50,22,0.45)", pointerEvents: "none" }} />
           </div>
 
-          {/* the flap — hinged at the top, with visible thickness */}
+          {/* the flap — hinged at the top; the seal now lives inside it,
+              so it lifts and rotates away together with the flap */}
           <div
             style={{
               position: "absolute", left: 0, right: 0, top: 0, height: h * 0.56,
@@ -172,59 +163,43 @@ export function CineEnvelope({
                 borderTop: "1px solid rgba(255,248,226,0.55)",
               }}
             />
-            {/* paper thickness at the folded edge */}
             <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 2, background: "rgba(160,128,78,0.7)" }} />
-          </div>
 
-          {/* red crescent wax seal at the flap point */}
-          <div
-            style={{
-              position: "absolute", left: "50%", top: h * 0.5,
-              width: width * 0.16, height: width * 0.16,
-              transform: "translate(-50%,-50%)",
-              transition: "opacity 0.6s",
-              opacity: phase === "empty" ? 0 : 1,
-            }}
-          >
-            {/* faint wax residue between the halves */}
-            {cracked && (
-              <div
-                aria-hidden
-                style={{
-                  position: "absolute", left: "44%", top: "12%", width: width * 0.022, height: width * 0.12,
-                  background: "radial-gradient(ellipse, rgba(120,26,42,0.28), transparent 70%)", filter: "blur(1.5px)",
-                }}
-              />
-            )}
-            <SealHalf uid={uid} side="l" broken={cracked} />
-            <SealHalf uid={uid} side="r" broken={cracked} />
-
-            {/* whole crescent, visible until it cracks apart */}
+            {/* red crescent wax seal — whole, cracks in place, then rises
+                away with the flap as it opens */}
             <div
               style={{
-                position: "absolute", inset: 0,
-                opacity: cracked ? 0 : 1,
-                transition: "opacity 0.5s 0.6s",
-                borderRadius: "50%",
-                animation: phase === "cracking"
-                  ? "cine-seal-glow 1.1s ease-in-out 1"
-                  : phase === "resealing"
-                    ? "cine-seal-glow 1.4s ease-in-out 1"
-                    : undefined,
+                position: "absolute", left: "50%", top: h * 0.5,
+                width: width * 0.16, height: width * 0.16,
+                transform: "translate(-50%,-50%)",
+                transition: "opacity 0.6s",
+                opacity: phase === "empty" ? 0 : 1,
               }}
             >
-              <CrescentSvg uid={`main-${uid}`} />
-            </div>
+              <div
+                style={{
+                  position: "absolute", inset: 0,
+                  borderRadius: "50%",
+                  animation: phase === "cracking"
+                    ? "cine-seal-glow 1.1s ease-in-out 1"
+                    : phase === "resealing"
+                      ? "cine-seal-glow 1.4s ease-in-out 1"
+                      : undefined,
+                }}
+              >
+                <CrescentSvg uid={`main-${uid}`} />
+              </div>
 
-            {cracked && (
-              <svg viewBox="0 0 100 100" style={{ position: "absolute", inset: 0 }} aria-hidden>
-                <path
-                  d="M52 12 L46 30 L58 42 L44 56 L54 72 L48 90"
-                  fill="none" stroke="#3d0a14" strokeWidth="3" strokeLinecap="round"
-                  strokeDasharray="60" style={{ animation: "cine-crack 0.5s ease-out forwards" }}
-                />
-              </svg>
-            )}
+              {cracked && (
+                <svg viewBox="0 0 100 100" style={{ position: "absolute", inset: 0 }} aria-hidden>
+                  <path
+                    d="M52 12 L46 30 L58 42 L44 56 L54 72 L48 90"
+                    fill="none" stroke="#3d0a14" strokeWidth="3" strokeLinecap="round"
+                    strokeDasharray="60" style={{ animation: "cine-crack 0.5s ease-out forwards" }}
+                  />
+                </svg>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -233,9 +208,7 @@ export function CineEnvelope({
 }
 
 /** A filled crescent moon: an outer red circle with a smaller offset circle
- *  masked out of it. Far more reliable across browsers than hand-built arc
- *  paths, which can silently collapse into a full circle if the radii don't
- *  mathematically fit the endpoints. */
+ *  masked out of it — reliable across browsers, unlike hand-built arc paths. */
 function CrescentSvg({ uid }: { uid: string }) {
   return (
     <svg viewBox="0 0 100 100" style={{ width: "100%", height: "100%", filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.5))" }} aria-hidden>
@@ -252,22 +225,6 @@ function CrescentSvg({ uid }: { uid: string }) {
       </defs>
       <circle cx="50" cy="50" r="44" fill={`url(#wax-${uid})`} mask={`url(#mask-${uid})`} stroke="#5a0d0d" strokeWidth="0.6" />
     </svg>
-  );
-}
-
-function SealHalf({ uid, side, broken }: { uid: string; side: "l" | "r"; broken: boolean }) {
-  return (
-    <div
-      style={{
-        position: "absolute", inset: 0,
-        opacity: broken ? 1 : 0,
-        overflow: "hidden",
-        clipPath: side === "l" ? "polygon(0 0, 50% 0, 50% 100%, 0 100%)" : "polygon(50% 0, 100% 0, 100% 100%, 50% 100%)",
-        animation: broken ? `${side === "l" ? "cine-seal-split-l" : "cine-seal-split-r"} 1.4s 0.45s cubic-bezier(0.3,0.1,0.2,1) forwards` : undefined,
-      }}
-    >
-      <CrescentSvg uid={`${side}-${uid}`} />
-    </div>
   );
 }
 
@@ -303,7 +260,6 @@ function Foxing() {
   );
 }
 
-/** Vintage crimson moon stamp with serrated perforation edges. */
 function MoonStamp({ w, variant = false }: { w: number; variant?: boolean }) {
   const h = w * 1.25;
   return (
@@ -326,7 +282,6 @@ function MoonStamp({ w, variant = false }: { w: number; variant?: boolean }) {
   );
 }
 
-/** Classic circular postmark — city arched above, date below. */
 function Postmark({ size, city, date }: { size: number; city: string; date: string }) {
   const uid = useId().replace(/:/g, "");
   return (
@@ -348,4 +303,4 @@ function Postmark({ size, city, date }: { size: number; city: string; date: stri
       <line x1="28" y1="55" x2="72" y2="55" stroke="#5c1420" strokeWidth="0.8" />
     </svg>
   );
-}
+                         }
