@@ -170,17 +170,17 @@ export const PostcardFront = forwardRef<HTMLDivElement, Props>(function Postcard
       {/* ── Right half — celestial stamp + address lines ── */}
       <div style={{ position: "relative", flex: 1, paddingLeft: 56, display: "flex", flexDirection: "column" }}>
         {/* Celestial stamp with birth postmark */}
-        <div style={{ display: "flex", justifyContent: "flex-end", position: "relative", height: 216 }}>
+        <div style={{ display: "flex", justifyContent: "flex-end", position: "relative", height: 240 }}>
           <div style={{ position: "relative" }}>
             <div style={{
-              width: 162, height: 198, border: `2px dashed ${s.line}`, borderRadius: 6,
+              width: 190, height: 230, border: `2px dashed ${s.line}`, borderRadius: 6,
               display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
               background: s.light ? "rgba(0,0,0,0.02)" : "rgba(255,255,255,0.03)",
             }}>
               <div style={{ borderRadius: "50%", background: "radial-gradient(circle, rgba(8,10,20,0.92) 45%, rgba(8,10,20,0) 76%)", padding: 6 }}>
-                <MoonSvg phaseAngle={p.moon.phaseAngle} illumination={p.moon.illumination} waxing={p.moon.waxing} size={98} />
+                <MoonSvg phaseAngle={p.moon.phaseAngle} illumination={p.moon.illumination} waxing={p.moon.waxing} size={115} />
               </div>
-              <p style={{ margin: "6px 0 0", fontSize: 9, letterSpacing: 2, textTransform: "uppercase", color: s.sub }}>Sky We Share</p>
+              <p style={{ margin: "6px 0 0", fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: s.sub }}>Sky We Share</p>
             </div>
             {/* circular birth postmark */}
             <svg width="164" height="164" style={{ position: "absolute", top: 6, left: -70, opacity: 0.6 }} aria-hidden>
@@ -201,8 +201,8 @@ export const PostcardFront = forwardRef<HTMLDivElement, Props>(function Postcard
         {/* Address block — recipient name & city written on ruled lines */}
         <div style={{ marginTop: 10 }}>
           <p style={{ margin: "0 0 22px", fontSize: 10.5, letterSpacing: 3.5, textTransform: "uppercase", color: s.sub }}>To</p>
-          <AddressLine ink={s.ink} line={s.line} width="80%" value={p.recipient} />
-          <AddressLine ink={s.ink} line={s.line} width="100%" value={p.recipientCity ?? ""} />
+          <AddressLine ink={s.ink} line={s.line} width="80%" value={p.recipient} size={46} />
+          <AddressLine ink={s.ink} line={s.line} width="100%" value={p.recipientCity ?? ""} size={32} />
         </div>
 
         <div style={{ flex: 1 }} />
@@ -217,13 +217,13 @@ export const PostcardFront = forwardRef<HTMLDivElement, Props>(function Postcard
   );
 });
 
-function AddressLine({ ink, line, width, value }: { ink: string; line: string; width: string; value: string }) {
+function AddressLine({ ink, line, width, value, size = 32 }: { ink: string; line: string; width: string; value: string; size?: number }) {
   return (
     <div style={{ width, marginBottom: 44, position: "relative" }}>
       <p style={{
-        margin: 0, fontFamily: "'Caveat', cursive", fontSize: 32, color: ink,
+        margin: 0, fontFamily: "'Caveat', cursive", fontSize: size, color: ink,
         whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", paddingLeft: 4,
-        minHeight: 38, lineHeight: "38px",
+        minHeight: size + 6, lineHeight: `${size + 6}px`,
       }}>
         {value}
       </p>
@@ -233,25 +233,6 @@ function AddressLine({ ink, line, width, value }: { ink: string; line: string; w
 }
 
 /* ══════════════════════  BACK — REAL PHOTO + MOON  ══════════════════════ */
-
-// Real high-altitude lakes and viewpoints, matched to the region so the caption
-// names an actual place — postcard convention, never invented geography.
-const SCENE_PLACES: { match: RegExp; place: string }[] = [
-  { match: /salem/i, place: "Yercaud Lake, Salem — from the Lake View Point" },
-  { match: /tamil\s*nadu/i, place: "Yercaud Lake, Salem — from the Lake View Point" },
-  { match: /kerala/i, place: "Mattupetty Lake, Munnar — from the Dam Road" },
-  { match: /karnataka/i, place: "Kaveri Backwaters, Coorg — from Kushalnagar" },
-  { match: /andhra|telangana/i, place: "Himayat Sagar, Deccan Plateau — from the East Bund" },
-  { match: /himachal|uttarakhand|ladakh|kashmir|jammu/i, place: "Pangong Tso, Ladakh — from the West Shore" },
-  { match: /sikkim|bengal|assam|meghalaya/i, place: "Umiam Lake, Meghalaya — from the Shillong Road" },
-  { match: /maharashtra|goa/i, place: "Bhandardara Lake, Sahyadri — from Wilson Dam" },
-  { match: /rajasthan|gujarat/i, place: "Lake Pichola, Aravalli — from the Ambrai Ghat" },
-];
-
-export function scenePlace(stateLabel?: string): string {
-  const hit = SCENE_PLACES.find((s) => s.match.test(stateLabel ?? ""));
-  return hit?.place ?? "Yercaud Lake, Salem — from the Lake View Point";
-}
 
 export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardBack(p, ref) {
   const s = STOCKS[p.style];
@@ -296,15 +277,16 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
               <MoonSvg phaseAngle={p.moon.phaseAngle} illumination={p.moon.illumination} waxing={p.moon.waxing} size={130} />
             </div>
           </div>
-          {/* location, burned onto the photo — bold, gold, bottom-left corner */}
-          <div style={{ position: "absolute", left: 22, bottom: 18, right: 22 }}>
+          {/* generic caption, centered — no mismatched stock place name */}
+          <div style={{ position: "absolute", left: 24, right: 24, bottom: 18, textAlign: "center" }}>
             <p
               style={{
-                margin: 0, fontSize: 21, fontWeight: 800, letterSpacing: 1.4, textTransform: "uppercase",
+                margin: 0, fontSize: 18, fontWeight: 700, letterSpacing: 1.2, textTransform: "uppercase",
                 color: "#f5c94b", textShadow: "0 2px 8px rgba(0,0,0,0.75), 0 0 18px rgba(0,0,0,0.4)",
+                whiteSpace: "normal", overflowWrap: "break-word",
               }}
             >
-              {scenePlace(p.stateLabel)}
+              Under this quiet sky, a moment kept exactly as it was.
             </p>
           </div>
         </div>
