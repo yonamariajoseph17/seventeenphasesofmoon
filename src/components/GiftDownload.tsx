@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { downloadPrintKit, downloadPrintKitFile, type PrintKitData } from "@/lib/printkit";
+import { downloadPrintKit, downloadPrintKitFile, taglineFor, type PrintKitData } from "@/lib/printkit";
 
 /**
  * The download screen — share the digital gift, or download the DIY print kit
@@ -14,6 +14,7 @@ const KIT_FILES = [
   { name: "how-to-make.pdf", label: "How To Make It", note: "A6 instruction card" },
   { name: "wax-seal-stickers.pdf", label: "Wax Seals", note: "A4 · 6 stickers" },
   { name: "bouquet-tag.pdf", label: "Bouquet Tag", note: "A6 · cut & tie" },
+  { name: "moon-cutouts.pdf", label: "Moon Cutouts", note: "A4 · cut & glue" },
 ];
 
 interface Props {
@@ -80,7 +81,7 @@ export function GiftDownload({ data, giftUrl, recipient, diyOnly = false }: Prop
         </p>
 
         <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {KIT_FILES.map((f) => (
+          {KIT_FILES.filter((f) => f.name !== "moon-cutouts.pdf" || data.moonImages?.main).map((f) => (
             <button
               key={f.name}
               type="button"
@@ -119,8 +120,10 @@ export function GiftDownload({ data, giftUrl, recipient, diyOnly = false }: Prop
         </Link>
       </div>
 
+      {/* Pronoun-aware tagline — previously hardcoded to "she" regardless of
+          the pronoun chosen on the main form. */}
       <p className="mx-auto mt-12 max-w-md text-[9px] leading-relaxed tracking-[0.22em] uppercase" style={{ color: "#7f8aa6" }}>
-        Sky We Share ✦ Built in love, for someone who loved moongazing and never knew how much she was watched over by it.
+        Sky We Share ✦ {taglineFor(data.pronoun)}
       </p>
     </div>
   );
