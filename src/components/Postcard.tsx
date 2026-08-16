@@ -277,7 +277,7 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
               <MoonSvg phaseAngle={p.moon.phaseAngle} illumination={p.moon.illumination} waxing={p.moon.waxing} size={130} />
             </div>
           </div>
-          {/* generic caption, centered — no mismatched stock place name */}
+          {/* fixed real-place caption — matches the actual photo used */}
           <div style={{ position: "absolute", left: 24, right: 24, bottom: 18, textAlign: "center" }}>
             <p
               style={{
@@ -286,7 +286,7 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
                 whiteSpace: "normal", overflowWrap: "break-word",
               }}
             >
-              Under this quiet sky, a moment kept exactly as it was.
+              Yercaud Lake, Salem
             </p>
           </div>
         </div>
