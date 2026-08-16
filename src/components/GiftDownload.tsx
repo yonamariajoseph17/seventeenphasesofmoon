@@ -8,12 +8,13 @@ import { downloadPrintKit, downloadPrintKitFile, taglineFor, type PrintKitData }
  */
 
 const KIT_FILES = [
-  { name: "letter.pdf", label: "The Letter", note: "A4 · fold guides" },
+  { name: "letter.pdf", label: "The Letter", note: "A4 · blank, write by hand" },
   { name: "envelope-template.pdf", label: "The Envelope", note: "A4 · cut & fold net" },
   { name: "postcard.pdf", label: "The Postcard", note: "4×6in · 2 sides" },
   { name: "how-to-make.pdf", label: "How To Make It", note: "A6 instruction card" },
   { name: "wax-seal-stickers.pdf", label: "Wax Seals", note: "A4 · 6 stickers" },
-  { name: "bouquet-tag.pdf", label: "Bouquet Tag", note: "A6 · cut & tie" },
+  { name: "moon-coin.pdf", label: "Keepsake Moon Coin", note: "A6 · cut & glue" },
+  { name: "star-map.pdf", label: "Star Map", note: "5×7in · frame-ready" },
   { name: "moon-cutouts.pdf", label: "Moon Cutouts", note: "A4 · cut & glue" },
 ];
 
@@ -29,6 +30,8 @@ export function GiftDownload({ data, giftUrl, recipient, diyOnly = false }: Prop
   const [copied, setCopied] = useState(false);
   const [busy, setBusy] = useState(false);
   const [sizeMb, setSizeMb] = useState<string | null>(null);
+
+  const visibleFiles = KIT_FILES.filter((f) => f.name !== "moon-cutouts.pdf" || data.moonImages?.main);
 
   async function copy() {
     try { await navigator.clipboard.writeText(giftUrl); setCopied(true); setTimeout(() => setCopied(false), 1600); } catch { /* ignore */ }
@@ -81,7 +84,7 @@ export function GiftDownload({ data, giftUrl, recipient, diyOnly = false }: Prop
         </p>
 
         <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {KIT_FILES.filter((f) => f.name !== "moon-cutouts.pdf" || data.moonImages?.main).map((f) => (
+          {visibleFiles.map((f) => (
             <button
               key={f.name}
               type="button"
@@ -107,7 +110,7 @@ export function GiftDownload({ data, giftUrl, recipient, diyOnly = false }: Prop
           {busy ? "Preparing your kit…" : "Download Everything (ZIP)  ↓"}
         </button>
         <p className="mt-3 text-center text-[10px] tracking-[0.2em] uppercase" style={{ color: "#a09a88" }}>
-          6 files · PDF format{sizeMb ? ` · ${sizeMb}MB` : ""}
+          {visibleFiles.length} files · PDF format{sizeMb ? ` · ${sizeMb}MB` : ""}
         </p>
         <p className="mt-4 text-center text-[11px] leading-relaxed italic" style={{ color: "#c9c0ae", fontFamily: "'Cormorant Garamond', serif" }}>
           This kit was made to be touched, folded and sent by hand. The sky above {data.city} on {data.dateLabel} was real. So is this.
@@ -127,4 +130,4 @@ export function GiftDownload({ data, giftUrl, recipient, diyOnly = false }: Prop
       </p>
     </div>
   );
-}
+          }
