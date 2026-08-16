@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { toPng } from "html-to-image";
 import { format, parseISO } from "date-fns";
 import type { AccurateMoonInfo } from "@/lib/astro-accurate";
@@ -14,6 +14,7 @@ import {
 import { FlowerBloom, WrapShape, BouquetArrangement, FLOWER_META, WRAP_META } from "@/components/Bouquet";
 import { GiftDownload } from "@/components/GiftDownload";
 import type { PrintKitData } from "@/lib/printkit";
+import { MoonImageCapture, type MoonImageSpec } from "@/components/MoonImageCapture";
 
 type BasePayload = Omit<LetterPayload, "style" | "to" | "from" | "msg" | "closing" | "occasion" | "song" | "bouquet" | "place" | "writtenDate">;
 
@@ -65,6 +66,20 @@ export function GiftWizard(props: Props) {
   const [giftType, setGiftType] = useState<GiftType | null>(null);
   const isDiy = giftType === "diy";
   const [step, setStep] = useState<1 | 2 | 3>(1);
+
+  // DIY moon cutouts — real photorealistic renders (same MoonSvg the site
+  // uses) captured off-screen once DIY is chosen, so they're ready by the
+  // time the person reaches "Generate My Print Kit". Only built for DIY;
+  // the digital gift never needs these images.
+  const moonCaptureSpecs = useMemo<MoonImageSpec[]>(() => {
+    if (!isDiy) return [];
+    return [
+      { key: "main", phaseAngle: moon.phaseAngle, illumination: moon.illumination, waxing: moon.waxing },
+      ...milestones.map((m) => ({ key: String(m.age), phaseAngle: m.phaseAngle, illumination: m.illumination, waxing: m.waxing })),
+    ];
+  }, [isDiy, moon, milestones]);
+  const [moonImages, setMoonImages] = useState<Record<string, string> | null>(null);
+  const moonImagesReady = !isDiy || !!moonImages;
 
   // Step 1 — the letter
   const [to, setTo] = useState("");
@@ -272,8 +287,19 @@ export function GiftWizard(props: Props) {
     moonset: props.moonsetLabel ?? "—",
     illumination: moon.illumination,
     waxing: moon.waxing,
-    milestones: milestones.map((m) => ({ age: m.age, illumination: m.illumination, waxing: m.waxing, name: m.name })),
+    milestones: milestones.map((m) => ({ age: m.age, phaseAngle: m.phaseAngle, illumination: m.illumination, waxing: m.waxing, name: m.name })),
     giftTagText: giftTagText.trim() || undefined,
+    pronoun: base.pronoun,
+    moonImages: moonImages
+      ? {
+          main: moonImages.main,
+          milestones: Object.fromEntries(
+            milestones
+              .map((m) => [m.age, moonImages[String(m.age)]] as const)
+              .filter((entry): entry is [number, string] => !!entry[1]),
+          ),
+        }
+      : undefined,
   };
 
   // ── DIY: the print kit is ready to download ────────────────────────
@@ -345,6 +371,9 @@ export function GiftWizard(props: Props) {
 
   return (
     <div>
+      {isDiy && moonCaptureSpecs.length > 0 && (
+        <MoonImageCapture specs={moonCaptureSpecs} onReady={setMoonImages} />
+      )}
       {/* Progress indicator */}
       <div className="mb-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
         {([[1, "The Letter"], [2, "The Postcard"], [3, "The Bouquet"]] as const).map(([n, label]) => (
@@ -659,10 +688,12 @@ export function GiftWizard(props: Props) {
 
               <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
                 <button type="button" onClick={() => setSubStep("wrap")} className="text-xs tracking-[0.2em] text-muted-foreground uppercase hover:text-foreground">← Back</button>
-                <button type="button" onClick={createGift} disabled={creating} className="rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
+                <button type="button" onClick={createGift} disabled={creating || !moonImagesReady} className="rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
                   {creating
                     ? (isDiy ? "Preparing your print kit…" : "Sealing your gift…")
-                    : (isDiy ? "Generate My Print Kit →" : "Create & Send Gift")}
+                    : !moonImagesReady
+                      ? "Preparing moon images…"
+                      : (isDiy ? "Generate My Print Kit →" : "Create & Send Gift")}
                 </button>
               </div>
 
