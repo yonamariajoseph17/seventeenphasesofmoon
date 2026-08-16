@@ -551,13 +551,13 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
             </div>
           )}
           {beat >= 6 && (
-            <div className="cine-fade mx-auto mt-14 max-w-md" style={{ color: "#8d8674" }}>
-              <p className="text-[9px] leading-relaxed tracking-[0.24em] uppercase">Sky We Share ✦ A diary in moonlight</p>
-              <p className="mt-2 text-[9px] leading-relaxed tracking-[0.2em] uppercase">
-                For her — who loved the moon, and every sky we shared beneath it.
-              </p>
-            </div>
-          )}
+  <div className="cine-fade mx-auto mt-14 max-w-md" style={{ color: "#8d8674" }}>
+    <p className="text-[9px] leading-relaxed tracking-[0.24em] uppercase">Sky We Share ✦ A diary in moonlight</p>
+    <p className="mt-2 text-[9px] leading-relaxed tracking-[0.2em] uppercase">
+      The sky remembers what we choose to keep.
+    </p>
+  </div>
+)}
           {beat >= 7 && (
 
             <div className="cine-fade mt-8 flex flex-wrap justify-center gap-3">
