@@ -1,6 +1,7 @@
 import { forwardRef } from "react";
 import { MoonSvg } from "./MoonSvg";
 import { milestoneLabel } from "@/lib/milestones";
+import postcardPhoto from "@/assets/file_000000000e5481f4878df9fcaf638fae.png";
 import type { AccurateMoonInfo } from "@/lib/astro-accurate";
 
 export const POSTCARD_STYLES = [
@@ -143,10 +144,22 @@ export const PostcardFront = forwardRef<HTMLDivElement, Props>(function Postcard
         </p>
         <div style={{ height: 0, borderTop: `1px solid ${s.line}`, opacity: 0.6, margin: "16px 0 26px", width: "72%" }} />
 
-        <div style={{ marginTop: 40 }}>
+        <div style={{ marginTop: 40, position: "relative" }}>
           {[0, 1, 2].map((i) => (
             <div key={i} style={{ height: 0, borderBottom: `1.5px solid ${s.line}`, opacity: 0.7, marginBottom: 78, width: i === 2 ? "72%" : "94%" }} />
           ))}
+          {/* handwritten message, laid over the ruled lines */}
+          <div style={{ position: "absolute", inset: 0, top: -6, right: "8%" }}>
+            <p
+              style={{
+                margin: 0, fontFamily: "'Caveat', cursive", fontSize: 30, lineHeight: "78px",
+                color: s.ink, whiteSpace: "pre-wrap", overflow: "hidden",
+                display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical",
+              }}
+            >
+              {p.message || "Every place becomes a little more beautiful when you have someone to share it with."}
+            </p>
+          </div>
         </div>
         <div style={{ flex: 1 }} />
       </div>
@@ -220,7 +233,7 @@ function AddressLine({ ink, line, width, value }: { ink: string; line: string; w
   );
 }
 
-/* ══════════════════════  BACK — NIGHT SKY SCENE  ══════════════════════ */
+/* ══════════════════════  BACK — REAL PHOTO + MOON  ══════════════════════ */
 
 // Real high-altitude lakes and viewpoints, matched to the region so the caption
 // names an actual place — postcard convention, never invented geography.
@@ -262,7 +275,27 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
         }}
       >
         <div style={{ position: "relative", height: 600, overflow: "hidden", background: "#04060f" }}>
-          <NightScene moon={p.moon} />
+          <img
+            src={postcardPhoto}
+            alt=""
+            style={{
+              position: "absolute", inset: 0, width: "100%", height: "100%",
+              objectFit: "cover", objectPosition: "center",
+            }}
+          />
+          {/* subtle darkening so the moon and any text stay legible */}
+          <div
+            style={{
+              position: "absolute", inset: 0,
+              background: "linear-gradient(180deg, rgba(4,6,15,0.15) 0%, rgba(4,6,15,0.05) 40%, rgba(4,6,15,0.35) 100%)",
+            }}
+          />
+          {/* the verified, phase-accurate moon — adjust top/left to sit in open sky */}
+          <div style={{ position: "absolute", top: "18%", left: "72%", transform: "translate(-50%, -50%)" }}>
+            <div style={{ borderRadius: "50%", filter: "drop-shadow(0 0 40px rgba(216,229,255,0.35))" }}>
+              <MoonSvg phaseAngle={p.moon.phaseAngle} illumination={p.moon.illumination} waxing={p.moon.waxing} size={190} />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -311,251 +344,3 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
     </div>
   );
 });
-
-/* ── deterministic pseudo-random so SSR and client render identically ── */
-function rng(seed: number) {
-  let t = seed >>> 0;
-  return () => {
-    t = (t * 1664525 + 1013904223) >>> 0;
-    return t / 4294967296;
-  };
-}
-
-/** Organic ridge path: jittered peaks, no straight slopes, no repeated shapes. */
-function ridgePath(seed: number, W: number, baseY: number, amp: number, segments: number, floor: number) {
-  const r = rng(seed);
-  const pts: { x: number; y: number }[] = [];
-  for (let i = 0; i <= segments; i++) {
-    const x = (W * i) / segments;
-    const wobble = Math.sin(i * 1.7 + seed) * 0.35 + Math.sin(i * 0.6 + seed * 0.3) * 0.4;
-    const y = baseY - amp * (0.35 + 0.65 * r()) - wobble * amp * 0.3;
-    pts.push({ x, y });
-  }
-  let d = `M0 ${floor} L0 ${pts[0].y.toFixed(1)}`;
-  for (let i = 1; i < pts.length; i++) {
-    const prev = pts[i - 1];
-    const cur = pts[i];
-    const cx = (prev.x + cur.x) / 2;
-    d += ` Q${cx.toFixed(1)} ${(prev.y + (cur.y - prev.y) * 0.15).toFixed(1)} ${cur.x.toFixed(1)} ${cur.y.toFixed(1)}`;
-  }
-  d += ` L${W} ${floor} Z`;
-  return d;
-}
-
-/**
- * A cinematic night landscape: layered organic ridgelines with atmospheric
- * perspective, a dense irregular treeline, a still lake carrying the moon's
- * light path, cloud wisps and naturally clustered stars. The moon itself is
- * always the verified MoonSvg — never a decorative circle.
- */
-function NightScene({ moon }: { moon: AccurateMoonInfo }) {
-  const W = 1540;
-  const H = 700;
-  const horizon = 430;
-  const moonSize = 190;
-  const moonCx = W * 0.755;
-  const moonCy = 132;
-
-  // Stars: clustered, size- and brightness-varied, thinning toward the horizon.
-  const r = rng(90210);
-  const stars = Array.from({ length: 420 }).map((_, i) => {
-    const x = r() * W;
-    // bias density upward and toward centre
-    const y = Math.pow(r(), 1.5) * (horizon - 8);
-    const nearHorizon = y / horizon;
-    // faint Milky Way diagonal: extra weight for stars near the band
-    const bandDist = Math.abs((y - (0.28 * horizon + (x / W) * 0.34 * horizon)) / horizon);
-    const bandBoost = Math.max(0, 1 - bandDist * 3.4);
-    const keep = r() < 0.55 + bandBoost * 0.4 - nearHorizon * 0.35;
-    const roll = r();
-    const rad = roll > 0.965 ? 1.9 + r() * 0.7 : roll > 0.85 ? 1.35 : 0.6 + r() * 0.45;
-    const o = (roll > 0.965 ? 0.9 + r() * 0.1 : 0.28 + r() * 0.34) * (1 - nearHorizon * 0.45);
-    const warm = bandBoost > 0.35;
-    // keep the sky around the moon clear
-    const nearMoon = Math.hypot(x - moonCx, y - moonCy) < moonSize * 0.85;
-    return { x, y, rad, o, warm, key: i, show: keep && !nearMoon, bright: roll > 0.965 };
-  }).filter((st) => st.show);
-
-  const treeR = rng(4477);
-
-  return (
-    <div style={{ position: "absolute", inset: 0 }}>
-      <svg width="100%" height="100%" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" aria-hidden>
-        <defs>
-          <linearGradient id="pc-sky" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#02040c" />
-            <stop offset="22%" stopColor="#060b1e" />
-            <stop offset="44%" stopColor="#0b1330" />
-            <stop offset="66%" stopColor="#132043" />
-            <stop offset="86%" stopColor="#20305a" />
-            <stop offset="100%" stopColor="#3a4a72" />
-          </linearGradient>
-          <radialGradient id="pc-moonglow" cx="50%" cy="50%" r="50%">
-            <stop offset="0%" stopColor="rgba(216,229,255,0.5)" />
-            <stop offset="35%" stopColor="rgba(178,199,246,0.22)" />
-            <stop offset="70%" stopColor="rgba(140,165,225,0.07)" />
-            <stop offset="100%" stopColor="rgba(140,165,225,0)" />
-          </radialGradient>
-          <linearGradient id="pc-milky" x1="0" y1="0" x2="1" y2="0.7">
-            <stop offset="0%" stopColor="rgba(226,214,196,0)" />
-            <stop offset="50%" stopColor="rgba(228,216,198,0.12)" />
-            <stop offset="100%" stopColor="rgba(226,214,196,0)" />
-          </linearGradient>
-          <linearGradient id="pc-haze" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(196,214,255,0)" />
-            <stop offset="100%" stopColor="rgba(206,221,255,0.3)" />
-          </linearGradient>
-          <linearGradient id="pc-water" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#26365e" />
-            <stop offset="18%" stopColor="#16224a" />
-            <stop offset="60%" stopColor="#0b1330" />
-            <stop offset="100%" stopColor="#050a1a" />
-          </linearGradient>
-          <linearGradient id="pc-path" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="rgba(232,240,255,0.62)" />
-            <stop offset="45%" stopColor="rgba(216,229,255,0.3)" />
-            <stop offset="100%" stopColor="rgba(206,222,255,0.1)" />
-          </linearGradient>
-          <filter id="pc-blur"><feGaussianBlur stdDeviation="30" /></filter>
-          <filter id="pc-blur-md"><feGaussianBlur stdDeviation="14" /></filter>
-          <filter id="pc-blur-sm"><feGaussianBlur stdDeviation="5" /></filter>
-          <filter id="pc-star-glow"><feGaussianBlur stdDeviation="1.6" /></filter>
-          <filter id="pc-ripple">
-            <feTurbulence type="fractalNoise" baseFrequency="0.012 0.16" numOctaves="2" seed="7" result="n" />
-            <feDisplacementMap in="SourceGraphic" in2="n" scale="9" xChannelSelector="R" yChannelSelector="G" />
-          </filter>
-        </defs>
-
-        {/* sky */}
-        <rect x="0" y="0" width={W} height={H} fill="url(#pc-sky)" />
-
-        {/* faint warm Milky Way axis */}
-        <g filter="url(#pc-blur)" opacity="0.9">
-          <ellipse cx={W * 0.5} cy={horizon * 0.44} rx={W * 0.62} ry={96} transform={`rotate(-14 ${W * 0.5} ${horizon * 0.44})`} fill="url(#pc-milky)" />
-        </g>
-
-        {/* moonlight spilling into the sky */}
-        <circle cx={moonCx} cy={moonCy} r={430} fill="url(#pc-moonglow)" />
-
-        {/* stars */}
-        <g>
-          {stars.map((st) => (
-            <circle
-              key={st.key}
-              cx={st.x}
-              cy={st.y}
-              r={st.rad}
-              fill={st.warm ? "#f2ecdd" : "#e8eeff"}
-              opacity={st.o}
-              filter={st.bright ? "url(#pc-star-glow)" : undefined}
-            />
-          ))}
-        </g>
-
-        {/* cloud wisps drifting across the upper sky */}
-        <g filter="url(#pc-blur-md)">
-          <ellipse cx={W * 0.72} cy={moonCy + 24} rx={330} ry={26} fill="rgba(206,220,255,0.14)" transform={`rotate(-6 ${W * 0.72} ${moonCy + 24})`} />
-          <ellipse cx={W * 0.3} cy={116} rx={280} ry={20} fill="rgba(150,170,215,0.1)" transform={`rotate(4 ${W * 0.3} 116)`} />
-          <ellipse cx={W * 0.52} cy={214} rx={380} ry={24} fill="rgba(10,14,32,0.35)" transform={`rotate(-3 ${W * 0.52} 214)`} />
-          <ellipse cx={W * 0.14} cy={252} rx={230} ry={18} fill="rgba(190,206,248,0.1)" />
-        </g>
-
-        {/* atmospheric haze where sky meets the ridges */}
-        <rect x="0" y={horizon - 170} width={W} height={170} fill="url(#pc-haze)" opacity="0.55" />
-
-        {/* far ridge — blue-grey, atmospheric perspective */}
-        <path d={ridgePath(31, W, horizon, 190, 13, horizon)} fill="#2b3a63" opacity="0.62" />
-        {/* middle ridge */}
-        <path d={ridgePath(58, W, horizon, 140, 17, horizon)} fill="#1a2748" opacity="0.9" />
-        {/* near ridge — charcoal */}
-        <path d={ridgePath(97, W, horizon + 4, 92, 23, horizon + 6)} fill="#080d1d" />
-
-        {/* dense irregular treeline along the near shore */}
-        <g fill="#050914">
-          {Array.from({ length: 120 }).map((_, i) => {
-            const cluster = 1 + treeR() * 0.7;
-            const x = (W * i) / 118 + (treeR() - 0.5) * 16;
-            const h = (18 + treeR() * 34) * cluster;
-            const w = 5 + treeR() * 6;
-            const base = horizon + 6;
-            return (
-              <path
-                key={i}
-                d={`M${x.toFixed(1)} ${base} L${(x - w).toFixed(1)} ${base} L${(x - w * 0.45).toFixed(1)} ${(base - h * 0.55).toFixed(1)} L${x.toFixed(1)} ${(base - h).toFixed(1)} L${(x + w * 0.45).toFixed(1)} ${(base - h * 0.55).toFixed(1)} L${(x + w).toFixed(1)} ${base} Z`}
-              />
-            );
-          })}
-          {/* a few taller firs breaking the treeline */}
-          {Array.from({ length: 14 }).map((_, i) => {
-            const x = 40 + treeR() * (W - 80);
-            const h = 58 + treeR() * 40;
-            const base = horizon + 6;
-            return <path key={`t${i}`} d={`M${x.toFixed(1)} ${base} L${(x - 8).toFixed(1)} ${base} L${x.toFixed(1)} ${(base - h).toFixed(1)} L${(x + 8).toFixed(1)} ${base} Z`} />;
-          })}
-        </g>
-
-        {/* lake */}
-        <rect x="0" y={horizon + 6} width={W} height={H - horizon - 6} fill="url(#pc-water)" />
-
-        {/* distorted reflection of the ridges */}
-        <g opacity="0.22" filter="url(#pc-ripple)">
-          <g transform={`translate(0 ${(horizon + 6) * 2}) scale(1 -1)`}>
-            <path d={ridgePath(97, W, horizon + 4, 92, 23, horizon + 6)} fill="#0d1730" />
-          </g>
-        </g>
-
-        {/* moonlight path — narrow at the far shore, wider at the near edge */}
-        <g filter="url(#pc-blur-md)" opacity="0.85">
-          <path
-            d={`M${moonCx - 24} ${horizon + 6} L${moonCx + 24} ${horizon + 6} L${moonCx + 132} ${H} L${moonCx - 132} ${H} Z`}
-            fill="url(#pc-path)"
-          />
-        </g>
-        {/* broken glitter across the light path */}
-        <g stroke="rgba(240,246,255,0.5)" strokeWidth="1.4" fill="none">
-          {Array.from({ length: 26 }).map((_, i) => {
-            const t = i / 25;
-            const y = horizon + 12 + t * (H - horizon - 16);
-            const half = 22 + t * 118;
-            const len = half * (0.25 + treeR() * 0.85);
-            const x = moonCx - half + treeR() * (2 * half - len);
-            return <line key={i} x1={x} y1={y} x2={x + len} y2={y} opacity={0.6 - t * 0.35} />;
-          })}
-        </g>
-        {/* faint overall water texture */}
-        <g stroke="rgba(190,208,248,0.08)" strokeWidth="1" fill="none">
-          {Array.from({ length: 22 }).map((_, i) => {
-            const y = horizon + 14 + i * 10.5;
-            const len = 120 + treeR() * 700;
-            const x = treeR() * (W - len);
-            return <line key={i} x1={x} y1={y} x2={x + len} y2={y} />;
-          })}
-        </g>
-        <rect x="0" y={horizon + 5} width={W} height="2" fill="rgba(214,228,255,0.28)" />
-      </svg>
-
-      {/* the verified moon, clearing the ridge at upper right */}
-      <div
-        style={{
-          position: "absolute",
-          left: `${(moonCx / W) * 100}%`,
-          top: `${(moonCy / H) * 100}%`,
-          transform: "translate(-50%, -50%)",
-        }}
-      >
-        <MoonSvg phaseAngle={moon.phaseAngle} illumination={moon.illumination} waxing={moon.waxing} size={moonSize} />
-      </div>
-      {/* cloud wisp passing in front of the moon */}
-      <div
-        aria-hidden
-        style={{
-          position: "absolute", left: 0, right: 0,
-          top: `${((moonCy + moonSize * 0.3) / H) * 100}%`,
-          height: 46,
-          background: "linear-gradient(90deg, rgba(198,214,255,0) 0%, rgba(202,216,255,0.16) 40%, rgba(202,216,255,0.2) 62%, rgba(198,214,255,0) 100%)",
-          filter: "blur(13px)", pointerEvents: "none",
-        }}
-      />
-    </div>
-  );
-}
