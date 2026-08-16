@@ -448,7 +448,7 @@ function buildPostcard(d: PrintKitData): jsPDF {
     }
 
     // Generic caption — matches the digital postcard, no invented place name.
-    const caption = "Under this quiet sky, a moment kept exactly as it was.";
+    const caption = "const caption = Yercaud Lake, Salem";
     doc.setFont("helvetica", "bold");
     doc.setFontSize(7);
     const capW = Math.min(doc.getTextWidth(caption) + 6, W - 8);
