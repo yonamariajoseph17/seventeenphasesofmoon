@@ -248,7 +248,7 @@ const SCENE_PLACES: { match: RegExp; place: string }[] = [
   { match: /rajasthan|gujarat/i, place: "Lake Pichola, Aravalli — from the Ambrai Ghat" },
 ];
 
-function scenePlace(stateLabel?: string): string {
+export function scenePlace(stateLabel?: string): string {
   const hit = SCENE_PLACES.find((s) => s.match.test(stateLabel ?? ""));
   return hit?.place ?? "Yercaud Lake, Salem — from the Lake View Point";
 }
