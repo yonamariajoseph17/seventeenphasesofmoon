@@ -439,7 +439,7 @@ export function GiftWizard(props: Props) {
 </div>
               <textarea
                 value={message}
-                onChange={(e) => setMessage(e.target.value.slice(0, 500))}
+                onChange={(e) => setMessage(e.target.value.slice(0, 1200))}
                 rows={7}
                 placeholder="Write it as if the pen never lifts — everything you'd want them to read again years from now…"
                 className="letterpaper-hand block w-full max-w-full resize-none bg-transparent outline-none placeholder:text-[#7a5a2e]/40"
