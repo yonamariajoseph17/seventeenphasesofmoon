@@ -36,7 +36,7 @@ export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
       { title: "Sky We Share · A diary in moonlight" },
-      { name: "description", content: "For her, who loved the moon — and for the love that made me understand why. The verified night sky traced from someone's first night to today — for anyone you love." },
+      { name: "description", content: "The sky remembers what we choose to keep. The verified night sky, traced from someone's first night to today — for anyone you love." },
     ],
     links: [
       { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -540,7 +540,7 @@ function Index() {
           </div>
           <h1 className="text-balance font-display text-6xl leading-[1.02] tracking-tight md:text-8xl">Sky We Share</h1>
           <p className="mx-auto mt-6 max-w-md text-balance text-base italic text-muted-foreground md:text-lg">
-            For her, who loved the moon — and for the love that made me understand why.
+            The sky remembers what we choose to keep.
           </p>
           <a href="#begin" className="mt-12 inline-flex items-center gap-2 rounded-full border border-accent/40 px-6 py-3 text-xs tracking-[0.3em] text-accent uppercase transition-colors hover:bg-accent/10">
             Enter a name to begin <span aria-hidden>↓</span>
@@ -937,7 +937,7 @@ function Index() {
             <MoonSvg phaseAngle={todayMoon.phaseAngle} illumination={todayMoon.illumination} waxing={todayMoon.waxing} size={96} />
           </div>
           <p className="max-w-md text-balance text-sm italic text-muted-foreground/90">
-            For her, who loved the moon — and for the love that made me understand why.
+            The sky remembers what we choose to keep.
           </p>
           <p className="mt-6 font-display text-xs tracking-[0.4em] text-accent uppercase">The same sky, still turning</p>
           <h2 className="mt-6 text-balance font-display text-3xl leading-[1.1] md:text-5xl">
@@ -958,7 +958,7 @@ function Index() {
 
       <footer className="relative border-t border-border/50 py-10 text-center text-xs tracking-widest text-muted-foreground uppercase">
         <p className="mb-2 text-[11px] italic normal-case tracking-normal text-muted-foreground/80">
-          For her, who loved the moon — and for the love that made me understand why.
+          Made by the creator, with everlasting love for the woman who loved moongazing.
         </p>
         Made under the same sky · for {personName} · {applied.city}
       </footer>
@@ -1070,4 +1070,4 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode, occasion }
       </div>
     </article>
   );
-}
+  }
