@@ -39,8 +39,8 @@ export interface PrintKitData {
   illumination: number;
   waxing: boolean;
   milestones: { age: number; phaseAngle: number; illumination: number; waxing: boolean; name?: string }[];
-  /** Optional custom note — no longer used by the moon coin / star map, kept
-   * for backward compatibility with any caller still passing it. */
+  /** Optional custom note — no longer used by any current PDF, kept for
+   * backward compatibility with any caller still passing it. */
   giftTagText?: string;
   /** The pronoun chosen on the main form — drives the closing tagline's wording. */
   pronoun?: "she/her" | "he/him" | "they/them";
@@ -68,6 +68,29 @@ const SUB: [number, number, number] = [116, 98, 70];
 const CRIMSON: [number, number, number] = [140, 26, 44];
 const NIGHT: [number, number, number] = [10, 15, 32];
 const GOLD: [number, number, number] = [180, 138, 66];
+
+/** Simplified but recognizable stick-figure star patterns for each zodiac
+ * constellation, in a normalized -50..50 space. Used on the star map so the
+ * print always shows the actual named constellation shape rather than a
+ * random seeded pattern. */
+const CONSTELLATIONS: Record<string, { stars: [number, number][]; edges: [number, number][] }> = {
+  Aries: { stars: [[-20, 10], [0, -6], [22, 4], [30, -14]], edges: [[0, 1], [1, 2], [2, 3]] },
+  Taurus: { stars: [[-24, 6], [-8, -8], [10, 8], [26, -4], [4, 18]], edges: [[0, 1], [1, 2], [2, 3], [1, 4]] },
+  Gemini: { stars: [[-22, -20], [-16, 0], [-10, 20], [18, -18], [14, 2], [10, 22]], edges: [[0, 1], [1, 2], [3, 4], [4, 5], [1, 4]] },
+  Cancer: { stars: [[-6, -20], [4, -4], [-14, 14], [16, 18]], edges: [[0, 1], [1, 2], [1, 3]] },
+  Leo: { stars: [[-28, 4], [-14, -14], [4, -18], [18, -8], [16, 10], [-4, 18], [-16, 14]], edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 0]] },
+  Virgo: { stars: [[-26, -10], [-12, 4], [2, -8], [16, 8], [28, -4], [8, 20]], edges: [[0, 1], [1, 2], [2, 3], [3, 4], [2, 5]] },
+  Libra: { stars: [[-18, -12], [18, -12], [-10, 10], [10, 10]], edges: [[0, 2], [1, 3], [2, 3], [0, 1]] },
+  Scorpio: { stars: [[-26, -18], [-16, -4], [-4, 6], [10, 10], [20, 4], [26, -8], [22, -20]], edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6]] },
+  Sagittarius: { stars: [[-20, -14], [0, -18], [18, -10], [16, 6], [-2, 10], [-18, 4], [0, -2]], edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 0], [6, 0], [6, 2]] },
+  Capricorn: { stars: [[-24, -8], [0, -16], [24, -6], [10, 16], [-10, 12]], edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 0]] },
+  Aquarius: { stars: [[-26, -6], [-12, 10], [2, -8], [16, 8], [28, -10]], edges: [[0, 1], [1, 2], [2, 3], [3, 4]] },
+  Pisces: { stars: [[-26, -16], [-18, 0], [-24, 16], [26, -14], [18, 2], [24, 16], [-2, 0], [2, 4]], edges: [[0, 1], [1, 2], [3, 4], [4, 5], [1, 6], [6, 7], [7, 4]] },
+};
+
+function constellationFor(name: string) {
+  return CONSTELLATIONS[name] ?? null;
+}
 
 // ── Pronoun helpers — used only for the closing tagline, so it matches
 // whatever pronoun the sender picked instead of assuming "she". ─────────
@@ -191,76 +214,105 @@ function crescentEmblem(doc: jsPDF, cx: number, cy: number, r: number, bg: [numb
   doc.circle(cx + r * 0.55, cy - r * 0.22, r * 0.86, "F");
 }
 
+/** A right-angle line with a small quarter-curve flourish, drawn in one of
+ * the four page corners — used to frame the premium letter. */
+function cornerFlourish(doc: jsPDF, x: number, y: number, size: number, quadrant: "tl" | "tr" | "bl" | "br") {
+  const sx = quadrant === "tl" || quadrant === "bl" ? 1 : -1;
+  const sy = quadrant === "tl" || quadrant === "tr" ? 1 : -1;
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(0.35);
+  doc.line(x, y, x + size * sx, y);
+  doc.line(x, y, x, y + size * sy);
+  doc.setLineWidth(0.2);
+  const steps = 10;
+  const pts: [number, number][] = [];
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    pts.push([x + Math.sin(t * Math.PI / 2) * size * 0.4 * sx, y + (1 - Math.cos(t * Math.PI / 2)) * size * 0.4 * sy]);
+  }
+  for (let i = 1; i < pts.length; i++) doc.line(pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1]);
+}
+
 /* ───────────────────────── 1. THE LETTER ───────────────────────── */
-/** Premium letterhead — a decorative header and a blank writing area for
- * the sender to fill in by hand, rather than a pre-printed message. No
- * ruled notebook lines, no margin rule, no fold guides or instructions. */
+/** Premium letterhead — nested gold frame with corner flourishes, a
+ * decorative crescent emblem, and a blank writing area for the sender to
+ * fill in by hand. No ruled notebook lines, no margin rule, no fold
+ * guides or instructions. */
 function buildLetter(d: PrintKitData): jsPDF {
   const W = 210, H = 297;
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   paper(doc, W, H);
 
+  // nested gold frame around the whole page
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(0.5);
+  doc.rect(10, 10, W - 20, H - 20, "S");
+  doc.setLineWidth(0.15);
+  doc.rect(13, 13, W - 26, H - 26, "S");
+  cornerFlourish(doc, 13, 13, 10, "tl");
+  cornerFlourish(doc, W - 13, 13, 10, "tr");
+  cornerFlourish(doc, 13, H - 13, 10, "bl");
+  cornerFlourish(doc, W - 13, H - 13, 10, "br");
+
   // crescent emblem, top centre
-  crescentEmblem(doc, W / 2, 22, 6);
+  crescentEmblem(doc, W / 2, 26, 6);
 
   // thin double rule beneath the emblem
   doc.setDrawColor(...GOLD);
   doc.setLineWidth(0.5);
-  doc.line(W / 2 - 22, 32, W / 2 + 22, 32);
+  doc.line(W / 2 - 22, 36, W / 2 + 22, 36);
   doc.setLineWidth(0.2);
-  doc.line(W / 2 - 14, 34.5, W / 2 + 14, 34.5);
+  doc.line(W / 2 - 14, 38.5, W / 2 + 14, 38.5);
 
   // header: place & date, top right
   doc.setFont("times", "italic");
   doc.setFontSize(10);
   doc.setTextColor(...SUB);
-  doc.text([d.place, d.writtenDate].filter(Boolean).join(", "), W - 26, 22, { align: "right" });
+  doc.text([d.place, d.writtenDate].filter(Boolean).join(", "), W - 30, 26, { align: "right" });
 
   // occasion line, centred, elegant
   doc.setFont("times", "italic");
   doc.setFontSize(12);
   doc.setTextColor(...INK);
-  doc.text(doc.splitTextToSize(d.occasionLine, 130), W / 2, 46, { align: "center" });
+  doc.text(doc.splitTextToSize(d.occasionLine, 126), W / 2, 50, { align: "center" });
 
   // salutation
   doc.setFont("times", "normal");
   doc.setFontSize(18);
   doc.setTextColor(...INK);
-  doc.text(d.greeting, 28, 68);
+  doc.text(d.greeting, 32, 72);
 
-  // blank writing area — a few faint, widely-spaced guide lines, no full
-  // ruled notebook grid and no margin rule
-  const writeTop = 82;
-  const writeBottom = H - 66;
+  // blank writing area — a few faint, widely-spaced guide lines
+  const writeTop = 86;
+  const writeBottom = H - 68;
   doc.setDrawColor(214, 204, 182);
   doc.setLineWidth(0.15);
   for (let y = writeTop; y < writeBottom; y += 11) {
-    doc.line(28, y, W - 26, y);
+    doc.line(32, y, W - 30, y);
   }
 
   // closing, bottom right — sender already known, signature line left blank
   doc.setFont("times", "normal");
   doc.setFontSize(14);
   doc.setTextColor(...INK);
-  doc.text(d.closing, W - 26, H - 56, { align: "right" });
-  if (d.sender) doc.text(d.sender, W - 26, H - 46, { align: "right" });
+  doc.text(d.closing, W - 30, H - 58, { align: "right" });
+  if (d.sender) doc.text(d.sender, W - 30, H - 48, { align: "right" });
   doc.setDrawColor(...SUB);
   doc.setLineWidth(0.2);
-  doc.line(W - 60, H - 40, W - 26, H - 40);
+  doc.line(W - 64, H - 42, W - 30, H - 42);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6);
   doc.setTextColor(...SUB);
-  doc.text("SIGNATURE", W - 43, H - 37, { align: "center" });
+  doc.text("SIGNATURE", W - 47, H - 39, { align: "center" });
 
-  // moon narration — a small italic footnote, the one printed piece of
-  // personalization left on an otherwise blank page
+  // moon narration — a small italic footnote
   doc.setFont("times", "italic");
   doc.setFontSize(8.5);
   doc.setTextColor(...SUB);
-  const narr = doc.splitTextToSize(d.narration, 150);
-  doc.text(narr, 28, H - 32, { lineHeightFactor: 1.5 });
+  const narr = doc.splitTextToSize(d.narration, 146);
+  doc.text(narr, 32, H - 34, { lineHeightFactor: 1.5 });
 
-  heading(doc, "Sky We Share", W / 2 - 12, H - 12, 6);
+  heading(doc, "Sky We Share", W / 2 - 12, H - 16, 6);
   return doc;
 }
 
@@ -588,18 +640,30 @@ function buildSeals(d: PrintKitData): jsPDF {
 }
 
 /* ─────────────────── 6. KEEPSAKE MOON COIN (A6) ─────────────────── */
-/** Small ring of radial ticks around a circle — mimics a coin's reeded edge. */
+/** Concentric ring of radial ticks around a circle, plus a highlight arc —
+ * mimics a minted coin's reeded edge and light catching its rim. */
 function coinEdge(doc: jsPDF, cx: number, cy: number, r: number) {
   doc.setDrawColor(...GOLD);
-  doc.setLineWidth(0.25);
-  const ticks = 72;
+  doc.setLineWidth(0.22);
+  const ticks = 90;
   for (let i = 0; i < ticks; i++) {
     const a = (i / ticks) * Math.PI * 2;
-    const x1 = cx + Math.cos(a) * (r - 2.6);
-    const y1 = cy + Math.sin(a) * (r - 2.6);
-    const x2 = cx + Math.cos(a) * (r - 0.6);
-    const y2 = cy + Math.sin(a) * (r - 0.6);
+    const x1 = cx + Math.cos(a) * (r - 2.2);
+    const y1 = cy + Math.sin(a) * (r - 2.2);
+    const x2 = cx + Math.cos(a) * (r - 0.4);
+    const y2 = cy + Math.sin(a) * (r - 0.4);
     doc.line(x1, y1, x2, y2);
+  }
+  // rim highlight — a brighter arc across the upper-left third, like light
+  // catching the edge of pressed metal
+  doc.setDrawColor(232, 208, 150);
+  doc.setLineWidth(0.9);
+  const start = Math.PI * 1.05, end = Math.PI * 1.55;
+  const steps = 24;
+  for (let i = 0; i < steps; i++) {
+    const a1 = start + ((end - start) * i) / steps;
+    const a2 = start + ((end - start) * (i + 1)) / steps;
+    doc.line(cx + Math.cos(a1) * r, cy + Math.sin(a1) * r, cx + Math.cos(a2) * r, cy + Math.sin(a2) * r);
   }
 }
 
@@ -700,59 +764,64 @@ function buildStarMap(d: PrintKitData): jsPDF {
   const doc = new jsPDF({ unit: "mm", format: [W, H] });
   paper(doc, W, H, [255, 255, 255]);
 
-  heading(doc, "The sky that night", W / 2 - 24, 14, 6.5, SUB);
+  // outer gold frame, nested double rule — reads as a printed keepsake, not a screenshot
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(0.6);
+  doc.rect(6, 6, W - 12, H - 12, "S");
+  doc.setLineWidth(0.2);
+  doc.rect(8.5, 8.5, W - 17, H - 17, "S");
+
+  heading(doc, "The sky that night", W / 2 - 24, 18, 6.5, SUB);
   doc.setFont("times", "italic");
   doc.setFontSize(15);
   doc.setTextColor(...INK);
-  doc.text(d.city, W / 2, 24, { align: "center" });
+  doc.text(d.city, W / 2, 27, { align: "center" });
   doc.setFont("times", "normal");
   doc.setFontSize(8.5);
   doc.setTextColor(...SUB);
-  doc.text(d.dateLabel, W / 2, 30, { align: "center" });
+  doc.text(d.dateLabel, W / 2, 33, { align: "center" });
 
   // sky panel
-  const panelX = 10, panelY = 36, panelW = W - 20, panelH = 108;
+  const panelX = 13, panelY = 39, panelW = W - 26, panelH = 102;
   doc.setFillColor(...NIGHT);
   doc.rect(panelX, panelY, panelW, panelH, "F");
 
   let seed = 54321;
   const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
   doc.setFillColor(228, 232, 250);
-  for (let i = 0; i < 260; i++) {
+  for (let i = 0; i < 240; i++) {
     const x = panelX + rnd() * panelW;
     const y = panelY + rnd() * panelH;
-    const r = 0.09 + rnd() * 0.26;
+    const r = 0.08 + rnd() * 0.22;
     doc.circle(x, y, r, "F");
   }
 
   // moon, upper right of the panel
-  const moonCx = panelX + panelW * 0.76;
-  const moonCy = panelY + panelH * 0.26;
+  const moonCx = panelX + panelW * 0.78;
+  const moonCy = panelY + panelH * 0.24;
   if (d.moonImages?.main) {
     moonGuide(doc, moonCx, moonCy, 9, false);
   } else {
     moonDisc(doc, moonCx, moonCy, 9, d.illumination, d.waxing);
   }
 
-  // a simple seeded constellation figure, lower half of the panel
-  const conCx = panelX + panelW * 0.36;
-  const conCy = panelY + panelH * 0.64;
-  const starCount = 6;
-  const conPts: [number, number][] = [];
-  for (let i = 0; i < starCount; i++) {
-    conPts.push([conCx + (rnd() - 0.5) * 34, conCy + (rnd() - 0.5) * 26]);
+  // the real named constellation, drawn as a recognizable stick figure
+  const con = constellationFor(d.constellation);
+  const conCx = panelX + panelW * 0.4;
+  const conCy = panelY + panelH * 0.66;
+  const scale = 0.85;
+  if (con) {
+    const pts = con.stars.map(([x, y]) => [conCx + x * scale, conCy + y * scale] as [number, number]);
+    doc.setDrawColor(170, 185, 225);
+    doc.setLineWidth(0.3);
+    con.edges.forEach(([a, b]) => doc.line(pts[a][0], pts[a][1], pts[b][0], pts[b][1]));
+    doc.setFillColor(250, 246, 255);
+    pts.forEach(([x, y], i) => doc.circle(x, y, i === 0 ? 0.9 : 0.6, "F"));
   }
-  doc.setDrawColor(150, 165, 210);
-  doc.setLineWidth(0.25);
-  for (let i = 1; i < conPts.length; i++) {
-    doc.line(conPts[i - 1][0], conPts[i - 1][1], conPts[i][0], conPts[i][1]);
-  }
-  doc.setFillColor(245, 240, 255);
-  conPts.forEach(([x, y]) => doc.circle(x, y, 0.6, "F"));
   doc.setFont("times", "italic");
-  doc.setFontSize(7.5);
-  doc.setTextColor(200, 208, 232);
-  doc.text(d.constellation, conCx, conCy + 20, { align: "center" });
+  doc.setFontSize(8);
+  doc.setTextColor(210, 216, 238);
+  doc.text(d.constellation, conCx, conCy + 30, { align: "center" });
 
   doc.setDrawColor(...GOLD);
   doc.setLineWidth(0.4);
@@ -764,12 +833,15 @@ function buildStarMap(d: PrintKitData): jsPDF {
   doc.setTextColor(...INK);
   doc.text(
     `${d.phaseName.toUpperCase()}  ·  ${d.illumPct}% ILLUMINATED  ·  ${d.moonAge} DAYS OLD`,
-    W / 2, panelY + panelH + 10, { align: "center" },
+    W / 2, panelY + panelH + 11, { align: "center" },
   );
   doc.setFontSize(6);
   doc.setTextColor(...SUB);
-  doc.text(`MOONRISE ${d.moonrise}   ·   MOONSET ${d.moonset}`, W / 2, panelY + panelH + 16, { align: "center" });
+  doc.text(`MOONRISE ${d.moonrise}   ·   MOONSET ${d.moonset}`, W / 2, panelY + panelH + 17, { align: "center" });
 
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(0.15);
+  doc.line(W / 2 - 16, H - 15, W / 2 + 16, H - 15);
   heading(doc, "Sky We Share", W / 2 - 12, H - 10, 5.5);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(5.5);
@@ -909,4 +981,4 @@ export async function downloadPrintKit(d: PrintKitData, filename = "sky-we-share
   const blob = await zip.generateAsync({ type: "blob" });
   saveBlob(blob, filename);
   return blob.size;
-                   }
+                                                                         }
