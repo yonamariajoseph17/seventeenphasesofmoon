@@ -1,6 +1,5 @@
 import { forwardRef } from "react";
 import { MoonSvg } from "./MoonSvg";
-import { milestoneLabel } from "@/lib/milestones";
 import postcardPhoto from "@/assets/file_000000000e5481f4878df9fcaf638fae.png";
 import type { AccurateMoonInfo } from "@/lib/astro-accurate";
 
@@ -256,7 +255,6 @@ function scenePlace(stateLabel?: string): string {
 
 export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardBack(p, ref) {
   const s = STOCKS[p.style];
-  const milestones = p.milestones ?? [];
   const captionLoc = [p.city, p.stateLabel].filter(Boolean).join(", ").toUpperCase();
   const phaseText = `${p.moon.name.toUpperCase()} · ${p.illumPct}% ILLUMINATED`;
 
@@ -267,19 +265,23 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
       {/* ruled frame on the cream card stock */}
       <div style={{ position: "absolute", inset: 22, border: `1.5px solid ${s.line}`, borderRadius: 16, opacity: 0.6, pointerEvents: "none" }} />
 
-      {/* ── Mounted photograph: cream card-stock mount visible around the scene ── */}
+      {/* ── Mounted photograph: cream card-stock mount visible around the scene, full-bleed within the frame ── */}
       <div
         style={{
-          position: "relative", margin: "44px 56px 0", padding: 9,
+          position: "relative", margin: "44px 56px 0", padding: 9, flex: 1,
           background: s.light ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.08)",
           boxShadow: `0 0 0 1px ${s.line}`,
+          display: "flex", flexDirection: "column",
         }}
       >
-        <div style={{ position: "relative", overflow: "hidden", background: "#04060f" }}>
+        <div style={{ position: "relative", flex: 1, overflow: "hidden", background: "#04060f" }}>
           <img
             src={postcardPhoto}
             alt=""
-            style={{ display: "block", maxWidth: "100%", maxHeight: 620, width: "auto", height: "auto", margin: "0 auto", objectFit: "contain" }}
+            style={{
+              position: "absolute", inset: 0, width: "100%", height: "100%",
+              objectFit: "cover", objectPosition: "center",
+            }}
           />
           {/* subtle darkening so the moon and any text stay legible */}
           <div
@@ -291,52 +293,19 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
           {/* the verified, phase-accurate moon — adjust top/left to sit in open sky */}
           <div style={{ position: "absolute", top: "20%", left: "70%", transform: "translate(-50%, -50%)" }}>
             <div style={{ borderRadius: "50%", filter: "drop-shadow(0 0 28px rgba(216,229,255,0.32))" }}>
-              <MoonSvg phaseAngle={p.moon.phaseAngle} illumination={p.moon.illumination} waxing={p.moon.waxing} size={120} />
+              <MoonSvg phaseAngle={p.moon.phaseAngle} illumination={p.moon.illumination} waxing={p.moon.waxing} size={130} />
             </div>
           </div>
         </div>
       </div>
 
       {/* ── Caption line, printed-photo style ── */}
-      <div style={{ position: "relative", margin: "14px 56px 0", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 20 }}>
+      <div style={{ position: "relative", margin: "14px 56px 30px", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 20 }}>
         <p style={{ margin: 0, fontSize: 13, letterSpacing: 3, textTransform: "uppercase", color: s.ink, fontWeight: 600 }}>
           {scenePlace(p.stateLabel).toUpperCase()}
         </p>
         <p style={{ margin: 0, fontSize: 11, letterSpacing: 2.2, textTransform: "uppercase", color: s.ink, opacity: 0.85, fontWeight: 500 }}>
           {captionLoc || p.city.toUpperCase()} · {p.dateLabel.toUpperCase()} · {phaseText}
-        </p>
-      </div>
-
-      {/* ── Milestone moon strip — dark plaque, cream type, compact (caption always shows, strip only when data exists) ── */}
-      <div style={{ position: "relative", marginTop: "auto", marginBottom: 26, marginLeft: 56, marginRight: 56 }}>
-        <div style={{ height: 0, borderTop: `1px solid ${s.line}`, opacity: 0.9, marginBottom: 14 }} />
-        {milestones.length > 0 && (
-          <div
-            style={{
-              background: "linear-gradient(160deg, #101830 0%, #0a1022 60%, #070b18 100%)",
-              borderRadius: 8, padding: "14px 16px 12px", boxShadow: "inset 0 0 0 1px rgba(226,235,255,0.16)",
-              display: "flex", justifyContent: "space-between", alignItems: "flex-end",
-            }}
-          >
-            {milestones.map((m) => (
-              <div key={m.age} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flex: 1 }}>
-                <div style={{ borderRadius: "50%", boxShadow: "0 0 0 1.5px rgba(214,224,248,0.5), 0 0 14px rgba(180,200,255,0.14)", lineHeight: 0 }}>
-                  <MoonSvg phaseAngle={m.phaseAngle} illumination={m.illumination} waxing={m.waxing} size={52} />
-                </div>
-                <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1.8, textTransform: "uppercase", color: "#f7f2e6" }}>
-                  {milestoneLabel(m.age)}
-                </span>
-                {m.name && (
-                  <span style={{ fontSize: 9.5, letterSpacing: 1, color: "#dcd3c0", textAlign: "center", whiteSpace: "nowrap" }}>
-                    {m.name}
-                  </span>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
-        <p style={{ margin: "10px 0 0", textAlign: "center", fontFamily: s.heading, fontStyle: "italic", fontSize: 15, color: s.ink, opacity: 0.9 }}>
-          Below: the moon's phase on {p.recipient || "this"}'s birthday, and how it has changed on each birthday since.
         </p>
       </div>
     </div>
