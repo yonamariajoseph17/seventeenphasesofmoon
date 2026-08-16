@@ -238,7 +238,8 @@ function AddressLine({ ink, line, width, value }: { ink: string; line: string; w
 // Real high-altitude lakes and viewpoints, matched to the region so the caption
 // names an actual place — postcard convention, never invented geography.
 const SCENE_PLACES: { match: RegExp; place: string }[] = [
-  { match: /tamil\s*nadu/i, place: "Emerald Lake, Nilgiris — from the South Shore" },
+  { match: /salem/i, place: "Yercaud Lake, Salem — from the Lake View Point" },
+  { match: /tamil\s*nadu/i, place: "Yercaud Lake, Salem — from the Lake View Point" },
   { match: /kerala/i, place: "Mattupetty Lake, Munnar — from the Dam Road" },
   { match: /karnataka/i, place: "Kaveri Backwaters, Coorg — from Kushalnagar" },
   { match: /andhra|telangana/i, place: "Himayat Sagar, Deccan Plateau — from the East Bund" },
@@ -250,7 +251,7 @@ const SCENE_PLACES: { match: RegExp; place: string }[] = [
 
 function scenePlace(stateLabel?: string): string {
   const hit = SCENE_PLACES.find((s) => s.match.test(stateLabel ?? ""));
-  return hit?.place ?? "Emerald Lake, Nilgiris — from the South Shore";
+  return hit?.place ?? "Yercaud Lake, Salem — from the Lake View Point";
 }
 
 export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardBack(p, ref) {
@@ -274,26 +275,23 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
           boxShadow: `0 0 0 1px ${s.line}`,
         }}
       >
-        <div style={{ position: "relative", height: 600, overflow: "hidden", background: "#04060f" }}>
+        <div style={{ position: "relative", overflow: "hidden", background: "#04060f" }}>
           <img
             src={postcardPhoto}
             alt=""
-            style={{
-              position: "absolute", inset: 0, width: "100%", height: "100%",
-              objectFit: "cover", objectPosition: "center",
-            }}
+            style={{ display: "block", maxWidth: "100%", maxHeight: 620, width: "auto", height: "auto", margin: "0 auto", objectFit: "contain" }}
           />
           {/* subtle darkening so the moon and any text stay legible */}
           <div
             style={{
               position: "absolute", inset: 0,
-              background: "linear-gradient(180deg, rgba(4,6,15,0.15) 0%, rgba(4,6,15,0.05) 40%, rgba(4,6,15,0.35) 100%)",
+              background: "linear-gradient(180deg, rgba(4,6,15,0.12) 0%, rgba(4,6,15,0.02) 40%, rgba(4,6,15,0.28) 100%)",
             }}
           />
           {/* the verified, phase-accurate moon — adjust top/left to sit in open sky */}
-          <div style={{ position: "absolute", top: "18%", left: "72%", transform: "translate(-50%, -50%)" }}>
-            <div style={{ borderRadius: "50%", filter: "drop-shadow(0 0 40px rgba(216,229,255,0.35))" }}>
-              <MoonSvg phaseAngle={p.moon.phaseAngle} illumination={p.moon.illumination} waxing={p.moon.waxing} size={190} />
+          <div style={{ position: "absolute", top: "20%", left: "70%", transform: "translate(-50%, -50%)" }}>
+            <div style={{ borderRadius: "50%", filter: "drop-shadow(0 0 28px rgba(216,229,255,0.32))" }}>
+              <MoonSvg phaseAngle={p.moon.phaseAngle} illumination={p.moon.illumination} waxing={p.moon.waxing} size={120} />
             </div>
           </div>
         </div>
@@ -309,27 +307,27 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
         </p>
       </div>
 
-      {/* ── Milestone moon strip — dark plaque, cream type (caption always shows, strip only when data exists) ── */}
-      <div style={{ position: "relative", marginTop: "auto", marginBottom: 34, marginLeft: 56, marginRight: 56 }}>
-        <div style={{ height: 0, borderTop: `1px solid ${s.line}`, opacity: 0.9, marginBottom: 18 }} />
+      {/* ── Milestone moon strip — dark plaque, cream type, compact (caption always shows, strip only when data exists) ── */}
+      <div style={{ position: "relative", marginTop: "auto", marginBottom: 26, marginLeft: 56, marginRight: 56 }}>
+        <div style={{ height: 0, borderTop: `1px solid ${s.line}`, opacity: 0.9, marginBottom: 14 }} />
         {milestones.length > 0 && (
           <div
             style={{
               background: "linear-gradient(160deg, #101830 0%, #0a1022 60%, #070b18 100%)",
-              borderRadius: 8, padding: "22px 20px 18px", boxShadow: "inset 0 0 0 1px rgba(226,235,255,0.16)",
+              borderRadius: 8, padding: "14px 16px 12px", boxShadow: "inset 0 0 0 1px rgba(226,235,255,0.16)",
               display: "flex", justifyContent: "space-between", alignItems: "flex-end",
             }}
           >
             {milestones.map((m) => (
-              <div key={m.age} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, flex: 1 }}>
-                <div style={{ borderRadius: "50%", boxShadow: "0 0 0 1.5px rgba(214,224,248,0.5), 0 0 22px rgba(180,200,255,0.14)", lineHeight: 0 }}>
-                  <MoonSvg phaseAngle={m.phaseAngle} illumination={m.illumination} waxing={m.waxing} size={84} />
+              <div key={m.age} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, flex: 1 }}>
+                <div style={{ borderRadius: "50%", boxShadow: "0 0 0 1.5px rgba(214,224,248,0.5), 0 0 14px rgba(180,200,255,0.14)", lineHeight: 0 }}>
+                  <MoonSvg phaseAngle={m.phaseAngle} illumination={m.illumination} waxing={m.waxing} size={52} />
                 </div>
-                <span style={{ fontSize: 15, fontWeight: 600, letterSpacing: 2.4, textTransform: "uppercase", color: "#f7f2e6" }}>
+                <span style={{ fontSize: 11, fontWeight: 600, letterSpacing: 1.8, textTransform: "uppercase", color: "#f7f2e6" }}>
                   {milestoneLabel(m.age)}
                 </span>
                 {m.name && (
-                  <span style={{ fontSize: 12, letterSpacing: 1.2, color: "#dcd3c0", textAlign: "center", whiteSpace: "nowrap" }}>
+                  <span style={{ fontSize: 9.5, letterSpacing: 1, color: "#dcd3c0", textAlign: "center", whiteSpace: "nowrap" }}>
                     {m.name}
                   </span>
                 )}
@@ -337,7 +335,7 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
             ))}
           </div>
         )}
-        <p style={{ margin: "16px 0 0", textAlign: "center", fontFamily: s.heading, fontStyle: "italic", fontSize: 17, color: s.ink, opacity: 0.9 }}>
+        <p style={{ margin: "10px 0 0", textAlign: "center", fontFamily: s.heading, fontStyle: "italic", fontSize: 15, color: s.ink, opacity: 0.9 }}>
           Below: the moon's phase on {p.recipient || "this"}'s birthday, and how it has changed on each birthday since.
         </p>
       </div>
