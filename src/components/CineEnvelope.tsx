@@ -192,39 +192,17 @@ export function CineEnvelope({
 
             {/* red crescent wax seal — whole, cracks in place, then rises
                 away with the flap as it opens */}
-            <div
-              style={{
-                position: "absolute", left: "50%", top: h * 0.5,
-                width: width * 0.16, height: width * 0.16,
-                transform: "translate(-50%,-50%)",
-                transition: "opacity 0.6s",
-                opacity: phase === "empty" ? 0 : 1,
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute", inset: 0,
-                  borderRadius: "50%",
-                  animation: phase === "cracking"
-                    ? "cine-seal-glow 1.1s ease-in-out 1"
-                    : phase === "resealing"
-                      ? "cine-seal-glow 1.4s ease-in-out 1"
-                      : undefined,
-                }}
-              >
-                <CrescentSvg uid={`main-${uid}`} />
-              </div>
-
-              {cracked && (
-                <svg viewBox="0 0 100 100" style={{ position: "absolute", inset: 0 }} aria-hidden>
-                  <path
-                    d="M52 12 L46 30 L58 42 L44 56 L54 72 L48 90"
-                    fill="none" stroke="#3d0a14" strokeWidth="3" strokeLinecap="round"
-                    strokeDasharray="60" style={{ animation: "cine-crack 0.5s ease-out forwards" }}
-                  />
-                </svg>
-              )}
-            </div>
+           <div
+  style={{
+    position: "absolute", left: "50%", top: h * 0.5,
+    width: width * 0.16, height: width * 0.16,
+    transform: "translate(-50%,-50%)",
+    transition: "opacity 0.6s",
+    opacity: phase === "empty" ? 0 : 1,
+  }}
+>
+  <CrescentSvg uid={`main-${uid}`} />
+</div> 
           </div>
         </div>
       </div>
