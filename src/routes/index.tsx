@@ -999,7 +999,7 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode, occasion }
   const validation = validateMoon(m);
   const seed = year * 10000 + month * 100 + day;
   const age = year - birthYear;
-  const ageLabel = occasion === "birthday" ? `Night ${age + 1}` : `Year ${age}`;
+  const ageLabel = occasion === "birthday" ? (age === 0 ? "Night 1" : `Year ${age}`) : `Year ${age}`;
   const dateLabel = shifted.toLocaleDateString("en-US", {
     month: "long", day: "numeric", year: "numeric", timeZone: "UTC",
   });
