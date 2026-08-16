@@ -319,42 +319,104 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
           {/* the letter itself */}
           {(phase === "unsealing" && beat >= 4) || phase === "letter" || phase === "reclosing" ? (
             <div className="mt-8 flex w-full justify-center">
-              <CineLetter state={letterState} bleedText={payload.msg}>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="cine-fade text-left" style={{ animationDelay: "0.1s" }}>
-                    <p className="text-[11px] italic" style={{ color: "#6e5a38" }}>From</p>
-                    <p className="letterpaper-hand text-lg leading-tight" style={{ color: "#3a2a14" }}>
-                      {payload.from || "—"}
-                    </p>
-                    {(payload.place || payload.city) && (
-                      <p className="text-[11px] italic" style={{ color: "#6e5a38" }}>
-                        {payload.place || payload.city}
-                      </p>
-                    )}
-                  </div>
-                  <p className="cine-fade text-right text-[11px] italic" style={{ color: "#6e5a38", animationDelay: "0.2s" }}>
-                    {[payload.place || payload.city, payload.writtenDate || dateLine].filter(Boolean).join(", ")}
-                  </p>
-                </div>
-                <p className="cine-fade mt-5 text-center text-[13px] italic leading-relaxed" style={{ color: "#5a4324", animationDelay: "0.6s", fontFamily: "'Cormorant Garamond', serif" }}>
-                  {occasionLine}
-                </p>
-                <p className="cine-fade mt-7 letterpaper-hand text-2xl" style={{ animationDelay: "1s" }}>
-                  Dear {recipient},
-                </p>
-                <p
-                  className="cine-fade mt-4 letterpaper-hand leading-relaxed"
-                  style={{ animationDelay: "1.5s", fontSize: (payload.msg?.length ?? 0) > 320 ? 17 : 20, overflowWrap: "anywhere" }}
-                >
-                  {payload.msg || "I wanted to show you the moon that existed the night you were here."}
-                </p>
-                <p className="cine-fade mt-7 text-[12px] leading-relaxed" style={{ animationDelay: "3s", color: "#5f4b2c", fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic" }}>
-                  {narration}
-                </p>
-                <p className="cine-fade mt-8 letterpaper-hand text-xl" style={{ animationDelay: "4.2s" }}>
-                  {payload.closing || "Forever yours,"} {payload.from ?? ""}
-                </p>
-              </CineLetter>
+            <CineLetter state={letterState} bleedText={payload.msg}>
+
+  {/* Location and date — top of letter like real correspondence */}
+  <div className="flex items-start justify-between gap-4">
+    <div
+      className="cine-fade text-left"
+      style={{ animationDelay: "0.1s" }}
+    >
+      {payload.from && (
+        <>
+          <p
+            className="text-[11px] italic"
+            style={{ color: "#6e5a38" }}
+          >
+            From
+          </p>
+          <p
+            className="letterpaper-hand text-lg leading-tight"
+            style={{ color: "#3a2a14" }}
+          >
+            {payload.from}
+          </p>
+        </>
+      )}
+      {(payload.place || payload.city) && (
+        <p
+          className="text-[11px] italic"
+          style={{ color: "#6e5a38" }}
+        >
+          {payload.place || payload.city}
+        </p>
+      )}
+    </div>
+    <p
+      className="cine-fade text-right text-[11px] italic"
+      style={{ color: "#6e5a38", animationDelay: "0.2s" }}
+    >
+      {[payload.place || payload.city, payload.writtenDate || dateLine]
+        .filter(Boolean)
+        .join(", ")}
+    </p>
+  </div>
+
+  {/* Occasion opening line — small, centred, italic */}
+  <p
+    className="cine-fade mt-6 text-center text-[13px] italic leading-relaxed"
+    style={{
+      color: "#5a4324",
+      animationDelay: "0.5s",
+      fontFamily: "'Cormorant Garamond', serif",
+    }}
+  >
+    {occasionLine}
+  </p>
+
+  {/* Salutation */}
+  <p
+    className="cine-fade mt-8 letterpaper-hand text-2xl"
+    style={{ animationDelay: "0.9s" }}
+  >
+    Dear {recipient},
+  </p>
+
+  {/* Personal message body —
+      font scales gracefully across four size tiers based on length.
+      whiteSpace: pre-wrap preserves the sender's line breaks.
+      No character limit shown. No narration paragraph here. */}
+  <p
+    className="cine-fade mt-5 letterpaper-hand leading-loose"
+    style={{
+      animationDelay: "1.4s",
+      fontSize:
+        (payload.msg?.length ?? 0) > 800
+          ? 14
+          : (payload.msg?.length ?? 0) > 500
+          ? 16
+          : (payload.msg?.length ?? 0) > 250
+          ? 18
+          : 21,
+      overflowWrap: "anywhere",
+      whiteSpace: "pre-wrap",
+      minHeight: "10rem",
+    }}
+  >
+    {payload.msg ||
+      "I wanted to show you the moon that existed the night you were here."}
+  </p>
+
+  {/* Closing signature */}
+  <p
+    className="cine-fade mt-10 letterpaper-hand text-xl"
+    style={{ animationDelay: "2.6s" }}
+  >
+    {payload.closing || "Forever yours,"}{" "}
+    {payload.from ?? ""}
+  </p>
+
+</CineLetter>  
             </div>
           ) : null}
 
