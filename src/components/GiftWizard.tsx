@@ -15,6 +15,7 @@ import { FlowerBloom, WrapShape, BouquetArrangement, FLOWER_META, WRAP_META } fr
 import { GiftDownload } from "@/components/GiftDownload";
 import type { PrintKitData } from "@/lib/printkit";
 import { MoonImageCapture, type MoonImageSpec } from "@/components/MoonImageCapture";
+import postcardPhotoAsset from "@/assets/file_000000000e5481f4878df9fcaf638fae.png";
 
 type BasePayload = Omit<LetterPayload, "style" | "to" | "from" | "msg" | "closing" | "occasion" | "song" | "bouquet" | "place" | "writtenDate">;
 
@@ -39,6 +40,10 @@ interface Props {
 
 const PREVIEW_W = 470;
 const MAX_FLOWERS = 17;
+// How many characters comfortably fit on one page of the letter, at the
+// smallest handwriting size. Once the message grows past this, it spills
+// onto additional pages instead of shrinking indefinitely or getting cut off.
+const LETTER_PAGE_CAPACITY = 650;
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -49,14 +54,59 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
+/** Convert a bundled image asset into a base64 data URL, so it can be
+ * embedded directly into the DIY print kit's PDFs (jsPDF needs raw image
+ * data, not a build-time asset URL). */
+async function imageAssetToDataUrl(src: string): Promise<string> {
+  const res = await fetch(src);
+  const blob = await res.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
+
 /** Linearly scale a font size from `max` down to `min` as text length grows. */
 function fitFontPx(len: number, max: number, min: number): number {
   const start = 120; // full size up to this many chars
-  const end = 500;   // clamped to min beyond this
+  const end = LETTER_PAGE_CAPACITY; // clamped to min beyond this (one page's worth)
   if (len <= start) return max;
   if (len >= end) return min;
   const t = (len - start) / (end - start);
   return Math.round((max - (max - min) * t) * 10) / 10;
+}
+
+/**
+ * Split a letter into pages of roughly `capacity` characters each, breaking
+ * on word boundaries (never mid-word) and preserving paragraph breaks.
+ */
+function paginateLetter(text: string, capacity: number): string[] {
+  if (!text) return [""];
+  const paragraphs = text.split("\n");
+  const pages: string[] = [];
+  let current = "";
+
+  const pushWord = (word: string) => {
+    const candidate = current ? `${current} ${word}` : word;
+    if (candidate.length > capacity && current.trim().length > 0) {
+      pages.push(current.replace(/\s+$/, ""));
+      current = word;
+    } else {
+      current = candidate;
+    }
+  };
+
+  paragraphs.forEach((para, i) => {
+    para.split(" ").filter(Boolean).forEach(pushWord);
+    if (i < paragraphs.length - 1) current += "\n";
+  });
+
+  if (current.trim().length > 0 || pages.length === 0) {
+    pages.push(current.replace(/\s+$/, ""));
+  }
+  return pages;
 }
 
 export function GiftWizard(props: Props) {
@@ -79,7 +129,18 @@ export function GiftWizard(props: Props) {
     ];
   }, [isDiy, moon, milestones]);
   const [moonImages, setMoonImages] = useState<Record<string, string> | null>(null);
-  const moonImagesReady = !isDiy || !!moonImages;
+
+  // DIY postcard photo — the same real-place photo the digital postcard uses,
+  // converted to a data URL once so the PDF builder can embed it directly.
+  const [postcardPhotoData, setPostcardPhotoData] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isDiy) return;
+    let cancelled = false;
+    imageAssetToDataUrl(postcardPhotoAsset).then((url) => { if (!cancelled) setPostcardPhotoData(url); });
+    return () => { cancelled = true; };
+  }, [isDiy]);
+
+  const kitAssetsReady = !isDiy || (!!moonImages && !!postcardPhotoData);
 
   // Step 1 — the letter
   const [to, setTo] = useState("");
@@ -127,6 +188,10 @@ export function GiftWizard(props: Props) {
   const [giftTagText, setGiftTagText] = useState("");
   const songInputRef = useRef<HTMLInputElement>(null);
 
+  // Letter pagination — split once the message outgrows one page, with a
+  // page-turn preview so nothing gets silently cut off before moving on.
+  const [letterPreviewPage, setLetterPreviewPage] = useState(0);
+
   // Result
   const [creating, setCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -139,8 +204,14 @@ export function GiftWizard(props: Props) {
   // Exact letter-header values chosen by the sender — never auto-derived from astronomy.
   const writtenDateLabel = writtenDate ? format(parseISO(writtenDate), "MMMM d, yyyy") : "";
   const headerPlace = place.trim();
-  // Scale handwriting down as the letter grows so it never spills past the paper.
+  // Scale handwriting down as the letter grows so it never spills past one page.
   const composerFontPx = fitFontPx(message.length, 22, 15);
+
+  // Paginate the letter — one page's worth of text per page, word-aware.
+  const letterPages = useMemo(() => paginateLetter(message, LETTER_PAGE_CAPACITY), [message]);
+  useEffect(() => {
+    setLetterPreviewPage((p) => Math.min(p, Math.max(0, letterPages.length - 1)));
+  }, [letterPages.length]);
 
   useEffect(() => {
     if (step !== 2) { setFlipHint(false); return; }
@@ -154,6 +225,7 @@ export function GiftWizard(props: Props) {
     date: new Date(),
     tz: base.tz,
     city,
+    stateLabel: city.split(",").slice(1).join(",").trim() || undefined,
     recipient,
     recipientCity: recipientCity.trim(),
     sender: from.trim(),
@@ -278,6 +350,10 @@ export function GiftWizard(props: Props) {
     closing: "Yours,",
     narration,
     city,
+    // Best-effort state/region label from "City, State" — same lookup basis
+    // the digital postcard's photo caption (scenePlace) uses, so the DIY
+    // print kit names the same real place instead of a default fallback.
+    stateLabel: city.split(",").slice(1).join(",").trim() || undefined,
     dateLabel,
     phaseName: moon.name,
     illumPct,
@@ -300,6 +376,7 @@ export function GiftWizard(props: Props) {
           ),
         }
       : undefined,
+    postcardPhoto: postcardPhotoData ?? undefined,
   };
 
   // ── DIY: the print kit is ready to download ────────────────────────
@@ -445,6 +522,10 @@ export function GiftWizard(props: Props) {
                 className="letterpaper-hand block w-full max-w-full resize-none bg-transparent outline-none placeholder:text-[#7a5a2e]/40"
                 style={{ fontSize: composerFontPx, lineHeight: "34px", overflowWrap: "anywhere", wordBreak: "break-word" }}
               />
+              <div className="mt-2 flex items-center justify-between text-[11px] text-[#7a5a2e]/70">
+                <span>{letterPages.length > 1 ? `Spans ${letterPages.length} pages` : "Fits on one page"}</span>
+                <span className="tabular-nums">{message.length}/1200</span>
+              </div>
               <div className="mt-6">
                 <span className="letterpaper-hand block text-2xl">Yours,</span>
                 <input
@@ -457,6 +538,51 @@ export function GiftWizard(props: Props) {
               </div>
             </div>
           </LetterPaper>
+
+          {/* Page-turn preview — appears once the letter outgrows a single page,
+              so the sender can see and flip through every page before moving on. */}
+          {letterPages.length > 1 && (
+            <div className="mt-6">
+              <div className="flex items-center justify-center gap-4">
+                <button
+                  type="button"
+                  onClick={() => setLetterPreviewPage((p) => Math.max(0, p - 1))}
+                  disabled={letterPreviewPage === 0}
+                  className="rounded-full border border-border px-4 py-1.5 text-[11px] tracking-[0.2em] text-muted-foreground uppercase disabled:opacity-30 hover:text-foreground"
+                >
+                  ← Prev page
+                </button>
+                <span className="text-[11px] tracking-[0.2em] text-accent uppercase">
+                  Page {letterPreviewPage + 1} of {letterPages.length}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setLetterPreviewPage((p) => Math.min(letterPages.length - 1, p + 1))}
+                  disabled={letterPreviewPage === letterPages.length - 1}
+                  className="rounded-full border border-border px-4 py-1.5 text-[11px] tracking-[0.2em] text-muted-foreground uppercase disabled:opacity-30 hover:text-foreground"
+                >
+                  Next page →
+                </button>
+              </div>
+              <div className="mt-4">
+                <LetterPaper
+                  place={letterPreviewPage === 0 ? headerPlace : ""}
+                  dateLabel={letterPreviewPage === 0 ? writtenDateLabel : ""}
+                  foldGuides={isDiy}
+                >
+                  <p
+                    className="letterpaper-hand whitespace-pre-wrap"
+                    style={{ fontSize: 15, lineHeight: "34px", overflowWrap: "anywhere", wordBreak: "break-word" }}
+                  >
+                    {letterPages[letterPreviewPage]}
+                  </p>
+                </LetterPaper>
+              </div>
+              <p className="mt-2 text-center text-[11px] text-muted-foreground/80">
+                {isDiy ? "Each page prints separately in the DIY kit." : "Shown as separate pages when they open the letter."}
+              </p>
+            </div>
+          )}
 
           {/* Occasion is set once on the main page — shown here read-only for context, not re-askable. */}
           <div className="mt-5 flex flex-wrap items-center justify-between gap-4">
@@ -688,11 +814,11 @@ export function GiftWizard(props: Props) {
 
               <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
                 <button type="button" onClick={() => setSubStep("wrap")} className="text-xs tracking-[0.2em] text-muted-foreground uppercase hover:text-foreground">← Back</button>
-                <button type="button" onClick={createGift} disabled={creating || !moonImagesReady} className="rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
+                <button type="button" onClick={createGift} disabled={creating || !kitAssetsReady} className="rounded-md bg-primary px-6 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60">
                   {creating
                     ? (isDiy ? "Preparing your print kit…" : "Sealing your gift…")
-                    : !moonImagesReady
-                      ? "Preparing moon images…"
+                    : !kitAssetsReady
+                      ? "Preparing images…"
                       : (isDiy ? "Generate My Print Kit →" : "Create & Send Gift")}
                 </button>
               </div>
