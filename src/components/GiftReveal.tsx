@@ -53,16 +53,26 @@ const CLOSING_CAPTION: Record<string, string[]> = {
   general: ["The moon keeps no calendar.", "It simply returns, night after night,", "to the same sky it has always known."],
 };
 
-/** Postcard-back explanation — driven by occasion, replacing the old milestone-only line. */
-function postcardBackLine(occasion: string, city: string, recipient: string): string {
+/**
+ * Postcard-back explanation — driven by occasion.
+ *
+ * Previously named the birth city directly ("The sky above {city}...") even
+ * though the photograph behind this caption is a fixed stock night scene
+ * (see Postcard.tsx's "Yercaud Lake, Salem" caption) — not an actual photo
+ * of that city. Naming a place next to a picture that isn't it read as a
+ * factual claim the product doesn't back up. These lines now describe what's
+ * actually real — the verified moon phase and the date — without claiming a
+ * location for the pictured scene.
+ */
+function postcardBackLine(occasion: string, recipient: string): string {
   const lines: Record<string, string> = {
-    birthday: `The sky above ${city}, on the night ${recipient} was born — kept exactly as it was.`,
-    anniversary: `The same sky above ${city}, the night it all began for you two.`,
-    memory: `A quiet frame of the sky above ${city}, holding onto that night.`,
-    proposal: `The sky above ${city}, the night everything changed.`,
-    friendship: `The sky above ${city}, on the night your story with ${recipient} began.`,
-    "first-met": `The sky above ${city}, exactly as it was the night you met.`,
-    general: `The sky above ${city}, held onto exactly as it was that night.`,
+    birthday: `The exact sky on the night ${recipient} was born — kept just as it was.`,
+    anniversary: `The exact sky from the night it all began for you two — kept just as it was.`,
+    memory: `A quiet frame of that night's sky, held onto just as it was.`,
+    proposal: `The sky from the night everything changed — kept just as it was.`,
+    friendship: `The sky from the night your story with ${recipient} began — kept just as it was.`,
+    "first-met": `The sky exactly as it was the night you met.`,
+    general: `The sky, held onto exactly as it was that night.`,
   };
   return lines[occasion] ?? lines.general;
 }
@@ -457,12 +467,14 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
             />
           </ScaledCard>
 
-          {/* explanation, sitting below the postcard graphic itself */}
+          {/* explanation, sitting below the postcard graphic itself — no
+              location claim here since the pictured scene is a fixed stock
+              photo, not an actual photo of the birth city. */}
           <div className="mt-6 max-w-md text-center px-4">
             <p className="text-[13px] leading-relaxed" style={{ color: "#c9c2ae", fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic" }}>
               {phase === "postcard-back"
-                ? `The front shows the address side — a postcard sent under the night sky over ${payload.city}, the moon exactly as it was the night ${recipient} was born.`
-                : postcardBackLine(occasion, payload.city, recipient)}
+                ? `The front shows the address side — a postcard sent under that night's sky, the moon exactly as it was the night ${recipient} was born.`
+                : postcardBackLine(occasion, recipient)}
             </p>
           </div>
 
