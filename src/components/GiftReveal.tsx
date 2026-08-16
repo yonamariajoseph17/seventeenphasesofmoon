@@ -53,6 +53,20 @@ const CLOSING_CAPTION: Record<string, string[]> = {
   general: ["The moon keeps no calendar.", "It simply returns, night after night,", "to the same sky it has always known."],
 };
 
+/** Postcard-back explanation — driven by occasion, replacing the old milestone-only line. */
+function postcardBackLine(occasion: string, city: string, recipient: string): string {
+  const lines: Record<string, string> = {
+    birthday: `The sky above ${city}, on the night ${recipient} was born — kept exactly as it was.`,
+    anniversary: `The same sky above ${city}, the night it all began for you two.`,
+    memory: `A quiet frame of the sky above ${city}, holding onto that night.`,
+    proposal: `The sky above ${city}, the night everything changed.`,
+    friendship: `The sky above ${city}, on the night your story with ${recipient} began.`,
+    "first-met": `The sky above ${city}, exactly as it was the night you met.`,
+    general: `The sky above ${city}, held onto exactly as it was that night.`,
+  };
+  return lines[occasion] ?? lines.general;
+}
+
 
 /** Poetic narration, phrased differently per occasion — same facts, different heart. */
 function buildNarration(
@@ -386,7 +400,7 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
             <p className="text-[13px] leading-relaxed" style={{ color: "#c9c2ae", fontFamily: "'Cormorant Garamond', serif", fontStyle: "italic" }}>
               {phase === "postcard-back"
                 ? `The front shows the address side — a postcard sent under the night sky over ${payload.city}, the moon exactly as it was the night ${recipient} was born.`
-                : `Below the sky, each moon marks a birthday since — the same date, the same city, a different sky each year.`}
+                : postcardBackLine(occasion, payload.city, recipient)}
             </p>
           </div>
 
@@ -559,4 +573,4 @@ function TapPrompt({ label, tone = "warm", delay }: { label: string; tone?: "war
       {label} <span aria-hidden>↓</span>
     </span>
   );
-        }
+}
