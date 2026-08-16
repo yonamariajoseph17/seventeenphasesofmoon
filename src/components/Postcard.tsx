@@ -151,12 +151,12 @@ export const PostcardFront = forwardRef<HTMLDivElement, Props>(function Postcard
           <div style={{ position: "absolute", inset: 0, top: -4, right: "3%" }}>
             <p
               style={{
-                margin: 0, fontFamily: "'Caveat', cursive", fontSize: 48, lineHeight: "78px",
+                margin: 0, fontFamily: "'Caveat', cursive", fontSize: 64, lineHeight: "90px",
                 color: s.ink, whiteSpace: "pre-wrap", overflow: "hidden",
                 display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical",
               }}
             >
-              {p.message || "Every place becomes a little more beautiful when you have someone to share it with."}
+              {"Every place becomes a little more beautiful when you have someone to share it with."}
             </p>
           </div>
         </div>
