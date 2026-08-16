@@ -2,7 +2,7 @@ import { useId } from "react";
 
 /**
  * The envelope of the gift — aged cream paper, vintage moon stamps, a circular
- * birth-city postmark, handwritten names and a burgundy wax seal on the flap.
+ * birth-city postmark, handwritten names and a dusty-rose wax seal on the flap.
  * All motion is driven by `phase`, so the reveal sequence controls the timing.
  */
 
@@ -29,7 +29,7 @@ interface Props {
 const PAPER = "linear-gradient(146deg, #f3e6cc 0%, #ecdcbc 42%, #e3d0a8 78%, #d8c496 100%)";
 const PAPER_DEEP = "linear-gradient(146deg, #e7d5b1 0%, #dcc79c 60%, #cfb787 100%)";
 const INK = "#2f2415";
-const WAX = "radial-gradient(circle at 36% 30%, #c03a50 0%, #8d1a2c 62%, #5f0f1d 100%)";
+const WAX = "radial-gradient(circle at 36% 30%, #dda3ae 0%, #ba7284 55%, #8d4d5e 100%)";
 
 export function CineEnvelope({
   phase,
@@ -119,18 +119,10 @@ export function CineEnvelope({
             borderRadius: 4, overflow: "visible",
           }}
         >
-          {/* texture + lining layer (not mirrored — no text here) */}
+          {/* texture layer (not mirrored — no text here) */}
           <div style={{ position: "absolute", inset: 0, borderRadius: 4, overflow: "hidden" }}>
             <Grain uid={`b${uid}`} />
             <Foxing />
-            {/* antique security lining — diagonal deep-red / navy stripes */}
-            <div
-              style={{
-                position: "absolute", inset: 0,
-                backgroundImage:
-                  "repeating-linear-gradient(45deg, rgba(122,20,32,0.11) 0 3px, transparent 3px 12px), repeating-linear-gradient(-45deg, rgba(20,32,86,0.10) 0 3px, transparent 3px 12px)",
-              }}
-            />
             {/* ghost postmark bled through from the outside stamp */}
             <div
               style={{
@@ -192,6 +184,9 @@ export function CineEnvelope({
             <div style={{ position: "absolute", left: 0, right: 0, top: 0, height: 2, background: "rgba(160,128,78,0.7)" }} />
           </div>
 
+          {/* dried flower sprig, rising from behind the seal */}
+          <FloralSprig top={h * 0.5} width={width} />
+
           {/* wax seal at the flap point — content layer un-mirrored */}
           <div
             style={{
@@ -246,7 +241,7 @@ export function CineEnvelope({
         </div>
       </div>
     </div>
-     );
+  );
 }
 
 function SealHalf({ side, broken }: { side: "l" | "r"; wax?: boolean; broken: boolean }) {
@@ -259,6 +254,41 @@ function SealHalf({ side, broken }: { side: "l" | "r"; wax?: boolean; broken: bo
         animation: broken ? `${side === "l" ? "cine-seal-split-l" : "cine-seal-split-r"} 1.4s 0.45s cubic-bezier(0.3,0.1,0.2,1) forwards` : undefined,
       }}
     />
+  );
+}
+
+/** Small dried-flower sprig, rising up from behind the wax seal — matches a
+ *  pressed baby's-breath bouquet tucked under the seal on a real envelope. */
+function FloralSprig({ top, width }: { top: number; width: number }) {
+  const w = width * 0.34;
+  const h = w * 1.6;
+  return (
+    <svg
+      width={w}
+      height={h}
+      viewBox="0 0 100 160"
+      style={{ position: "absolute", left: "50%", top, transform: "translate(-50%, -78%)", pointerEvents: "none" }}
+      aria-hidden
+    >
+      <g stroke="#8f8a68" strokeWidth="1.3" fill="none" opacity="0.85">
+        <path d="M50 160 C 47 130, 53 108, 47 78" />
+        <path d="M48 118 C 39 110, 30 106, 22 96" />
+        <path d="M51 106 C 60 98, 69 94, 78 86" />
+        <path d="M46 90 C 38 80, 31 74, 26 62" />
+        <path d="M50 78 C 59 68, 66 62, 73 51" />
+      </g>
+      <g fill="#c9b79c" opacity="0.9">
+        <circle cx="47" cy="76" r="3.4" />
+        <circle cx="22" cy="94" r="2.8" />
+        <circle cx="78" cy="84" r="3" />
+        <circle cx="26" cy="60" r="2.6" />
+        <circle cx="73" cy="49" r="2.8" />
+        <circle cx="40" cy="68" r="1.9" />
+        <circle cx="58" cy="60" r="2.1" />
+        <circle cx="32" cy="44" r="1.9" />
+        <circle cx="65" cy="38" r="1.9" />
+      </g>
+    </svg>
   );
 }
 
