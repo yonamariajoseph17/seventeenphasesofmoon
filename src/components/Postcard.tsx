@@ -148,10 +148,10 @@ export const PostcardFront = forwardRef<HTMLDivElement, Props>(function Postcard
             <div key={i} style={{ height: 0, borderBottom: `1.5px solid ${s.line}`, opacity: 0.7, marginBottom: 78, width: i === 2 ? "72%" : "94%" }} />
           ))}
           {/* handwritten message, laid over the ruled lines */}
-          <div style={{ position: "absolute", inset: 0, top: -6, right: "8%" }}>
+          <div style={{ position: "absolute", inset: 0, top: -4, right: "3%" }}>
             <p
               style={{
-                margin: 0, fontFamily: "'Caveat', cursive", fontSize: 30, lineHeight: "78px",
+                margin: 0, fontFamily: "'Caveat', cursive", fontSize: 48, lineHeight: "78px",
                 color: s.ink, whiteSpace: "pre-wrap", overflow: "hidden",
                 display: "-webkit-box", WebkitLineClamp: 3, WebkitBoxOrient: "vertical",
               }}
@@ -265,10 +265,10 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
       {/* ruled frame on the cream card stock */}
       <div style={{ position: "absolute", inset: 22, border: `1.5px solid ${s.line}`, borderRadius: 16, opacity: 0.6, pointerEvents: "none" }} />
 
-      {/* ── Mounted photograph: cream card-stock mount visible around the scene, full-bleed within the frame ── */}
+      {/* ── Mounted photograph: thin cream card-stock edge, photo dominates the card ── */}
       <div
         style={{
-          position: "relative", margin: "44px 56px 0", padding: 9, flex: 1,
+          position: "relative", margin: "26px 30px 0", padding: 6, flex: 1,
           background: s.light ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.08)",
           boxShadow: `0 0 0 1px ${s.line}`,
           display: "flex", flexDirection: "column",
@@ -287,7 +287,7 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
           <div
             style={{
               position: "absolute", inset: 0,
-              background: "linear-gradient(180deg, rgba(4,6,15,0.12) 0%, rgba(4,6,15,0.02) 40%, rgba(4,6,15,0.28) 100%)",
+              background: "linear-gradient(180deg, rgba(4,6,15,0.12) 0%, rgba(4,6,15,0.02) 40%, rgba(4,6,15,0.4) 100%)",
             }}
           />
           {/* the verified, phase-accurate moon — adjust top/left to sit in open sky */}
@@ -296,14 +296,22 @@ export const PostcardBack = forwardRef<HTMLDivElement, Props>(function PostcardB
               <MoonSvg phaseAngle={p.moon.phaseAngle} illumination={p.moon.illumination} waxing={p.moon.waxing} size={130} />
             </div>
           </div>
+          {/* location, burned onto the photo — bold, gold, bottom-left corner */}
+          <div style={{ position: "absolute", left: 22, bottom: 18, right: 22 }}>
+            <p
+              style={{
+                margin: 0, fontSize: 21, fontWeight: 800, letterSpacing: 1.4, textTransform: "uppercase",
+                color: "#f5c94b", textShadow: "0 2px 8px rgba(0,0,0,0.75), 0 0 18px rgba(0,0,0,0.4)",
+              }}
+            >
+              {scenePlace(p.stateLabel)}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* ── Caption line, printed-photo style ── */}
-      <div style={{ position: "relative", margin: "14px 56px 30px", display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 20 }}>
-        <p style={{ margin: 0, fontSize: 13, letterSpacing: 3, textTransform: "uppercase", color: s.ink, fontWeight: 600 }}>
-          {scenePlace(p.stateLabel).toUpperCase()}
-        </p>
+      {/* ── Caption line — city, date, phase ── */}
+      <div style={{ position: "relative", margin: "14px 56px 30px", textAlign: "right" }}>
         <p style={{ margin: 0, fontSize: 11, letterSpacing: 2.2, textTransform: "uppercase", color: s.ink, opacity: 0.85, fontWeight: 500 }}>
           {captionLoc || p.city.toUpperCase()} · {p.dateLabel.toUpperCase()} · {phaseText}
         </p>
