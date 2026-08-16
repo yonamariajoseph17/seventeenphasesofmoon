@@ -306,9 +306,22 @@ export function GiftReveal({ record, onSeeRecord }: { record: LetterRecord; onSe
           {(phase === "unsealing" && beat >= 4) || phase === "letter" || phase === "reclosing" ? (
             <div className="mt-8 flex w-full justify-center">
               <CineLetter state={letterState} bleedText={payload.msg}>
-                <p className="cine-fade text-right text-[11px] italic" style={{ color: "#6e5a38", animationDelay: "0.2s" }}>
-                  {[payload.place || payload.city, payload.writtenDate || dateLine].filter(Boolean).join(", ")}
-                </p>
+                <div className="flex items-start justify-between gap-4">
+                  <div className="cine-fade text-left" style={{ animationDelay: "0.1s" }}>
+                    <p className="text-[11px] italic" style={{ color: "#6e5a38" }}>From</p>
+                    <p className="letterpaper-hand text-lg leading-tight" style={{ color: "#3a2a14" }}>
+                      {payload.from || "—"}
+                    </p>
+                    {(payload.place || payload.city) && (
+                      <p className="text-[11px] italic" style={{ color: "#6e5a38" }}>
+                        {payload.place || payload.city}
+                      </p>
+                    )}
+                  </div>
+                  <p className="cine-fade text-right text-[11px] italic" style={{ color: "#6e5a38", animationDelay: "0.2s" }}>
+                    {[payload.place || payload.city, payload.writtenDate || dateLine].filter(Boolean).join(", ")}
+                  </p>
+                </div>
                 <p className="cine-fade mt-5 text-center text-[13px] italic leading-relaxed" style={{ color: "#5a4324", animationDelay: "0.6s", fontFamily: "'Cormorant Garamond', serif" }}>
                   {occasionLine}
                 </p>
@@ -546,4 +559,4 @@ function TapPrompt({ label, tone = "warm", delay }: { label: string; tone?: "war
       {label} <span aria-hidden>↓</span>
     </span>
   );
-}
+        }
