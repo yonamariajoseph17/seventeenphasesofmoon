@@ -56,36 +56,35 @@ export const WRAPS = [
 export type WrapId = (typeof WRAPS)[number];
 
 export interface Bouquet {
-  flowers: FlowerId[];   // chosen blooms (may mix types/colors), up to 8
+  flowers: FlowerId[];
   wrap: WrapId;
 }
 
 export interface LetterPayload {
-  v: 1;                 // schema version
-  name: string;         // person the moon was calculated for
+  v: 1;
+  name: string;
   pronoun: "she/her" | "he/him" | "they/them";
-  date: string;         // YYYY-MM-DD (civil date at location)
-  time: string;         // HH:MM local
+  date: string;
+  time: string;
   city: string;
   tz: number;
   lat: number;
   lon: number;
   mode: "custom" | "sunrise" | "sunset";
-  to?: string;          // recipient display name
-  msg?: string;         // personal message
-  from?: string;        // sender name
-  closing?: string;     // closing line (default "Forever yours,")
-  place?: string;       // where the sender wrote from (letter header)
-  writtenDate?: string; // the date the sender chose (letter header), display string
+  to?: string;
+  msg?: string;          // up to 1200 chars
+  from?: string;
+  closing?: string;
+  place?: string;
+  writtenDate?: string;
   style: LetterStyle;
-  occasion?: LetterOccasion;  // sets the emotional opening line
-  song?: string;        // signed URL of an uploaded personal song
-  songScope?: "letter" | "all"; // where the personal song plays
-  recipientCity?: string;       // recipient's city, shown on envelope + postcard
-  bouquet?: Bouquet;    // chosen flowers + wrap
-  giftType?: "digital" | "diy"; // shared as a link, or printed by hand
-  giftTagText?: string;         // DIY bouquet tag note (max 60 chars)
-
+  occasion?: LetterOccasion;
+  song?: string;
+  songScope?: "letter" | "all";
+  recipientCity?: string;
+  bouquet?: Bouquet;
+  giftType?: "digital" | "diy";
+  giftTagText?: string;  // up to 80 chars
 }
 
 function utf8ToB64Url(str: string): string {
