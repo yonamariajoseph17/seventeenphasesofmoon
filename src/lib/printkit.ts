@@ -32,9 +32,21 @@ export interface PrintKitData {
   /** 0..1 illuminated fraction, and whether the lit limb is on the right. */
   illumination: number;
   waxing: boolean;
-  milestones: { age: number; illumination: number; waxing: boolean; name?: string }[];
+  milestones: { age: number; phaseAngle: number; illumination: number; waxing: boolean; name?: string }[];
   /** DIY bouquet tag note written by the sender. */
   giftTagText?: string;
+  /** The pronoun chosen on the main form — drives the closing tagline's wording. */
+  pronoun?: "she/her" | "he/him" | "they/them";
+  /**
+   * Real photorealistic moon renders captured from the website (base64 PNGs),
+   * used to build the moon-cutouts sheet. When present, the postcard and
+   * bouquet tag print blank cut-guide circles instead of a drawn moon — the
+   * person cuts the matching image from the cutout sheet and glues it on.
+   */
+  moonImages?: {
+    main: string;
+    milestones: Record<number, string>;
+  };
 }
 
 const CREAM: [number, number, number] = [246, 238, 219];
@@ -42,6 +54,24 @@ const INK: [number, number, number] = [56, 44, 26];
 const SUB: [number, number, number] = [116, 98, 70];
 const CRIMSON: [number, number, number] = [140, 26, 44];
 const NIGHT: [number, number, number] = [10, 15, 32];
+
+// ── Pronoun helpers — used only for the closing tagline, so it matches
+// whatever pronoun the sender picked instead of assuming "she". ─────────
+const PRONOUN_SUBJECT: Record<string, string> = { "she/her": "she", "he/him": "he", "they/them": "they" };
+const PRONOUN_WAS: Record<string, string> = { "she/her": "was", "he/him": "was", "they/them": "were" };
+export function subjectPronoun(p?: string): string { return PRONOUN_SUBJECT[p ?? ""] ?? "they"; }
+export function wasWere(p?: string): string { return PRONOUN_WAS[p ?? ""] ?? "were"; }
+export function taglineFor(p?: string): string {
+  return `Built in love, for someone who gazed at the moon and never knew how much ${subjectPronoun(p)} ${wasWere(p)} watched over by it.`;
+}
+
+/** Monogram initial for stamps / wax seals — the sender's initial (classic
+ * wax-seal convention), falling back to the recipient's, then to "S" for
+ * Sky We Share. Previously this was hardcoded to "C" everywhere. */
+function monogram(d: PrintKitData): string {
+  const name = (d.sender || d.recipient || "").trim();
+  return name ? name[0].toUpperCase() : "S";
+}
 
 function paper(doc: jsPDF, w: number, h: number, fill = CREAM) {
   doc.setFillColor(...fill);
@@ -56,36 +86,94 @@ function dashed(doc: jsPDF, x1: number, y1: number, x2: number, y2: number) {
   doc.setLineDashPattern([], 0);
 }
 
-/** A small moon disc: dark disc, lit portion, thin ring. */
+/** Fill a closed polygon given as absolute points relative to (cx, cy). */
+function fillPolygon(doc: jsPDF, cx: number, cy: number, pts: Array<[number, number]>, style: "F" | "S" | "FD" = "F") {
+  if (pts.length < 3) return;
+  const deltas: Array<[number, number]> = [];
+  for (let i = 1; i < pts.length; i++) {
+    deltas.push([pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]]);
+  }
+  doc.lines(deltas, cx + pts[0][0], cy + pts[0][1], [1, 1], style, true);
+}
+
+/**
+ * A small moon disc: dark disc, lit portion, thin ring.
+ *
+ * Rewritten to use one continuous closed-form polygon (same terminator-ellipse
+ * geometry as the web moon renderer) instead of the old branch-based
+ * circle+ellipse+rect subtraction hack. The old version special-cased
+ * "near full" / "gibbous" / "crescent" separately and could hit degenerate,
+ * zero-area shapes at certain illumination values (e.g. milestones whose
+ * illumination came through as NaN/undefined) — those fed NaN into jsPDF's
+ * ellipse() calls, which produced malformed drawing instructions that some
+ * PDF renderers silently drop, showing up as a blank moon. This version:
+ *   1. Guards against any non-finite input, treating it safely as "new moon"
+ *      instead of ever passing NaN to a drawing primitive.
+ *   2. Uses a single unbroken formula for every phase from new to full, so
+ *      there are no special-case branches left to break.
+ */
 function moonDisc(doc: jsPDF, cx: number, cy: number, r: number, illum: number, waxing: boolean) {
+  // Base disc — dark night side, always drawn first regardless of phase.
   doc.setFillColor(24, 28, 44);
   doc.circle(cx, cy, r, "F");
-  const f = Math.max(0, Math.min(1, illum));
-  if (f > 0.005) {
-    doc.setFillColor(238, 236, 226);
-    if (f >= 0.985) {
+
+  const safeIllum = typeof illum === "number" && Number.isFinite(illum) ? illum : 0;
+  const f = Math.max(0, Math.min(1, safeIllum));
+
+  if (f > 0.003) {
+    if (f >= 0.997) {
+      // Full moon — the terminator ellipse degenerates to the disc edge, so
+      // just fill the whole disc directly rather than building a polygon.
+      doc.setFillColor(238, 236, 226);
       doc.circle(cx, cy, r, "F");
-    } else if (f >= 0.5) {
-      // gibbous: full half plus an ellipse bulging across the terminator
-      const half = (f - 0.5) * 2;
-      doc.ellipse(cx, cy, r * half, r, "F");
-      doc.circle(cx + (waxing ? r / 2 : -r / 2), cy, r, "F");
-      doc.setFillColor(24, 28, 44);
-      doc.rect(waxing ? cx - r * 1.02 : cx, cy - r * 1.02, r * 1.02, r * 2.04, "F");
-      doc.setFillColor(238, 236, 226);
-      doc.ellipse(cx, cy, r * half, r, "F");
-      doc.setFillColor(238, 236, 226);
-      const s = waxing ? 1 : -1;
-      doc.ellipse(cx + (s * r) / 2, cy, r / 2, r, "F");
     } else {
-      // crescent: lit sliver on the correct limb
-      const s = waxing ? 1 : -1;
-      doc.ellipse(cx + (s * r * (1 - f)) / 1.4, cy, r * f * 1.1, r, "F");
+      // Standard phase geometry: illumination fraction f = (1 - cos(angle)) / 2,
+      // so angle = acos(1 - 2f), running 0 (new) .. PI (full). The terminator's
+      // horizontal projection is cos(angle): 1 at new, 0 at quarter, -1 at full.
+      const angle = Math.acos(1 - 2 * f);
+      const terminator = Math.cos(angle);
+      const steps = 48;
+      const pts: Array<[number, number]> = [];
+      // Outer edge, top to bottom, on the illuminated side.
+      for (let i = 0; i <= steps; i++) {
+        const y = -r + (2 * r * i) / steps;
+        const edge = Math.sqrt(Math.max(0, r * r - y * y));
+        pts.push([waxing ? edge : -edge, y]);
+      }
+      // Back up along the terminator curve, bottom to top.
+      for (let i = steps; i >= 0; i--) {
+        const y = -r + (2 * r * i) / steps;
+        const edge = Math.sqrt(Math.max(0, r * r - y * y));
+        const boundary = (waxing ? terminator : -terminator) * edge;
+        pts.push([boundary, y]);
+      }
+      doc.setFillColor(238, 236, 226);
+      fillPolygon(doc, cx, cy, pts, "F");
     }
   }
+
   doc.setDrawColor(150, 156, 172);
   doc.setLineWidth(0.2);
   doc.circle(cx, cy, r, "S");
+}
+
+/**
+ * Blank dashed cut-guide circle — printed on the postcard/bouquet tag in
+ * place of a drawn moon when a real cutout image is available. The person
+ * cuts the matching moon from the moon-cutouts sheet and glues it on here.
+ */
+function moonGuide(doc: jsPDF, cx: number, cy: number, r: number, caption = true) {
+  doc.setDrawColor(...SUB);
+  doc.setLineWidth(0.25);
+  doc.setLineDashPattern([1, 1], 0);
+  doc.circle(cx, cy, r, "S");
+  doc.setLineDashPattern([], 0);
+  if (caption) {
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(4.4);
+    doc.setTextColor(...SUB);
+    doc.text("GLUE MOON HERE", cx, cy + r + 3.5, { align: "center" });
+  }
 }
 
 function heading(doc: jsPDF, text: string, x: number, y: number, size = 9, color = SUB) {
@@ -241,7 +329,7 @@ function buildEnvelope(d: PrintKitData): jsPDF {
   doc.rect(x0 + bw - 44, y0 + 8, 20, 25, "F");
   doc.setTextColor(247, 220, 189);
   doc.setFontSize(13);
-  doc.text("C", x0 + bw - 34, y0 + 22, { align: "center" });
+  doc.text(monogram(d), x0 + bw - 34, y0 + 22, { align: "center" });
   doc.setFontSize(5);
   doc.text("SKY WE SHARE", x0 + bw - 34, y0 + 29, { align: "center" });
   // postmark
@@ -260,7 +348,7 @@ function buildEnvelope(d: PrintKitData): jsPDF {
   doc.circle(x0 + bw / 2, y0 - top + 22, 9, "F");
   doc.setTextColor(240, 207, 166);
   doc.setFontSize(10);
-  doc.text("C", x0 + bw / 2, y0 - top + 25, { align: "center" });
+  doc.text(monogram(d), x0 + bw / 2, y0 - top + 25, { align: "center" });
 
   // instructions in the margin, outside the cut lines
   doc.setFont("helvetica", "normal");
@@ -300,8 +388,13 @@ function buildPostcard(d: PrintKitData): jsPDF {
     const x = rnd() * W, y = rnd() * 56, r = 0.08 + rnd() * 0.22;
     doc.circle(x, y, r, "F");
   }
-  // moon
-  moonDisc(doc, W - 34, 20, 9, d.illumination, d.waxing);
+  // moon — a blank cut-guide when the real image ships on the cutout sheet,
+  // otherwise fall back to the drawn vector moon so nothing is ever blank.
+  if (d.moonImages?.main) {
+    moonGuide(doc, W - 34, 20, 9);
+  } else {
+    moonDisc(doc, W - 34, 20, 9, d.illumination, d.waxing);
+  }
   // mountains
   doc.setFillColor(9, 12, 24);
   doc.triangle(-6, 60, 44, 30, 90, 60, "F");
@@ -327,7 +420,11 @@ function buildPostcard(d: PrintKitData): jsPDF {
   const step = W / (ms.length || 1);
   ms.forEach((m, i) => {
     const cx = step * (i + 0.5);
-    moonDisc(doc, cx, 88, 4, m.illumination, m.waxing);
+    if (d.moonImages?.milestones?.[m.age]) {
+      moonGuide(doc, cx, 88, 4, false);
+    } else {
+      moonDisc(doc, cx, 88, 4, m.illumination, m.waxing);
+    }
     doc.setFontSize(4.6);
     doc.setTextColor(...SUB);
     doc.text(m.age === 0 ? "BIRTH" : `AGE ${m.age}`, cx, 96, { align: "center" });
@@ -368,7 +465,7 @@ function buildPostcard(d: PrintKitData): jsPDF {
   doc.rect(W - 30, 8, 16, 20, "F");
   doc.setTextColor(247, 220, 189);
   doc.setFontSize(11);
-  doc.text("C", W - 22, 20, { align: "center" });
+  doc.text(monogram(d), W - 22, 20, { align: "center" });
   doc.setDrawColor(...CRIMSON);
   doc.setLineWidth(0.35);
   doc.circle(W - 36, 18, 9, "S");
@@ -381,7 +478,7 @@ function buildPostcard(d: PrintKitData): jsPDF {
 }
 
 /* ─────────────────── 4. INSTRUCTION CARD (A6) ─────────────────── */
-function buildInstructions(): jsPDF {
+function buildInstructions(d: PrintKitData): jsPDF {
   const W = 105, H = 148;
   const doc = new jsPDF({ unit: "mm", format: "a6" });
   paper(doc, W, H);
@@ -400,34 +497,37 @@ function buildInstructions(): jsPDF {
     "Fold the letter twice along its guides and place it inside.",
     "Seal the flap with a wax seal sticker.",
     "Print the postcard double-sided and trim to size.",
+    "Cut each moon from the moon-cutouts sheet and glue it onto the matching circle on the postcard and bouquet tag.",
     "Write the bouquet tag by hand and tie it with twine.",
   ];
   doc.setFont("times", "normal");
   doc.setFontSize(9.5);
   doc.setTextColor(...INK);
   steps.forEach((s, i) => {
-    const y = 42 + i * 16;
+    const y = 40 + i * 14;
     doc.setDrawColor(...SUB);
     doc.setLineWidth(0.3);
     doc.circle(14, y - 1.5, 3.4, "S");
     doc.setFontSize(7);
     doc.text(String(i + 1), 14, y - 0.2, { align: "center" });
-    doc.setFontSize(9);
+    doc.setFontSize(8);
     doc.text(doc.splitTextToSize(s, W - 34), 22, y);
   });
 
   doc.setFont("helvetica", "normal");
   doc.setFontSize(5);
   doc.setTextColor(...SUB);
+  // Pronoun-aware tagline — previously hardcoded to "she" regardless of the
+  // pronoun chosen on the main form.
   doc.text(
-    doc.splitTextToSize("SKY WE SHARE  ·  Built in love, for someone who gazed at the moon and never knew how much she was watched over by it.", W - 24),
+    doc.splitTextToSize(`SKY WE SHARE  ·  ${taglineFor(d.pronoun)}`, W - 24),
     W / 2, H - 16, { align: "center" },
   );
   return doc;
 }
 
 /* ─────────────────── 5. WAX SEAL STICKERS (A4) ─────────────────── */
-function buildSeals(): jsPDF {
+function buildSeals(d: PrintKitData): jsPDF {
   const W = 210, H = 297;
   const doc = new jsPDF({ unit: "mm", format: "a4" });
   paper(doc, W, H, [255, 255, 255]);
@@ -441,6 +541,7 @@ function buildSeals(): jsPDF {
   const positions: [number, number][] = [
     [62, 70], [148, 70], [62, 140], [148, 140], [62, 210], [148, 210],
   ];
+  const letter = monogram(d);
   positions.forEach(([cx, cy]) => {
     doc.setFillColor(...CRIMSON);
     doc.circle(cx, cy, r, "F");
@@ -449,7 +550,7 @@ function buildSeals(): jsPDF {
     doc.setTextColor(240, 207, 166);
     doc.setFont("times", "italic");
     doc.setFontSize(22);
-    doc.text("C", cx, cy + 7, { align: "center" });
+    doc.text(letter, cx, cy + 7, { align: "center" });
     doc.setDrawColor(120, 120, 120);
     doc.setLineWidth(0.2);
     doc.setLineDashPattern([1.5, 1.5], 0);
@@ -485,7 +586,11 @@ function buildBouquetTag(d: PrintKitData): jsPDF {
   doc.setLineWidth(0.4);
   doc.circle(W / 2, ty + 8, 2.6, "S");
 
-  moonDisc(doc, W / 2, ty + 24, 7, d.illumination, d.waxing);
+  if (d.moonImages?.main) {
+    moonGuide(doc, W / 2, ty + 24, 7);
+  } else {
+    moonDisc(doc, W / 2, ty + 24, 7, d.illumination, d.waxing);
+  }
 
   doc.setFont("times", "italic");
   doc.setFontSize(11);
@@ -507,18 +612,91 @@ function buildBouquetTag(d: PrintKitData): jsPDF {
   return doc;
 }
 
+/* ─────────────────── 7. MOON CUTOUTS (A4) ─────────────────── */
+/**
+ * A sheet of real, photorealistic moon renders (captured from the same
+ * MoonSvg the website uses) as small circular cutouts — one for the
+ * postcard, one for the bouquet tag, and one per milestone — matching the
+ * blank "GLUE MOON HERE" guide circles left on those pages. Only produced
+ * when the caller has actually supplied moonImages; otherwise those pages
+ * fall back to a directly-drawn vector moon and this sheet is skipped.
+ */
+function buildMoonCutouts(d: PrintKitData): jsPDF {
+  const W = 210, H = 297;
+  const doc = new jsPDF({ unit: "mm", format: "a4" });
+  paper(doc, W, H, [255, 255, 255]);
+  heading(doc, "Moon cutouts", 20, 24, 9, INK);
+  doc.setFont("times", "italic");
+  doc.setFontSize(9.5);
+  doc.setTextColor(...SUB);
+  doc.text(
+    doc.splitTextToSize("Cut out each moon along its dashed circle and glue it onto the matching guide circle on the postcard or bouquet tag.", W - 40),
+    20, 32,
+  );
+
+  type Cutout = { label: string; image?: string };
+  const cutouts: Cutout[] = [];
+  if (d.moonImages?.main) {
+    cutouts.push({ label: "POSTCARD", image: d.moonImages.main });
+    cutouts.push({ label: "BOUQUET TAG", image: d.moonImages.main });
+  }
+  for (const m of d.milestones.slice(0, 9)) {
+    const img = d.moonImages?.milestones?.[m.age];
+    if (img) cutouts.push({ label: m.age === 0 ? "BIRTH" : `AGE ${m.age}`, image: img });
+  }
+
+  const r = 12; // 24mm finished cutout diameter
+  const cols = 4;
+  const usableW = W - 40;
+  const gapX = usableW / cols;
+  const startX = 20 + gapX / 2;
+  const startY = 55;
+  const gapY = 36;
+
+  cutouts.forEach((c, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    const cx = startX + col * gapX;
+    const cy = startY + row * gapY;
+    if (c.image) {
+      const size = r * 2;
+      doc.addImage(c.image, "PNG", cx - r, cy - r, size, size, undefined, "FAST");
+    }
+    doc.setDrawColor(...SUB);
+    doc.setLineWidth(0.25);
+    doc.setLineDashPattern([1, 1], 0);
+    doc.circle(cx, cy, r, "S");
+    doc.setLineDashPattern([], 0);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(6);
+    doc.setTextColor(...SUB);
+    doc.text(c.label, cx, cy + r + 5, { align: "center" });
+  });
+
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(7);
+  doc.setTextColor(...SUB);
+  doc.text("Print on matte photo paper or sticker paper for the crispest finish.", W / 2, H - 14, { align: "center" });
+  return doc;
+}
+
 export interface PrintKitFile { name: string; label: string; blob: Blob }
 
-/** Build all six PDFs. */
+/** Build all PDFs — seven when real moon images were captured, six otherwise
+ * (the postcard/tag pages fall back to a drawn moon and skip the cutout sheet). */
 export function buildPrintKitFiles(d: PrintKitData): PrintKitFile[] {
-  return [
+  const files: PrintKitFile[] = [
     { name: "letter.pdf", label: "The Letter", blob: buildLetter(d).output("blob") },
     { name: "envelope-template.pdf", label: "The Envelope", blob: buildEnvelope(d).output("blob") },
     { name: "postcard.pdf", label: "The Postcard", blob: buildPostcard(d).output("blob") },
-    { name: "how-to-make.pdf", label: "How to Make It", blob: buildInstructions().output("blob") },
-    { name: "wax-seal-stickers.pdf", label: "Wax Seals", blob: buildSeals().output("blob") },
+    { name: "how-to-make.pdf", label: "How to Make It", blob: buildInstructions(d).output("blob") },
+    { name: "wax-seal-stickers.pdf", label: "Wax Seals", blob: buildSeals(d).output("blob") },
     { name: "bouquet-tag.pdf", label: "Bouquet Tag", blob: buildBouquetTag(d).output("blob") },
   ];
+  if (d.moonImages?.main) {
+    files.push({ name: "moon-cutouts.pdf", label: "Moon Cutouts", blob: buildMoonCutouts(d).output("blob") });
+  }
+  return files;
 }
 
 function saveBlob(blob: Blob, filename: string) {
@@ -543,6 +721,7 @@ export async function downloadPrintKit(d: PrintKitData, filename = "sky-we-share
   const files = buildPrintKitFiles(d);
   const zip = new JSZip();
   for (const f of files) zip.file(f.name, f.blob);
+  const hasCutouts = files.some((f) => f.name === "moon-cutouts.pdf");
   zip.file(
     "README.txt",
     [
@@ -550,10 +729,11 @@ export async function downloadPrintKit(d: PrintKitData, filename = "sky-we-share
       "",
       "letter.pdf ................ A4, fold twice along the dotted guides",
       "envelope-template.pdf ..... A4 landscape, cut & fold into a DL envelope (110x220mm)",
-      "postcard.pdf .............. 4x6in, two pages — print double-sided on 250-300gsm",
+      `postcard.pdf .............. 4x6in, two pages — print double-sided on 250-300gsm${hasCutouts ? " (moons are glued on from moon-cutouts.pdf)" : ""}`,
       "how-to-make.pdf ........... A6 instruction card",
       "wax-seal-stickers.pdf ..... A4 sheet of six seals, print on sticker paper",
-      "bouquet-tag.pdf ........... A6, cut out and tie to a real bouquet",
+      `bouquet-tag.pdf ........... A6, cut out and tie to a real bouquet${hasCutouts ? " (moon glued on from moon-cutouts.pdf)" : ""}`,
+      ...(hasCutouts ? ["moon-cutouts.pdf .......... A4 sheet of real moon renders — cut and glue onto the postcard and bouquet tag"] : []),
       "",
       "Built in love, under the same sky.",
     ].join("\n"),
