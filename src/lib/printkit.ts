@@ -1,5 +1,6 @@
 import jsPDF from "jspdf";
 import JSZip from "jszip";
+import { scenePlace } from "@/components/Postcard";
 
 /**
  * DIY physical gift print kit — six print-ready PDFs bundled into one ZIP:
@@ -22,6 +23,10 @@ export interface PrintKitData {
   closing: string;
   narration: string;
   city: string;
+  /** The state/region the birth city is in, e.g. "Tamil Nadu" — drives the
+   * real-place postcard caption (scenePlace), same lookup the digital
+   * postcard's photo side uses. */
+  stateLabel?: string;
   dateLabel: string;
   phaseName: string;
   illumPct: string;
@@ -47,6 +52,12 @@ export interface PrintKitData {
     main: string;
     milestones: Record<number, string>;
   };
+  /**
+   * The real postcard photo (base64), same image used on the digital
+   * postcard's photo side. When present, the printed postcard's scene page
+   * uses this photo instead of the old vector illustration.
+   */
+  postcardPhoto?: string;
 }
 
 const CREAM: [number, number, number] = [246, 238, 219];
@@ -371,50 +382,74 @@ function buildPostcard(d: PrintKitData): jsPDF {
   const W = 152, H = 102;
   const doc = new jsPDF({ unit: "mm", format: [W, H], orientation: "landscape" });
 
-  // ── page 1: night sky scene + milestone strip
-  doc.setFillColor(...NIGHT);
-  doc.rect(0, 0, W, H, "F");
-  // horizon glow
-  for (let i = 0; i < 30; i++) {
-    const t = i / 30;
-    doc.setFillColor(12 + t * 18, 18 + t * 22, 40 + t * 26);
-    doc.rect(0, 34 + t * 22, W, 1.2, "F");
-  }
-  // stars
-  doc.setFillColor(235, 240, 255);
-  let seed = 12345;
-  const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
-  for (let i = 0; i < 220; i++) {
-    const x = rnd() * W, y = rnd() * 56, r = 0.08 + rnd() * 0.22;
-    doc.circle(x, y, r, "F");
-  }
-  // moon — a blank cut-guide when the real image ships on the cutout sheet,
-  // otherwise fall back to the drawn vector moon so nothing is ever blank.
-  if (d.moonImages?.main) {
-    moonGuide(doc, W - 34, 20, 9);
+  // ── page 1: photo scene (real place, matching the digital postcard) + milestone strip
+  const sceneH = 74; // top portion of the card reserved for the scene
+  if (d.postcardPhoto) {
+    // Real photo, same image the digital postcard's photo side uses.
+    doc.addImage(d.postcardPhoto, "PNG", 0, 0, W, sceneH, undefined, "FAST");
+
+    // moon — blank cut-guide when a real cutout image ships, else drawn vector moon
+    if (d.moonImages?.main) {
+      moonGuide(doc, W - 34, 20, 9);
+    } else {
+      moonDisc(doc, W - 34, 20, 9, d.illumination, d.waxing);
+    }
+
+    // real-place caption, burned onto the photo — same lookup (scenePlace)
+    // the digital postcard's photo side uses, so both never disagree.
+    const caption = scenePlace(d.stateLabel);
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(7);
+    const capW = Math.min(doc.getTextWidth(caption) + 6, W - 8);
+    doc.setFillColor(4, 6, 15);
+    doc.rect(4, sceneH - 13, capW, 9, "F");
+    doc.setTextColor(245, 201, 75);
+    doc.text(caption, 7, sceneH - 6.5);
   } else {
-    moonDisc(doc, W - 34, 20, 9, d.illumination, d.waxing);
+    // Fallback: old vector illustration, used only when no photo was captured.
+    doc.setFillColor(...NIGHT);
+    doc.rect(0, 0, W, sceneH, "F");
+    // horizon glow
+    for (let i = 0; i < 30; i++) {
+      const t = i / 30;
+      doc.setFillColor(12 + t * 18, 18 + t * 22, 40 + t * 26);
+      doc.rect(0, 34 + t * 22, W, 1.2, "F");
+    }
+    // stars
+    doc.setFillColor(235, 240, 255);
+    let seed = 12345;
+    const rnd = () => ((seed = (seed * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+    for (let i = 0; i < 220; i++) {
+      const x = rnd() * W, y = rnd() * 56, r = 0.08 + rnd() * 0.22;
+      doc.circle(x, y, r, "F");
+    }
+    if (d.moonImages?.main) {
+      moonGuide(doc, W - 34, 20, 9);
+    } else {
+      moonDisc(doc, W - 34, 20, 9, d.illumination, d.waxing);
+    }
+    // mountains
+    doc.setFillColor(9, 12, 24);
+    doc.triangle(-6, 60, 44, 30, 90, 60, "F");
+    doc.setFillColor(6, 9, 19);
+    doc.triangle(52, 60, 104, 34, 158, 60, "F");
+    // lake
+    doc.setFillColor(8, 13, 30);
+    doc.rect(0, 60, W, 14, "F");
+    doc.setFillColor(150, 165, 205);
+    for (let i = 0; i < 16; i++) {
+      const y = 61 + i * 0.8;
+      doc.rect(W - 36 - i * 0.5, y, 4 + i * 0.5, 0.25, "F");
+    }
   }
-  // mountains
-  doc.setFillColor(9, 12, 24);
-  doc.triangle(-6, 60, 44, 30, 90, 60, "F");
-  doc.setFillColor(6, 9, 19);
-  doc.triangle(52, 60, 104, 34, 158, 60, "F");
-  // lake
-  doc.setFillColor(8, 13, 30);
-  doc.rect(0, 60, W, 14, "F");
-  doc.setFillColor(150, 165, 205);
-  for (let i = 0; i < 16; i++) {
-    const y = 61 + i * 0.8;
-    doc.rect(W - 36 - i * 0.5, y, 4 + i * 0.5, 0.25, "F");
-  }
-  // caption band
+
+  // caption band (city / date / phase — same on either path)
   doc.setFillColor(...CREAM);
-  doc.rect(0, 74, W, H - 74, "F");
+  doc.rect(0, sceneH, W, H - sceneH, "F");
   doc.setFont("helvetica", "normal");
   doc.setFontSize(6);
   doc.setTextColor(...INK);
-  doc.text(`${d.city.toUpperCase()}  ·  ${d.dateLabel.toUpperCase()}  ·  ${d.phaseName.toUpperCase()} · ${d.illumPct}% ILLUMINATED`, W / 2, 79, { align: "center" });
+  doc.text(`${d.city.toUpperCase()}  ·  ${d.dateLabel.toUpperCase()}  ·  ${d.phaseName.toUpperCase()} · ${d.illumPct}% ILLUMINATED`, W / 2, sceneH + 5, { align: "center" });
   // milestone strip
   const ms = d.milestones.slice(0, 9);
   const step = W / (ms.length || 1);
