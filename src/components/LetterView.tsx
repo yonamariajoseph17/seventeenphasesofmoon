@@ -186,7 +186,7 @@ export function LetterView({ record }: { record: LetterRecord }) {
                       )}
                       <p className="text-[10px] tracking-[0.3em] uppercase" style={{ color: isMilestone ? GOLD : theme.accent }}>{yr.year}</p>
                       <p className="text-[9px] tracking-[0.2em] uppercase" style={{ color: theme.sub }}>
-                        {yr.age === 0 ? "Born" : `Turning ${yr.age}`}
+                        {yr.age === 0 ? "Night 1" : `Year ${yr.age}`}
                       </p>
                       <div className="mt-3">
                         <MoonSvg phaseAngle={yr.phaseAngle} illumination={yr.illumination} waxing={yr.waxing} size={84} />
