@@ -15,12 +15,19 @@ import { useSoundscape } from "@/lib/useAmbient";
 import { PostcardFront, PostcardBack, POSTCARD_STYLES, POSTCARD_W, POSTCARD_H, type PostcardStyle, type PostcardMilestone } from "@/components/Postcard";
 import { LETTER_STYLES, LETTER_OCCASIONS, OCCASION_LABELS, type LetterStyle, type LetterOccasion, type LetterPayload } from "@/lib/letter";
 import { createLetter, uploadLetterSong, SONG_ACCEPT, SONG_MAX_BYTES } from "@/lib/letter-store";
-import { ALL_PRESETS, resolvePreset, searchPresets, type CityPreset } from "@/lib/india-locations";
+import { type CityPreset } from "@/lib/india-locations";
+import { GLOBAL_PRESETS, searchGlobalPresets, resolveGlobalPreset } from "@/lib/world-locations";
 import { isMilestoneAge, postcardMilestones } from "@/lib/milestones";
 import { GiftWizard } from "@/components/GiftWizard";
 import auroraBg from "@/assets/aurorayellowknife_takasaka.jpg";
 
 const PREVIEW_W = 520;
+
+// Create one real, polished gift through your own flow (clearly demo content,
+// not implying a real customer), then drop its permanent link/id here.
+// This makes "See a real example" show the ACTUAL cinematic reveal —
+// envelope, letter, postcard, bouquet — not a mockup.
+const DEMO_LETTER_PATH = "/letter/REPLACE_WITH_YOUR_DEMO_ID";
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -46,7 +53,7 @@ export const Route = createFileRoute("/")({
   }),
 });
 
-const BUILTIN_PRESETS: CityPreset[] = ALL_PRESETS;
+const BUILTIN_PRESETS: CityPreset[] = GLOBAL_PRESETS;
 
 const MODE_OPTIONS = ["custom", "sunrise", "sunset"] as const;
 type Mode = (typeof MODE_OPTIONS)[number];
@@ -245,7 +252,7 @@ function Index() {
     if (q.length < 2) return savedPresets.slice(0, 10);
     const saved = savedPresets.filter((p) => p.name.toLowerCase().includes(q.toLowerCase()));
     const seen = new Set<string>();
-    return [...saved, ...searchPresets(q, 14)].filter((p) => {
+    return [...saved, ...searchGlobalPresets(q, 14)].filter((p) => {
       const k = p.name.toLowerCase();
       if (seen.has(k)) return false;
       seen.add(k);
@@ -257,7 +264,7 @@ function Index() {
   const cityKnown = useMemo(() => {
     const q = form.city.trim();
     if (!q) return true;
-    return !!(allPresets.find((c) => c.name.toLowerCase() === q.toLowerCase()) || resolvePreset(q));
+    return !!(allPresets.find((c) => c.name.toLowerCase() === q.toLowerCase()) || resolveGlobalPreset(q));
   }, [form.city, allPresets]);
 
   const birthYear = Number(applied.date.slice(0, 4));
@@ -339,7 +346,7 @@ function Index() {
     // Exact match first (incl. user-saved presets), then alias resolution
     // (Bombay → Mumbai, Madras → Chennai, …), so coordinates always auto-fill.
     const preset =
-      allPresets.find((c) => c.name.toLowerCase() === name.toLowerCase()) ?? resolvePreset(name);
+      allPresets.find((c) => c.name.toLowerCase() === name.toLowerCase()) ?? resolveGlobalPreset(name);
     setForm((f) => preset
       ? { ...f, city: preset.name, tz: preset.tz, lat: preset.lat, lon: preset.lon }
       : { ...f, city: name });
@@ -553,10 +560,12 @@ function Index() {
               Create a gift <span aria-hidden>↓</span>
             </a>
             <a
-              href="#example"
+              href={DEMO_LETTER_PATH}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-full border border-accent/40 px-6 py-3 text-xs tracking-[0.3em] text-accent uppercase transition-colors hover:bg-accent/10"
             >
-              See a real example
+              See a real example ↗
             </a>
           </div>
         </div>
@@ -620,14 +629,14 @@ function Index() {
                 max="2100-12-31"
               />
             </Field>
-            <Field label="City, district or state" error={errors.city}>
+            <Field label="City" error={errors.city}>
               <input
                 list="cities"
                 type="text"
                 value={form.city}
                 maxLength={80}
                 onChange={(e) => setCity(e.target.value)}
-                placeholder="e.g. Salem · Madurai · Madras · 600001"
+                placeholder="e.g. Tokyo · São Paulo · Salem · Cairo"
                 className="input"
                 autoComplete="off"
               />
