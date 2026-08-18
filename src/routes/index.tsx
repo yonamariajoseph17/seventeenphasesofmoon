@@ -542,11 +542,29 @@ function Index() {
           <p className="mx-auto mt-6 max-w-md text-balance text-base italic text-muted-foreground md:text-lg">
             The sky remembers what we choose to keep.
           </p>
-          <a href="#begin" className="mt-12 inline-flex items-center gap-2 rounded-full border border-accent/40 px-6 py-3 text-xs tracking-[0.3em] text-accent uppercase transition-colors hover:bg-accent/10">
-            Enter a name to begin <span aria-hidden>↓</span>
-          </a>
+          <p className="mx-auto mt-4 max-w-md text-balance text-sm text-muted-foreground/80">
+            A verified night sky, turned into a letter, postcard, and bouquet — delivered as one link, anywhere in the world.
+          </p>
+          <div className="mt-12 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <a
+              href="#begin"
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-xs tracking-[0.3em] text-primary-foreground uppercase transition-colors hover:bg-primary/90"
+            >
+              Create a gift <span aria-hidden>↓</span>
+            </a>
+            <a
+              href="#example"
+              className="inline-flex items-center gap-2 rounded-full border border-accent/40 px-6 py-3 text-xs tracking-[0.3em] text-accent uppercase transition-colors hover:bg-accent/10"
+            >
+              See a real example
+            </a>
+          </div>
         </div>
       </section>
+
+      <HowItWorks />
+      <SocialProof />
+      <PricingAndTrust />
 
       {/* Personalized intro */}
       <section className="relative mx-auto flex max-w-5xl flex-col items-center px-6 pt-24 pb-12 text-center md:pt-32">
@@ -788,8 +806,8 @@ function Index() {
         </div>
       </section>
 
-      {/* The night they were born — moon is the centerpiece */}
-      <section className="relative mx-auto max-w-3xl px-6 pb-28 text-center">
+      {/* The night they were born — moon is the centerpiece; this section IS the live example linked from the hero */}
+      <section id="example" className="relative mx-auto max-w-3xl px-6 pb-28 text-center">
         <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">{OCCASION_EYEBROW[applied.occasion]}</p>
         <h2 className="mt-2 font-display text-3xl md:text-4xl">{fmtDate(birth, applied.tz)}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{birthTimeLabel} · {applied.city} · {tzText}</p>
@@ -930,6 +948,8 @@ function Index() {
         </div>
       </section>
 
+      <FAQ />
+
       {/* Closing moment — a quiet breath before the end */}
       {showClosing && (
         <section className="relative mx-auto flex max-w-2xl flex-col items-center px-6 pb-32 text-center">
@@ -961,6 +981,10 @@ function Index() {
           Made by the creator, with everlasting love for the woman who loved moongazing.
         </p>
         Made under the same sky · for {personName} · {applied.city}
+        <p className="mt-4 text-[10px] normal-case tracking-normal text-muted-foreground/60">
+          {/* TODO: wire these to real pages before launch */}
+          [Add: contact email · privacy policy · refund policy]
+        </p>
       </footer>
     </main>
   );
@@ -1071,3 +1095,163 @@ function YearCard({ date, tz, lat, lon, birthYear, currentYear, mode, occasion }
     </article>
   );
   }
+
+// ── New sections for a first-time, worldwide visitor ──────────────────
+// These sit around the existing cinematic core without changing its behavior.
+// Anything in [brackets] below is a placeholder — replace with real copy,
+// numbers, and policies before this goes live to paying strangers.
+
+function HowItWorks() {
+  const steps = [
+    {
+      n: "01",
+      title: "Tell us the moment",
+      body: "A birth, a first meeting, a proposal, a memory — just a date, time, and place.",
+    },
+    {
+      n: "02",
+      title: "We verify the sky",
+      body: "Real positions of the Sun and Moon are computed for that exact moment — nothing invented, nothing generic.",
+    },
+    {
+      n: "03",
+      title: "They open it, live",
+      body: "One link unfolds into a handwritten letter, a moon postcard, and a bouquet — anywhere in the world.",
+    },
+  ];
+  return (
+    <section className="relative mx-auto max-w-5xl px-6 pb-24">
+      <div className="mb-12 text-center">
+        <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">How it works</p>
+        <h2 className="mt-3 font-display text-3xl md:text-5xl">Three steps, one gift</h2>
+      </div>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        {steps.map((s) => (
+          <div key={s.n} className="rounded-2xl border border-border bg-card/30 p-6 backdrop-blur-sm">
+            <p className="font-display text-3xl text-accent/70">{s.n}</p>
+            <p className="mt-3 font-display text-xl text-foreground">{s.title}</p>
+            <p className="mt-2 text-sm text-muted-foreground">{s.body}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// TODO: replace with real sender quotes once you have them.
+// Leaving this array empty hides the section entirely — do NOT fill it
+// with invented reviews just to make the page look more trafficked.
+const TESTIMONIALS: { quote: string; context: string }[] = [
+  // { quote: "…", context: "Sent to a father, on his 60th birthday" },
+];
+
+function SocialProof() {
+  if (TESTIMONIALS.length === 0) return null;
+  return (
+    <section className="relative mx-auto max-w-5xl px-6 pb-24">
+      <div className="mb-12 text-center">
+        <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">Real gifts, real moments</p>
+        <h2 className="mt-3 font-display text-3xl md:text-5xl">Trusted to carry the right words</h2>
+      </div>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        {TESTIMONIALS.map((t, i) => (
+          <div key={i} className="rounded-2xl border border-border bg-card/30 p-6 backdrop-blur-sm">
+            <p className="text-sm italic text-foreground/90">&ldquo;{t.quote}&rdquo;</p>
+            <p className="mt-4 text-xs tracking-[0.15em] text-muted-foreground uppercase">{t.context}</p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+// TODO: wire this to your real price/currency logic (Stripe/Razorpay), and
+// replace the bracketed policy text with your actual terms before launch.
+const PRICE_DISPLAY = "[$—]";
+
+function PricingAndTrust() {
+  return (
+    <section className="relative mx-auto max-w-4xl px-6 pb-24">
+      <div className="rounded-2xl border border-accent/30 bg-card/40 p-6 text-center backdrop-blur-sm md:p-10">
+        <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">Simple, one-time price</p>
+        <p className="mt-4 font-display text-5xl text-foreground">{PRICE_DISPLAY}</p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          One gift, three chapters, delivered as a single link. No subscription.
+        </p>
+        <a
+          href="#begin"
+          className="mt-8 inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-xs tracking-[0.3em] text-primary-foreground uppercase transition-colors hover:bg-primary/90"
+        >
+          Create a gift <span aria-hidden>↓</span>
+        </a>
+
+        <div className="mt-10 grid grid-cols-1 gap-4 border-t border-border/50 pt-8 text-left sm:grid-cols-3">
+          <div>
+            <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">Payments</p>
+            <p className="mt-1 text-sm text-foreground/90">Cards, UPI &amp; Razorpay, via Stripe</p>
+          </div>
+          <div>
+            <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">Your data</p>
+            <p className="mt-1 text-sm text-foreground/90">
+              [State plainly what you store from the birth-details form, for how long, and who can see it.]
+            </p>
+          </div>
+          <div>
+            <p className="text-xs tracking-[0.2em] text-muted-foreground uppercase">Refunds</p>
+            <p className="mt-1 text-sm text-foreground/90">[State your real refund/cancellation policy here.]</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const FAQS: { q: string; a: string }[] = [
+  {
+    q: "Is the sky actually accurate?",
+    a: "Yes. Every phase, illumination percentage, and rise/set time is computed from the real positions of the Sun and Moon for the exact date, time, and place you enter.",
+  },
+  {
+    q: "What if I don't know the exact birth time?",
+    a: "You can compute the sky at local sunrise or sunset instead — the moon phase itself barely changes across a single day, so the result stays accurate.",
+  },
+  {
+    q: "Is my data private?",
+    a: "[State clearly what you store, for how long, and who can access it — important for a product built on birth dates and locations.]",
+  },
+  {
+    q: "Will they need an account to receive it?",
+    a: "No — the gift opens from a single link, no sign-up required on their end.",
+  },
+  {
+    q: "What if they're not into astronomy?",
+    a: "The sky is the frame, not the point — the letter and the words you write are what carry the meaning.",
+  },
+];
+
+function FAQ() {
+  const [open, setOpen] = useState<number | null>(null);
+  return (
+    <section className="relative mx-auto max-w-3xl px-6 pb-28">
+      <div className="mb-10 text-center">
+        <p className="font-display text-xs tracking-[0.3em] text-accent uppercase">Before you begin</p>
+        <h2 className="mt-3 font-display text-3xl md:text-5xl">Questions</h2>
+      </div>
+      <div className="divide-y divide-border/50 rounded-2xl border border-border bg-card/30 backdrop-blur-sm">
+        {FAQS.map((f, i) => (
+          <div key={i} className="p-5">
+            <button
+              type="button"
+              onClick={() => setOpen(open === i ? null : i)}
+              className="flex w-full items-center justify-between gap-4 text-left"
+            >
+              <span className="font-display text-base text-foreground md:text-lg">{f.q}</span>
+              <span className="text-accent" aria-hidden>{open === i ? "\u2212" : "+"}</span>
+            </button>
+            {open === i && <p className="mt-3 text-sm text-muted-foreground">{f.a}</p>}
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
